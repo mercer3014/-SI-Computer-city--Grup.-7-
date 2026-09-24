@@ -27,35 +27,23 @@ class PasswordResetTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_reset_password_link_can_be_requested()
+    public function test_reset_code_can_be_requested()
     {
         Notification::fake();
 
         $user = User::factory()->create();
 
-        $this->post(route('password.email'), ['email' => $user->email]);
-
-        Notification::assertSentTo($user, ResetPassword::class);
-    }
-
-    public function test_reset_password_screen_can_be_rendered()
-    {
-        Notification::fake();
-
-        $user = User::factory()->create();
-
-        $this->post(route('password.email'), ['email' => $user->email]);
+        $this->from(route('password.request'))
+            ->post(route('password.email'), ['email' => $user->email])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHas('status');
 
         Notification::assertSentTo($user, ResetPassword::class, function ($notification) {
-            $response = $this->get(route('password.reset', $notification->token));
-
-            $response->assertOk();
-
-            return true;
+            return preg_match('/^\d{6}$/', $notification->token) === 1;
         });
     }
 
-    public function test_password_can_be_reset_with_valid_token()
+    public function test_password_can_be_reset_with_valid_code()
     {
         Notification::fake();
 
@@ -67,8 +55,8 @@ class PasswordResetTest extends TestCase
             $response = $this->post(route('password.update'), [
                 'token' => $notification->token,
                 'email' => $user->email,
-                'password' => 'password',
-                'password_confirmation' => 'password',
+                'password' => 'Password1!',
+                'password_confirmation' => 'Password1!',
             ]);
 
             $response
@@ -79,17 +67,17 @@ class PasswordResetTest extends TestCase
         });
     }
 
-    public function test_password_cannot_be_reset_with_invalid_token(): void
+    public function test_password_cannot_be_reset_with_invalid_code(): void
     {
         $user = User::factory()->create();
 
         $response = $this->post(route('password.update'), [
-            'token' => 'invalid-token',
+            'token' => '000000',
             'email' => $user->email,
-            'password' => 'newpassword123',
-            'password_confirmation' => 'newpassword123',
+            'password' => 'Password1!',
+            'password_confirmation' => 'Password1!',
         ]);
 
-        $response->assertSessionHasErrors('email');
+        $response->assertSessionHasErrors('token');
     }
 }

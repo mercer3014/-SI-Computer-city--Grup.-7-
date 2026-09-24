@@ -24,7 +24,9 @@ return new class extends Migration
             $table->foreign('metodo_pago_id', 'pago_venta_metodo_pago_id_fkey')->references('id')->on('metodo_pago');
         });
 
-        DB::statement('ALTER TABLE pago_venta ADD CONSTRAINT pago_venta_monto_check CHECK (monto > 0)');
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE pago_venta ADD CONSTRAINT pago_venta_monto_check CHECK (monto > 0)');
+        }
     }
 
     /**

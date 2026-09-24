@@ -24,8 +24,10 @@ return new class extends Migration
             $table->foreign('variante_id', 'detalle_compra_variante_id_fkey')->references('id')->on('variante_producto');
         });
 
-        DB::statement('ALTER TABLE detalle_compra ADD CONSTRAINT detalle_compra_cantidad_check CHECK (cantidad > 0)');
-        DB::statement('ALTER TABLE detalle_compra ADD CONSTRAINT detalle_compra_costo_unitario_check CHECK (costo_unitario >= 0)');
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE detalle_compra ADD CONSTRAINT detalle_compra_cantidad_check CHECK (cantidad > 0)');
+            DB::statement('ALTER TABLE detalle_compra ADD CONSTRAINT detalle_compra_costo_unitario_check CHECK (costo_unitario >= 0)');
+        }
     }
 
     /**

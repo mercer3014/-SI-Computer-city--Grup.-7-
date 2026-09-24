@@ -23,7 +23,9 @@ return new class extends Migration
             $table->foreign('usuario_id', 'movimiento_caja_usuario_id_fkey')->references('id')->on('usuario');
         });
 
-        DB::statement('ALTER TABLE movimiento_caja ADD CONSTRAINT movimiento_caja_monto_check CHECK (monto > 0)');
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE movimiento_caja ADD CONSTRAINT movimiento_caja_monto_check CHECK (monto > 0)');
+        }
     }
 
     /**

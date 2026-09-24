@@ -29,7 +29,9 @@ return new class extends Migration
             $table->foreign('usuario_id', 'gasto_usuario_id_fkey')->references('id')->on('usuario');
         });
 
-        DB::statement('ALTER TABLE gasto ADD CONSTRAINT gasto_monto_check CHECK (monto > 0)');
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE gasto ADD CONSTRAINT gasto_monto_check CHECK (monto > 0)');
+        }
     }
 
     /**

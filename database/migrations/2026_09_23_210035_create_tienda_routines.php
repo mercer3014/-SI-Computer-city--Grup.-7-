@@ -10,7 +10,48 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::unprepared(<<<'SQL'
+DROP TRIGGER IF EXISTS trg_venta_restaurar_stock_anulacion ON public.venta;
+DROP TRIGGER IF EXISTS trg_venta_generar_numero ON public.venta;
+DROP TRIGGER IF EXISTS trg_venta_generar_movimiento ON public.venta;
+DROP TRIGGER IF EXISTS trg_variante_set_fecha_actualizacion ON public.variante_producto;
+DROP TRIGGER IF EXISTS trg_producto_set_fecha_actualizacion ON public.producto;
+DROP TRIGGER IF EXISTS trg_detalle_venta_validar_y_garantia ON public.detalle_venta;
+DROP TRIGGER IF EXISTS trg_detalle_venta_actualizar_stock ON public.detalle_venta;
+DROP TRIGGER IF EXISTS trg_detalle_compra_actualizar_stock ON public.detalle_compra;
+DROP TRIGGER IF EXISTS trg_compra_generar_movimiento ON public.compra;
+DROP TRIGGER IF EXISTS trg_auditoria_cambio_precio ON public.variante_producto;
+
+DROP FUNCTION IF EXISTS public.fn_validar_garantia(character varying);
+DROP FUNCTION IF EXISTS public.fn_trg_venta_restaurar_stock_anulacion();
+DROP FUNCTION IF EXISTS public.fn_trg_venta_generar_numero();
+DROP FUNCTION IF EXISTS public.fn_trg_venta_generar_movimiento();
+DROP FUNCTION IF EXISTS public.fn_trg_set_fecha_actualizacion();
+DROP FUNCTION IF EXISTS public.fn_trg_detalle_venta_validar_y_garantia();
+DROP FUNCTION IF EXISTS public.fn_trg_detalle_venta_actualizar_stock();
+DROP FUNCTION IF EXISTS public.fn_trg_detalle_compra_actualizar_stock();
+DROP FUNCTION IF EXISTS public.fn_trg_compra_generar_movimiento();
+DROP FUNCTION IF EXISTS public.fn_trg_auditoria_cambio_precio();
+DROP FUNCTION IF EXISTS public.fn_reporte_ventas_periodo(date, date);
+DROP FUNCTION IF EXISTS public.fn_productos_mas_vendidos(date, date, integer);
+DROP FUNCTION IF EXISTS public.fn_flujo_caja_periodo(date, date);
+DROP FUNCTION IF EXISTS public.fn_alertas_stock_bajo();
+
+DROP PROCEDURE IF EXISTS public.sp_registrar_venta(integer, integer, integer, character varying, jsonb);
+DROP PROCEDURE IF EXISTS public.sp_registrar_proveedor(character varying, character varying, character varying, character varying, character varying, character varying);
+DROP PROCEDURE IF EXISTS public.sp_registrar_gasto(integer, integer, integer, character varying, numeric, timestamp without time zone);
+DROP PROCEDURE IF EXISTS public.sp_registrar_compra(integer, integer, integer, character varying, timestamp without time zone, jsonb);
+DROP PROCEDURE IF EXISTS public.sp_registrar_cliente(character varying, character varying, character varying, character varying, character varying);
+DROP PROCEDURE IF EXISTS public.sp_anular_venta(character varying, integer, text);
+DROP PROCEDURE IF EXISTS public.sp_ajustar_stock(character varying, integer, integer, text);
+DROP PROCEDURE IF EXISTS public.sp_actualizar_precio_variante(character varying, numeric, integer);
+
+DROP SEQUENCE IF EXISTS public.seq_numero_venta;
+
 CREATE SEQUENCE public.seq_numero_venta
     START WITH 1
     INCREMENT BY 1
@@ -478,6 +519,10 @@ SQL);
      */
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::unprepared(<<<'SQL'
 DROP TRIGGER IF EXISTS trg_venta_restaurar_stock_anulacion ON public.venta;
 DROP TRIGGER IF EXISTS trg_venta_generar_numero ON public.venta;

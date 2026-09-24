@@ -22,7 +22,9 @@ return new class extends Migration
             $table->foreign('variante_id', 'detalle_movimiento_inventario_variante_id_fkey')->references('id')->on('variante_producto');
         });
 
-        DB::statement('ALTER TABLE detalle_movimiento_inventario ADD CONSTRAINT detalle_movimiento_inventario_cantidad_check CHECK (cantidad > 0)');
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE detalle_movimiento_inventario ADD CONSTRAINT detalle_movimiento_inventario_cantidad_check CHECK (cantidad > 0)');
+        }
     }
 
     /**

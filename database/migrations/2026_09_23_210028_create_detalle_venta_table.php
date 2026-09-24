@@ -30,8 +30,10 @@ return new class extends Migration
             $table->foreign('variante_id', 'detalle_venta_variante_id_fkey')->references('id')->on('variante_producto');
         });
 
-        DB::statement('ALTER TABLE detalle_venta ADD CONSTRAINT detalle_venta_cantidad_check CHECK (cantidad > 0)');
-        DB::statement('ALTER TABLE detalle_venta ADD CONSTRAINT detalle_venta_precio_unitario_check CHECK (precio_unitario >= 0)');
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE detalle_venta ADD CONSTRAINT detalle_venta_cantidad_check CHECK (cantidad > 0)');
+            DB::statement('ALTER TABLE detalle_venta ADD CONSTRAINT detalle_venta_precio_unitario_check CHECK (precio_unitario >= 0)');
+        }
     }
 
     /**

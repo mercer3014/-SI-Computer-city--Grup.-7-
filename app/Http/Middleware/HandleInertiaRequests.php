@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -39,9 +40,31 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $this->usuarioCompartido($request->user()),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+        ];
+    }
+
+    /**
+     * Datos del usuario autenticado que consume el sidebar y el user chip.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function usuarioCompartido(?User $user): ?array
+    {
+        if ($user === null) {
+            return null;
+        }
+
+        $user->loadMissing('rol.permisos');
+
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'rol' => $user->rol?->nombre,
+            'permisos' => $user->rol?->permisos->pluck('clave')->values()->all() ?? [],
         ];
     }
 }

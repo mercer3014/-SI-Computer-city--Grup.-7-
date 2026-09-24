@@ -65,6 +65,35 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_blocked_users_cannot_authenticate()
+    {
+        $user = User::factory()->create([
+            'bloqueado' => true,
+        ]);
+
+        $response = $this->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertGuest();
+        $response->assertSessionHasErrors('email');
+    }
+
+    public function test_inactive_users_cannot_authenticate()
+    {
+        $user = User::factory()->create([
+            'estado' => 'INACTIVO',
+        ]);
+
+        $this->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertGuest();
+    }
+
     public function test_users_can_logout()
     {
         $user = User::factory()->create();

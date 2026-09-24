@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Auth\OtpPasswordBrokerManager;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton('auth.password', function ($app) {
+            return new OtpPasswordBrokerManager($app);
+        });
     }
 
     /**
@@ -37,14 +40,11 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
+        Password::defaults(fn (): Password => Password::min(8)
+            ->mixedCase()
+            ->letters()
+            ->numbers()
+            ->symbols(),
         );
     }
 }

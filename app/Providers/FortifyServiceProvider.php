@@ -4,13 +4,23 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Responses\OtpFailedResponse;
+use App\Http\Responses\OtpSentResponse;
+use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Laravel\Fortify\Contracts\FailedPasswordResetResponse as FailedPasswordResetResponseContract;
+use Laravel\Fortify\Contracts\SuccessfulPasswordResetLinkRequestResponse as SuccessfulPasswordResetLinkRequestResponseContract;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 
@@ -21,7 +31,8 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(SuccessfulPasswordResetLinkRequestResponseContract::class, OtpSentResponse::class);
+        $this->app->singleton(FailedPasswordResetResponseContract::class, OtpFailedResponse::class);
     }
 
     /**
@@ -32,6 +43,9 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureActions();
         $this->configureViews();
         $this->configureRateLimiting();
+        $this->configureOtpMail();
+
+        Route::getRoutes()->getByName('password.update')?->middleware('throttle:otp');
     }
 
     /**
@@ -41,6 +55,36 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
+        Fortify::authenticateUsing(function (Request $request): ?User {
+            $email = Str::lower($request->string(Fortify::username())->toString());
+
+            $user = User::query()
+                ->whereRaw('lower(email) = ?', [$email])
+                ->first();
+
+            $password = $request->string('password')->toString();
+
+            if (! $user || ! Hash::check($password, $user->password_hash)) {
+                return null;
+            }
+
+            if (! $user->puedeIniciarSesion()) {
+                throw ValidationException::withMessages([
+                    Fortify::username() => 'Tu cuenta está inactiva o bloqueada.',
+                ]);
+            }
+
+            if (Hash::needsRehash($user->password_hash)) {
+                $user->password_hash = $password;
+            }
+
+            $user->forceFill([
+                'fecha_ultimo_login' => now(),
+                'intentos_fallidos' => 0,
+            ])->save();
+
+            return $user;
+        });
     }
 
     /**
@@ -50,6 +94,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/Login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
+            'canUsePasskeys' => Features::canManagePasskeys(),
             'status' => $request->session()->get('status'),
         ]));
 
@@ -95,6 +140,26 @@ class FortifyServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by(
                 ($request->input('credential.id') ?: $request->session()->getId()).'|'.$request->ip(),
             );
+        });
+
+        RateLimiter::for('otp', function (Request $request) {
+            return Limit::perMinute(5)->by(Str::lower((string) $request->input('email')).'|'.$request->ip());
+        });
+    }
+
+    /**
+     * El correo lleva el código, no un enlace.
+     */
+    private function configureOtpMail(): void
+    {
+        ResetPassword::toMailUsing(function (object $notifiable, string $token): MailMessage {
+            $minutes = config('auth.passwords.'.config('auth.defaults.passwords').'.expire');
+
+            return (new MailMessage)
+                ->subject('Código para recuperar tu cuenta')
+                ->line('Recibimos una solicitud para recuperar tu cuenta.')
+                ->line('Tu código es: '.$token)
+                ->line('Caduca en '.$minutes.' minutos. Si no pediste este código, ignora este correo.');
         });
     }
 }
