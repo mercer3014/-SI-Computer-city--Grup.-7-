@@ -4,10 +4,35 @@ import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
+import type { Plugin } from 'vite';
 import { defineConfig, lazyPlugins } from 'vite-plus';
+
+const laravelAppUrl = 'http://127.0.0.1:8000';
+const laravelLoginUrl = `${laravelAppUrl}/login`;
+
+function openLaravelLogin(): Plugin {
+    return {
+        name: 'open-laravel-login',
+        configureServer(server) {
+            server.middlewares.use((req, res, next) => {
+                const path = req.url?.split('?')[0] ?? '';
+
+                if (path === '/' || path === '/index.html') {
+                    res.statusCode = 302;
+                    res.setHeader('Location', laravelLoginUrl);
+                    res.end();
+                    return;
+                }
+
+                next();
+            });
+        },
+    };
+}
 
 export default defineConfig({
     plugins: lazyPlugins(() => [
+        openLaravelLogin(),
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.ts'],
             refresh: true,
@@ -32,6 +57,9 @@ export default defineConfig({
         }),
     ]),
     server: {
+        host: '127.0.0.1',
+        port: 5173,
+        open: laravelLoginUrl,
         watch: {
             ignored: [
                 '**/.agents/**',
@@ -39,6 +67,8 @@ export default defineConfig({
                 '**/.cursor/**',
                 '**/.junie/**',
                 '**/vendor/**',
+                '**/storage/**',
+                '**/bootstrap/cache/**',
             ],
         },
     },

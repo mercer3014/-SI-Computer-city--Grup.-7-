@@ -5,7 +5,7 @@ import type { Passkey } from '@/types/auth';
 import Heading from '@/components/Heading.vue';
 import PasskeyItem from '@/components/PasskeyItem.vue';
 import PasskeyRegister from '@/components/PasskeyRegister.vue';
-import { destroy } from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyRegistrationController';
+import { destroy } from '@/lib/disabledFortifyRoutes';
 
 export type Props = {
     canManagePasskeys?: boolean;

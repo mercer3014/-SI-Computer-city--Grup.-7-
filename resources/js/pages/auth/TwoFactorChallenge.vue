@@ -9,7 +9,7 @@ import {
     InputOTPGroup,
     InputOTPSlot,
 } from '@/components/ui/input-otp';
-import { store } from '@/routes/two-factor/login';
+import { store } from '@/lib/disabledFortifyRoutes';
 import type { TwoFactorConfigContent } from '@/types';
 
 const showRecoveryInput = ref<boolean>(false);

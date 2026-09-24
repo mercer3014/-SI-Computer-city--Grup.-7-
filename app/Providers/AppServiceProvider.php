@@ -16,8 +16,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton('auth.password', function ($app) {
-            return new OtpPasswordBrokerManager($app);
+        // El PasswordResetServiceProvider es diferido y pisa un singleton
+        // propio. extend() se aplica cuando Laravel termina de resolverlo.
+        $this->app->extend('auth.password', function ($manager, $app) {
+            return $manager instanceof OtpPasswordBrokerManager
+                ? $manager
+                : new OtpPasswordBrokerManager($app);
         });
     }
 

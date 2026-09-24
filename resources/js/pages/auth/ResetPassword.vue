@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import AuthActionIcon from '@/components/AuthActionIcon.vue';
+import AuthPasswordControl from '@/components/AuthPasswordControl.vue';
 import InputError from '@/components/InputError.vue';
-import PasswordInput from '@/components/PasswordInput.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import TextLink from '@/components/TextLink.vue';
 import { Spinner } from '@/components/ui/spinner';
+import { login } from '@/routes';
 import { update } from '@/routes/password';
 
 defineOptions({
     layout: {
-        title: 'Reset password',
-        description: 'Please enter your new password below',
+        title: 'Nueva contraseña',
+        description: 'Ingresa el código y tu nueva contraseña',
+        formSide: 'left',
     },
 });
 
@@ -21,70 +21,77 @@ const props = defineProps<{
     email: string;
     passwordRules: string;
 }>();
-
-const inputEmail = ref(props.email);
 </script>
 
 <template>
-    <Head title="Reset password" />
+    <Head title="Nueva contraseña" />
 
-    <Form
-        v-bind="update.form()"
-        :transform="(data) => ({ ...data, token, email })"
-        :reset-on-success="['password', 'password_confirmation']"
-        v-slot="{ errors, processing }"
-    >
-        <div class="grid gap-6">
-            <div class="grid gap-2">
-                <Label for="email">Email</Label>
-                <Input
-                    id="email"
-                    type="email"
-                    name="email"
-                    autocomplete="email"
-                    v-model="inputEmail"
-                    class="mt-1 block w-full"
-                    readonly
-                />
-                <InputError :message="errors.email" class="mt-2" />
-            </div>
+        <Form
+            v-bind="update.form()"
+            :reset-on-success="['password', 'password_confirmation']"
+            v-slot="{ errors, processing }"
+            class="cc-form"
+        >
+            <input type="hidden" name="email" :value="props.email" />
+            <h1>Nueva contraseña</h1>
 
-            <div class="grid gap-2">
-                <Label for="password">Password</Label>
-                <PasswordInput
+            <label class="cc-field">
+                <span>Código</span>
+                <span class="cc-field__control">
+                    <input
+                        id="token"
+                        type="text"
+                        name="token"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                        maxlength="6"
+                        required
+                        :value="props.token"
+                    />
+                </span>
+                <small>6 dígitos</small>
+                <InputError :message="errors.token" />
+                <InputError :message="errors.email" />
+            </label>
+
+            <label class="cc-field">
+                <span>Nueva clave</span>
+                <AuthPasswordControl
                     id="password"
                     name="password"
                     autocomplete="new-password"
-                    class="mt-1 block w-full"
-                    autofocus
-                    placeholder="Password"
                     :passwordrules="passwordRules"
+                    autofocus
                 />
+                <small
+                    >8 caracteres, mayúscula, minúscula, número y símbolo</small
+                >
                 <InputError :message="errors.password" />
-            </div>
+            </label>
 
-            <div class="grid gap-2">
-                <Label for="password_confirmation"> Confirm password </Label>
-                <PasswordInput
+            <label class="cc-field">
+                <span>Confirmar clave</span>
+                <AuthPasswordControl
                     id="password_confirmation"
                     name="password_confirmation"
                     autocomplete="new-password"
-                    class="mt-1 block w-full"
-                    placeholder="Confirm password"
                     :passwordrules="passwordRules"
                 />
+                <small>Repetí la misma clave</small>
                 <InputError :message="errors.password_confirmation" />
-            </div>
+            </label>
 
-            <Button
+            <button
                 type="submit"
-                class="mt-4 w-full"
+                class="cc-button"
                 :disabled="processing"
                 data-test="reset-password-button"
             >
                 <Spinner v-if="processing" />
-                Reset password
-            </Button>
-        </div>
-    </Form>
+                <AuthActionIcon v-else />
+                <span>Guardar nueva clave</span>
+            </button>
+
+            <TextLink :href="login()">Iniciar sesión</TextLink>
+        </Form>
 </template>

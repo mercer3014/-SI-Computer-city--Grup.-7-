@@ -6,12 +6,15 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Responses\OtpFailedResponse;
 use App\Http\Responses\OtpSentResponse;
+use App\Http\Responses\PasswordResetCompleteResponse;
+use App\Http\Responses\RegisteredResponse;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -20,6 +23,8 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\FailedPasswordResetResponse as FailedPasswordResetResponseContract;
+use Laravel\Fortify\Contracts\PasswordResetResponse as PasswordResetResponseContract;
+use Laravel\Fortify\Contracts\RegisterResponse as RegisterResponseContract;
 use Laravel\Fortify\Contracts\SuccessfulPasswordResetLinkRequestResponse as SuccessfulPasswordResetLinkRequestResponseContract;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
@@ -33,6 +38,8 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $this->app->singleton(SuccessfulPasswordResetLinkRequestResponseContract::class, OtpSentResponse::class);
         $this->app->singleton(FailedPasswordResetResponseContract::class, OtpFailedResponse::class);
+        $this->app->singleton(PasswordResetResponseContract::class, PasswordResetCompleteResponse::class);
+        $this->app->singleton(RegisterResponseContract::class, RegisteredResponse::class);
     }
 
     /**
@@ -104,16 +111,26 @@ class FortifyServiceProvider extends ServiceProvider
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
         ]));
 
-        Fortify::requestPasswordResetLinkView(fn (Request $request) => Inertia::render('auth/ForgotPassword', [
-            'status' => $request->session()->get('status'),
-        ]));
+        Fortify::requestPasswordResetLinkView(function (Request $request) {
+            if ($request->boolean('otro')) {
+                $request->session()->forget('password_reset_email');
+            }
+
+            return Inertia::render('auth/ForgotPassword', [
+                'status' => $request->session()->get('status'),
+                'email' => $request->session()->get('password_reset_email'),
+                'recovered' => false,
+            ]);
+        });
 
         Fortify::verifyEmailView(fn (Request $request) => Inertia::render('auth/VerifyEmail', [
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::registerView(fn () => Inertia::render('auth/Register', [
+        Fortify::registerView(fn (Request $request) => Inertia::render('auth/Register', [
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
+            'registered' => false,
+            'status' => $request->session()->get('status'),
         ]));
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/TwoFactorChallenge'));
@@ -154,6 +171,11 @@ class FortifyServiceProvider extends ServiceProvider
     {
         ResetPassword::toMailUsing(function (object $notifiable, string $token): MailMessage {
             $minutes = config('auth.passwords.'.config('auth.defaults.passwords').'.expire');
+
+            Log::info('OTP recuperar cuenta', [
+                'email' => $notifiable->email,
+                'codigo' => $token,
+            ]);
 
             return (new MailMessage)
                 ->subject('Código para recuperar tu cuenta')

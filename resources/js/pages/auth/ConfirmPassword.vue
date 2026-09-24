@@ -9,7 +9,7 @@ import { store } from '@/routes/password/confirm';
 import {
     index as confirmOptions,
     store as confirmStore,
-} from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyConfirmationController';
+} from '@/lib/disabledFortifyRoutes';
 import PasskeyVerify from '@/components/PasskeyVerify.vue';
 
 defineOptions({

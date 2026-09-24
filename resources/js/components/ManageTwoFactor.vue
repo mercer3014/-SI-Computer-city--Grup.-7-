@@ -7,7 +7,7 @@ import TwoFactorRecoveryCodes from '@/components/TwoFactorRecoveryCodes.vue';
 import TwoFactorSetupModal from '@/components/TwoFactorSetupModal.vue';
 import { Button } from '@/components/ui/button';
 import { useTwoFactorAuth } from '@/composables/useTwoFactorAuth';
-import { disable, enable } from '@/routes/two-factor';
+import { disable, enable } from '@/lib/disabledFortifyRoutes';
 
 export type Props = {
     canManageTwoFactor?: boolean;
