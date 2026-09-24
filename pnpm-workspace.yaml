@@ -1,0 +1,8 @@
+packages:
+    - '.'
+
+allowBuilds:
+    vue-demi: false
+
+publicHoistPattern:
+    - '@inertiajs/core'
