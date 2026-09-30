@@ -23,7 +23,9 @@ withDefaults(defineProps<Props>(), {
             class="min-w-0 overflow-x-clip bg-[var(--cc-page)]"
         >
             <AppSidebarHeader :breadcrumbs="breadcrumbs" />
-            <slot />
+            <div class="cc-app-main">
+                <slot />
+            </div>
         </AppContent>
         <Toaster />
     </AppShell>

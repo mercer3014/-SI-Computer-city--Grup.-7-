@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
-import { Sidebar } from '@/components/ui/sidebar';
+import { computed, watch } from 'vue';
+import { Sidebar, useSidebar } from '@/components/ui/sidebar';
 import { dashboard, logout } from '@/routes';
 
 type Modulo = {
@@ -86,6 +86,16 @@ const modulos: Modulo[] = [
 ];
 
 const page = usePage();
+const { isMobile, setOpenMobile } = useSidebar();
+
+watch(
+    () => page.url,
+    () => {
+        if (isMobile.value) {
+            setOpenMobile(false);
+        }
+    },
+);
 
 const visibles = computed(() => {
     const claves = new Set(page.props.auth.user?.permisos ?? []);
