@@ -477,6 +477,18 @@
         border-bottom: 1px solid var(--cc-border);
         border-radius: 4px 4px 0 0;
         background: var(--cc-surface);
+        transition: border-color 150ms ease-out;
+        will-change: transform;
+    }
+
+    .cc-field.is-error .cc-field__control {
+        border-bottom-color: var(--cc-error);
+    }
+
+    .cc-field__control.is-shaking {
+        animation: cc-field-shake
+            calc(var(--cc-shake-dur-a, 80ms) * 2 + var(--cc-shake-dur-b, 60ms) * 2)
+            linear;
     }
 
     .cc-field__control::after {
@@ -540,11 +552,47 @@
         height: 18px;
     }
 
-    .cc-field small {
+    .cc-field small,
+    .cc-field__hint {
+        display: block;
         min-height: 16px;
         color: var(--cc-muted);
         font-size: 11px;
         line-height: 16px;
+    }
+
+    .cc-field__hint--error {
+        color: var(--cc-error);
+    }
+
+    /* error-state-shake — https://transitions.dev/detail.html?t=error-state-shake */
+    @keyframes cc-field-shake {
+        0% {
+            transform: translateX(0);
+            animation-timing-function: var(--cc-shake-ease, cubic-bezier(0.22, 1, 0.36, 1));
+        }
+        28.57% {
+            transform: translateX(var(--cc-shake-distance, 6px));
+            animation-timing-function: var(--cc-shake-ease, cubic-bezier(0.22, 1, 0.36, 1));
+        }
+        57.14% {
+            transform: translateX(calc(var(--cc-shake-distance, 6px) * -1));
+            animation-timing-function: var(--cc-shake-ease, cubic-bezier(0.22, 1, 0.36, 1));
+        }
+        78.57% {
+            transform: translateX(var(--cc-shake-overshoot, 4px));
+            animation-timing-function: var(--cc-shake-ease, cubic-bezier(0.22, 1, 0.36, 1));
+        }
+        100% {
+            transform: translateX(0);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .cc-field__control.is-shaking {
+            animation: none !important;
+            transform: none !important;
+        }
     }
 
     .cc-button {
@@ -615,6 +663,28 @@
         background: var(--cc-border);
     }
 
+    .cc-passkey {
+        display: grid;
+        gap: 12px;
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    .cc-passkey__icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .cc-passkey__or {
+        margin: 0;
+        color: var(--cc-muted);
+        font-size: 11px;
+        line-height: 16px;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
     .cc-verify {
         display: inline-flex;
         align-items: center;
@@ -650,24 +720,9 @@
         pointer-events: none;
         position: fixed;
         inset: 0;
-        z-index: 3;
-        overflow: hidden;
-    }
-
-    .cc-confetti__piece {
-        position: absolute;
-        top: 0;
-        left: 0;
-        border-radius: 1px;
-        will-change: transform, opacity;
-    }
-
-    .cc-confetti__piece[data-shape='dot'] {
-        border-radius: 999px;
-    }
-
-    .cc-confetti__piece[data-shape='strip'] {
-        border-radius: 2px;
+        z-index: 40;
+        width: 100vw;
+        height: 100vh;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -680,6 +735,24 @@
         display: flex;
         flex-wrap: wrap;
         gap: 16px;
+    }
+
+    .cc-auth-toggle {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        color: var(--cc-accent);
+        font: inherit;
+        font-size: 12px;
+        line-height: 16px;
+        cursor: pointer;
+        text-align: left;
+    }
+
+    .cc-auth-toggle:hover {
+        text-decoration: underline;
+        text-underline-offset: 3px;
     }
 
     .cc-form a {
@@ -736,6 +809,11 @@
     .cc-status--success {
         background: color-mix(in srgb, var(--cc-success) 14%, transparent);
         color: var(--cc-success);
+    }
+
+    .cc-status--throttle {
+        background: color-mix(in srgb, var(--cc-error) 12%, transparent);
+        color: var(--cc-error);
     }
 
     @media (max-width: 720px) {

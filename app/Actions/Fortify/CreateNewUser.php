@@ -32,7 +32,7 @@ class CreateNewUser implements CreatesNewUsers
             'apellido' => ['required', 'string', 'max:100'],
             'ci' => ['required', 'string', 'max:30', Rule::unique(Personal::class, 'ci')],
             'cargo' => ['required', 'string', 'max:100'],
-            'telefono' => ['required', 'string', 'max:30'],
+            'telefono' => ['required', 'string', 'digits_between:7,15'],
             'email' => $this->emailRules(),
             'token' => ['required', 'digits:6'],
             'password' => $this->passwordRules(),

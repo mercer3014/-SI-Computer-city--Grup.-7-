@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, usePage } from '@inertiajs/vue3';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import AuthActionIcon from '@/components/AuthActionIcon.vue';
 import AuthConfetti from '@/components/AuthConfetti.vue';
+import AuthFieldHint from '@/components/AuthFieldHint.vue';
 import AuthPasswordControl from '@/components/AuthPasswordControl.vue';
-import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Spinner } from '@/components/ui/spinner';
 import { login } from '@/routes';
@@ -21,7 +22,86 @@ const props = defineProps<{
     status?: string;
     email?: string;
     recovered?: boolean;
+    throttleSeconds?: number | null;
 }>();
+
+const page = usePage();
+const remaining = ref(0);
+let tick: number | null = null;
+
+const throttleLabel = computed(() => {
+    if (remaining.value <= 0) {
+        return '';
+    }
+
+    const m = Math.floor(remaining.value / 60);
+    const s = remaining.value % 60;
+
+    if (m > 0) {
+        return `Demasiados intentos. Esperá ${m}:${String(s).padStart(2, '0')}.`;
+    }
+
+    return remaining.value === 1
+        ? 'Demasiados intentos. Esperá 1 segundo.'
+        : `Demasiados intentos. Esperá ${remaining.value} segundos.`;
+});
+
+const throttled = computed(() => remaining.value > 0);
+
+function stopTick(): void {
+    if (tick !== null) {
+        window.clearInterval(tick);
+        tick = null;
+    }
+}
+
+function startCountdown(seconds: number): void {
+    stopTick();
+    remaining.value = Math.max(0, Math.floor(seconds));
+
+    if (remaining.value <= 0) {
+        return;
+    }
+
+    tick = window.setInterval(() => {
+        remaining.value -= 1;
+
+        if (remaining.value <= 0) {
+            stopTick();
+        }
+    }, 1000);
+}
+
+function isThrottleMessage(message?: string): boolean {
+    return Boolean(message && /demasiados intentos|too many/i.test(message));
+}
+
+watch(
+    () => props.throttleSeconds,
+    (value) => {
+        if (typeof value === 'number' && value > 0) {
+            startCountdown(value);
+        }
+    },
+    { immediate: true },
+);
+
+watch(
+    () => page.props.errors as Record<string, string> | undefined,
+    (errors) => {
+        const msg = errors?.email || errors?.token || '';
+        const match = msg.match(/(\d+)\s*(?:segundos?|seconds?)/i);
+
+        if (match && remaining.value <= 0) {
+            startCountdown(Number(match[1]));
+        }
+    },
+    { immediate: true },
+);
+
+onBeforeUnmount(() => {
+    stopTick();
+});
 </script>
 
 <template>
@@ -59,21 +139,24 @@ const props = defineProps<{
                         autocomplete="email"
                         v-focus
                         required
+                        :disabled="throttled"
                     />
                 </span>
-                <small>El que figura en tu ficha</small>
-                <InputError :message="errors.email" />
+                <AuthFieldHint
+                    hint="El que figura en tu ficha"
+                    :error="throttled ? throttleLabel : errors.email"
+                />
             </label>
 
             <button
                 type="submit"
                 class="cc-button"
-                :disabled="processing"
+                :disabled="processing || throttled"
                 data-test="email-password-reset-link-button"
             >
                 <Spinner v-if="processing" />
                 <AuthActionIcon v-else />
-                <span>Recuperar</span>
+                <span>{{ throttled ? `Esperá ${remaining}s` : 'Recuperar' }}</span>
             </button>
 
             <TextLink :href="login()">Iniciar sesión</TextLink>
@@ -101,11 +184,19 @@ const props = defineProps<{
                         maxlength="6"
                         required
                         v-focus
+                        :disabled="throttled"
                     />
                 </span>
-                <small>6 dígitos · vence en 10 minutos</small>
-                <InputError :message="errors.token" />
-                <InputError :message="errors.email" />
+                <AuthFieldHint
+                    hint="6 dígitos · vence en 10 minutos"
+                    :error="
+                        throttled
+                            ? throttleLabel
+                            : isThrottleMessage(errors.email)
+                              ? undefined
+                              : errors.token || errors.email
+                    "
+                />
             </label>
 
             <label class="cc-field">
@@ -114,9 +205,12 @@ const props = defineProps<{
                     id="password"
                     name="password"
                     autocomplete="new-password"
+                    :disabled="throttled"
                 />
-                <small>8 caracteres, mayúscula, minúscula, número y símbolo</small>
-                <InputError :message="errors.password" />
+                <AuthFieldHint
+                    hint="8 caracteres, mayúscula, minúscula, número y símbolo"
+                    :error="errors.password"
+                />
             </label>
 
             <label class="cc-field">
@@ -125,20 +219,23 @@ const props = defineProps<{
                     id="password_confirmation"
                     name="password_confirmation"
                     autocomplete="new-password"
+                    :disabled="throttled"
                 />
-                <small>Repetí la misma clave</small>
-                <InputError :message="errors.password_confirmation" />
+                <AuthFieldHint
+                    hint="Repetí la misma clave"
+                    :error="errors.password_confirmation"
+                />
             </label>
 
             <button
                 type="submit"
                 class="cc-button"
-                :disabled="processing"
+                :disabled="processing || throttled"
                 data-test="reset-password-button"
             >
                 <Spinner v-if="processing" />
                 <AuthActionIcon v-else />
-                <span>Guardar nueva clave</span>
+                <span>{{ throttled ? `Esperá ${remaining}s` : 'Guardar nueva clave' }}</span>
             </button>
 
             <div class="cc-auth-links">

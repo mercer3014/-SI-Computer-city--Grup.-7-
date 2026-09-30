@@ -3,8 +3,8 @@ import { Form, Head, router, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import AuthActionIcon from '@/components/AuthActionIcon.vue';
 import AuthConfetti from '@/components/AuthConfetti.vue';
+import AuthFieldHint from '@/components/AuthFieldHint.vue';
 import AuthPasswordControl from '@/components/AuthPasswordControl.vue';
-import InputError from '@/components/InputError.vue';
 import { useRegisterStep } from '@/composables/useAuthChrome';
 import TextLink from '@/components/TextLink.vue';
 import { Spinner } from '@/components/ui/spinner';
@@ -15,6 +15,7 @@ const props = defineProps<{
     passwordRules: string;
     registered?: boolean;
     status?: string;
+    throttleSeconds?: number | null;
 }>();
 
 defineOptions({
@@ -30,7 +31,8 @@ const step = useRegisterStep();
 const sending = ref(false);
 const verifying = ref(false);
 const otpSent = ref(false);
-const localError = ref('');
+const remaining = ref(0);
+let tick: number | null = null;
 
 const form = reactive({
     nombre: '',
@@ -44,29 +46,131 @@ const form = reactive({
     password_confirmation: '',
 });
 
-const errors = computed(
+const localErrors = reactive<Record<string, string>>({
+    nombre: '',
+    apellido: '',
+    ci: '',
+    cargo: '',
+    telefono: '',
+    email: '',
+    token: '',
+});
+
+const serverErrors = computed(
     () => (page.props.errors ?? {}) as Record<string, string>,
 );
 
-function goTo(next: number) {
-    localError.value = '';
+const throttleLabel = computed(() => {
+    if (remaining.value <= 0) {
+        return '';
+    }
+
+    const m = Math.floor(remaining.value / 60);
+    const s = remaining.value % 60;
+
+    if (m > 0) {
+        return `Demasiados intentos. Esperá ${m}:${String(s).padStart(2, '0')}.`;
+    }
+
+    return remaining.value === 1
+        ? 'Demasiados intentos. Esperá 1 segundo.'
+        : `Demasiados intentos. Esperá ${remaining.value} segundos.`;
+});
+
+const throttled = computed(() => remaining.value > 0);
+
+function fieldError(key: string, liveThrottle = false): string | undefined {
+    if (liveThrottle && throttled.value) {
+        return throttleLabel.value;
+    }
+
+    return localErrors[key] || serverErrors.value[key] || undefined;
+}
+
+function clearLocalErrors(...keys: string[]): void {
+    for (const key of keys) {
+        localErrors[key] = '';
+    }
+}
+
+function stopTick(): void {
+    if (tick !== null) {
+        window.clearInterval(tick);
+        tick = null;
+    }
+}
+
+function startCountdown(seconds: number): void {
+    stopTick();
+    remaining.value = Math.max(0, Math.floor(seconds));
+
+    if (remaining.value <= 0) {
+        return;
+    }
+
+    tick = window.setInterval(() => {
+        remaining.value -= 1;
+
+        if (remaining.value <= 0) {
+            stopTick();
+        }
+    }, 1000);
+}
+
+function goTo(next: number): void {
+    clearLocalErrors(
+        'nombre',
+        'apellido',
+        'ci',
+        'cargo',
+        'telefono',
+        'email',
+        'token',
+    );
     step.value = next;
 }
 
-function continuePersonal() {
-    if (!form.nombre || !form.apellido || !form.ci || !form.cargo) {
-        localError.value = 'Completá nombre, apellido, CI y cargo.';
+function continuePersonal(): void {
+    clearLocalErrors('nombre', 'apellido', 'ci', 'cargo');
+
+    if (!form.nombre) {
+        localErrors.nombre = 'Completá tu nombre.';
+    }
+
+    if (!form.apellido) {
+        localErrors.apellido = 'Completá tu apellido.';
+    }
+
+    if (!form.ci) {
+        localErrors.ci = 'Completá tu CI.';
+    }
+
+    if (!form.cargo) {
+        localErrors.cargo = 'Completá tu cargo.';
+    }
+
+    if (
+        localErrors.nombre ||
+        localErrors.apellido ||
+        localErrors.ci ||
+        localErrors.cargo
+    ) {
         return;
     }
 
     goTo(2);
 }
 
-function sendOtp() {
-    if (!form.email || sending.value) {
+function sendOtp(): void {
+    if (!form.email || sending.value || throttled.value) {
+        if (!form.email) {
+            localErrors.email = 'Completá tu correo.';
+        }
+
         return;
     }
 
+    clearLocalErrors('email');
     sending.value = true;
     router.post(
         '/register/otp',
@@ -84,9 +188,30 @@ function sendOtp() {
     );
 }
 
-function continueContact() {
-    if (!form.telefono || !form.email || !form.token) {
-        localError.value = 'Completá celular, correo y el código.';
+function continueContact(): void {
+    clearLocalErrors('telefono', 'email', 'token');
+
+    if (!form.telefono) {
+        localErrors.telefono = 'Completá tu celular.';
+    } else if (!/^\d{7,15}$/.test(form.telefono)) {
+        localErrors.telefono = 'Solo números, entre 7 y 15 dígitos.';
+    }
+
+    if (!form.email) {
+        localErrors.email = 'Completá tu correo.';
+    }
+
+    if (!otpSent.value) {
+        localErrors.email = localErrors.email || 'Verificá tu correo primero.';
+    } else if (!form.token) {
+        localErrors.token = 'Ingresá el código de 6 dígitos.';
+    }
+
+    if (localErrors.telefono || localErrors.email || localErrors.token) {
+        return;
+    }
+
+    if (throttled.value) {
         return;
     }
 
@@ -107,8 +232,35 @@ function continueContact() {
     );
 }
 
+watch(
+    () => props.throttleSeconds,
+    (value) => {
+        if (typeof value === 'number' && value > 0) {
+            startCountdown(value);
+        }
+    },
+    { immediate: true },
+);
+
+watch(
+    serverErrors,
+    (errors) => {
+        const msg = errors.email || errors.token || '';
+        const match = msg.match(/(\d+)\s*(?:segundos?|seconds?)/i);
+
+        if (match && remaining.value <= 0) {
+            startCountdown(Number(match[1]));
+        }
+    },
+    { immediate: true },
+);
+
 onMounted(() => {
     step.value = props.registered ? 4 : 1;
+
+    if (props.throttleSeconds && props.throttleSeconds > 0) {
+        startCountdown(props.throttleSeconds);
+    }
 });
 
 watch(
@@ -121,6 +273,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
+    stopTick();
     step.value = 1;
 });
 </script>
@@ -139,7 +292,6 @@ onBeforeUnmount(() => {
         <div v-if="status" class="cc-status cc-status--success" role="status">
             {{ status }}
         </div>
-        <p v-if="localError" class="cc-status" role="alert">{{ localError }}</p>
 
         <form
             v-if="step === 1"
@@ -159,8 +311,10 @@ onBeforeUnmount(() => {
                         v-focus
                     />
                 </span>
-                <small>Como figura en tu documento</small>
-                <InputError :message="errors.nombre" />
+                <AuthFieldHint
+                    hint="Como figura en tu documento"
+                    :error="fieldError('nombre')"
+                />
             </label>
 
             <label class="cc-field">
@@ -173,8 +327,10 @@ onBeforeUnmount(() => {
                         required
                     />
                 </span>
-                <small>Como figura en tu documento</small>
-                <InputError :message="errors.apellido" />
+                <AuthFieldHint
+                    hint="Como figura en tu documento"
+                    :error="fieldError('apellido')"
+                />
             </label>
 
             <label class="cc-field">
@@ -182,8 +338,10 @@ onBeforeUnmount(() => {
                 <span class="cc-field__control">
                     <input v-model="form.ci" type="text" required />
                 </span>
-                <small>Documento de identidad</small>
-                <InputError :message="errors.ci" />
+                <AuthFieldHint
+                    hint="Documento de identidad"
+                    :error="fieldError('ci')"
+                />
             </label>
 
             <label class="cc-field">
@@ -191,8 +349,10 @@ onBeforeUnmount(() => {
                 <span class="cc-field__control">
                     <input v-model="form.cargo" type="text" required />
                 </span>
-                <small>Tu rol en la tienda</small>
-                <InputError :message="errors.cargo" />
+                <AuthFieldHint
+                    hint="Tu rol en la tienda"
+                    :error="fieldError('cargo')"
+                />
             </label>
 
             <button type="submit" class="cc-button">
@@ -216,13 +376,20 @@ onBeforeUnmount(() => {
                     <input
                         v-model="form.telefono"
                         type="tel"
+                        inputmode="numeric"
                         autocomplete="tel"
                         required
                         v-focus
+                        :disabled="throttled"
+                        @input="
+                            form.telefono = form.telefono.replace(/\D/g, '').slice(0, 15)
+                        "
                     />
                 </span>
-                <small>Con código de área</small>
-                <InputError :message="errors.telefono" />
+                <AuthFieldHint
+                    hint="Solo números · 7 a 15 dígitos"
+                    :error="fieldError('telefono')"
+                />
             </label>
 
             <label class="cc-field">
@@ -233,18 +400,30 @@ onBeforeUnmount(() => {
                         type="email"
                         autocomplete="email"
                         required
+                        :disabled="throttled"
                     />
                 </span>
                 <label class="cc-verify">
                     <input
                         type="checkbox"
                         :checked="otpSent"
-                        :disabled="sending || !form.email"
+                        :disabled="sending || !form.email || throttled"
                         @click.prevent="sendOtp"
                     />
-                    <span>{{ sending ? 'Enviando…' : 'Verificar' }}</span>
+                    <span>
+                        {{
+                            throttled
+                                ? `Esperá ${remaining}s`
+                                : sending
+                                  ? 'Enviando…'
+                                  : 'Verificar'
+                        }}
+                    </span>
                 </label>
-                <InputError :message="errors.email" />
+                <AuthFieldHint
+                    hint="Correo de la tienda"
+                    :error="fieldError('email', !otpSent)"
+                />
             </label>
 
             <label v-if="otpSent" class="cc-field">
@@ -257,23 +436,30 @@ onBeforeUnmount(() => {
                         autocomplete="one-time-code"
                         maxlength="6"
                         required
+                        :disabled="throttled"
                     />
                 </span>
-                <small>6 dígitos · vence en 10 minutos</small>
-                <InputError :message="errors.token" />
+                <AuthFieldHint
+                    hint="6 dígitos · vence en 10 minutos"
+                    :error="fieldError('token', true)"
+                />
             </label>
 
             <div class="cc-auth-links">
                 <button
                     type="submit"
                     class="cc-button"
-                    :disabled="verifying || !otpSent"
+                    :disabled="verifying || !otpSent || throttled"
                 >
                     <Spinner v-if="verifying" />
                     <AuthActionIcon v-else />
-                    <span>Continuar</span>
+                    <span>{{ throttled ? `Esperá ${remaining}s` : 'Continuar' }}</span>
                 </button>
-                <button type="button" class="cc-button cc-button--ghost" @click="goTo(1)">
+                <button
+                    type="button"
+                    class="cc-button cc-button--ghost"
+                    @click="goTo(1)"
+                >
                     Atrás
                 </button>
             </div>
@@ -305,8 +491,10 @@ onBeforeUnmount(() => {
                     :passwordrules="passwordRules"
                     autofocus
                 />
-                <small>8 caracteres, mayúscula, minúscula, número y símbolo</small>
-                <InputError :message="submitErrors.password" />
+                <AuthFieldHint
+                    hint="8 caracteres, mayúscula, minúscula, número y símbolo"
+                    :error="submitErrors.password"
+                />
             </label>
 
             <label class="cc-field">
@@ -317,12 +505,15 @@ onBeforeUnmount(() => {
                     autocomplete="new-password"
                     :passwordrules="passwordRules"
                 />
-                <small>Repetí la misma clave</small>
-                <InputError :message="submitErrors.password_confirmation" />
+                <AuthFieldHint
+                    hint="Repetí la misma clave"
+                    :error="
+                        submitErrors.password_confirmation ||
+                        submitErrors.token ||
+                        submitErrors.email
+                    "
+                />
             </label>
-
-            <InputError :message="submitErrors.token" />
-            <InputError :message="submitErrors.email" />
 
             <div class="cc-auth-links">
                 <button
@@ -335,7 +526,11 @@ onBeforeUnmount(() => {
                     <AuthActionIcon v-else />
                     <span>Registrarme</span>
                 </button>
-                <button type="button" class="cc-button cc-button--ghost" @click="goTo(2)">
+                <button
+                    type="button"
+                    class="cc-button cc-button--ghost"
+                    @click="goTo(2)"
+                >
                     Atrás
                 </button>
             </div>

@@ -11,11 +11,13 @@ withDefaults(
         passwordrules?: string;
         autofocus?: boolean;
         tabindex?: number | string;
+        disabled?: boolean;
     }>(),
     {
         autocomplete: 'new-password',
         required: true,
         autofocus: false,
+        disabled: false,
     },
 );
 
@@ -32,6 +34,7 @@ const visible = ref(false);
             :required="required"
             :passwordrules="passwordrules"
             :tabindex="tabindex"
+            :disabled="disabled"
             v-focus="autofocus"
         />
         <button
@@ -39,6 +42,7 @@ const visible = ref(false);
             class="cc-field__reveal"
             :aria-label="visible ? 'Ocultar clave' : 'Ver clave'"
             :aria-pressed="visible"
+            :disabled="disabled"
             tabindex="-1"
             @click="visible = !visible"
         >

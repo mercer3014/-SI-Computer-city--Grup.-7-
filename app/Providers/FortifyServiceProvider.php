@@ -9,6 +9,7 @@ use App\Http\Responses\OtpSentResponse;
 use App\Http\Responses\PasswordResetCompleteResponse;
 use App\Http\Responses\RegisteredResponse;
 use App\Models\User;
+use App\Services\BitacoraService;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -76,10 +77,23 @@ class FortifyServiceProvider extends ServiceProvider
             }
 
             if (! $user->puedeIniciarSesion()) {
+                BitacoraService::registrar(
+                    'Seguridad',
+                    'LOGIN_BLOQUEADO',
+                    'usuario',
+                    (int) $user->id,
+                    null,
+                    ['email' => $user->email, 'estado' => $user->estado, 'bloqueado' => $user->bloqueado],
+                    'Intento de login con cuenta inactiva o bloqueada',
+                    (int) $user->id,
+                );
+
                 throw ValidationException::withMessages([
                     Fortify::username() => 'Tu cuenta está inactiva o bloqueada.',
                 ]);
             }
+
+            BitacoraService::bindContext((int) $user->id);
 
             if (Hash::needsRehash($user->password_hash)) {
                 $user->password_hash = $password;
@@ -103,6 +117,7 @@ class FortifyServiceProvider extends ServiceProvider
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
             'canUsePasskeys' => Features::canManagePasskeys(),
             'status' => $request->session()->get('status'),
+            'throttleSeconds' => $request->session()->pull('throttleSeconds'),
         ]));
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/ResetPassword', [
@@ -120,6 +135,7 @@ class FortifyServiceProvider extends ServiceProvider
                 'status' => $request->session()->get('status'),
                 'email' => $request->session()->get('password_reset_email'),
                 'recovered' => false,
+                'throttleSeconds' => $request->session()->pull('throttleSeconds'),
             ]);
         });
 
@@ -131,6 +147,7 @@ class FortifyServiceProvider extends ServiceProvider
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
             'registered' => false,
             'status' => $request->session()->get('status'),
+            'throttleSeconds' => $request->session()->pull('throttleSeconds'),
         ]));
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/TwoFactorChallenge'));
@@ -150,7 +167,7 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
 
-            return Limit::perMinute(5)->by($throttleKey);
+            return Limit::perMinute(3)->by($throttleKey);
         });
 
         RateLimiter::for('passkeys', function (Request $request) {
