@@ -1,219 +1,157 @@
 <script setup lang="ts">
-import { animate } from 'motion-v';
+import confetti from 'canvas-confetti';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 
-type Shape = 'rect' | 'sq' | 'strip' | 'dot';
+/** Colores Computer City — misma idea que Magic UI / canvas-confetti. */
+const COLORS = ['#FF3D8F', '#B01050', '#5CE1FF', '#D97706', '#3DDC97', '#FFD166'];
 
-type Piece = {
-    id: number;
-    color: string;
-    shape: Shape;
-    width: number;
-    height: number;
-    angle: number;
-    speed: number;
-    spin: number;
-    delay: number;
-    gravity: number;
-    drift: number;
-    duration: number;
-    peak: number;
-    along: number;
-    lift: number;
-};
+type ConfettiInstance = ReturnType<typeof confetti.create>;
 
-const COLORS = ['#FF3D8F', '#B01050', '#5CE1FF', '#D97706', '#3DDC97', '#FFD166', '#FFFFFF'];
-const SHAPES: Shape[] = ['rect', 'sq', 'strip', 'dot'];
-const COUNT = 72;
-const SPREAD = (78 * Math.PI) / 180;
+const canvas = ref<HTMLCanvasElement | null>(null);
+let instance: ConfettiInstance | null = null;
+let rafId = 0;
+let timeoutIds: number[] = [];
 
-function makePieces(): Piece[] {
-    const pieces: Piece[] = [];
-
-    for (let index = 0; index < COUNT; index++) {
-        const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
-        const scalar = 0.55 + Math.random() * 1.15;
-        const size =
-            shape === 'strip'
-                ? [3, 16]
-                : shape === 'sq'
-                  ? [8, 8]
-                  : shape === 'dot'
-                    ? [6, 6]
-                    : [7, 13];
-
-        pieces.push({
-            id: index,
-            color: COLORS[Math.floor(Math.random() * COLORS.length)],
-            shape,
-            width: Math.max(3, Math.round(size[0] * scalar)),
-            height: Math.max(4, Math.round(size[1] * scalar)),
-            angle: -Math.PI / 2 + (Math.random() - 0.5) * SPREAD,
-            speed: 210 + Math.random() * 320,
-            spin: (Math.random() < 0.5 ? -1 : 1) * (280 + Math.random() * 980),
-            delay: Math.random() * 0.07,
-            gravity: 240 + Math.random() * 340,
-            drift: (Math.random() - 0.5) * 140,
-            duration: 1.35 + Math.random() * 1.1,
-            peak: 0.22 + Math.random() * 0.16,
-            along: (index + Math.random() * 0.8) / COUNT,
-            lift: Math.random(),
-        });
+function clearTimers(): void {
+    if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
     }
 
-    return pieces;
-}
-
-const pieces = makePieces();
-const root = ref<HTMLElement | null>(null);
-const controls: Array<{ stop: () => void }> = [];
-
-function stopBurst(): void {
-    for (let index = 0; index < controls.length; index++) {
-        controls[index]?.stop();
+    for (const id of timeoutIds) {
+        window.clearTimeout(id);
     }
 
-    controls.length = 0;
+    timeoutIds = [];
 }
 
-function letterSlots(heading: HTMLElement): DOMRect[] {
-    const slots: DOMRect[] = [];
-    const walker = document.createTreeWalker(heading, NodeFilter.SHOW_TEXT);
+function headingOrigin(): { x: number; y: number } {
+    const heading = document.querySelector('.cc-form--success h1');
 
-    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-        const value = node.textContent ?? '';
-
-        for (let index = 0; index < value.length; index++) {
-            if (/\s/.test(value[index] ?? '')) {
-                continue;
-            }
-
-            const range = document.createRange();
-            range.setStart(node, index);
-            range.setEnd(node, index + 1);
-            const rect = range.getBoundingClientRect();
-
-            if (rect.width > 0 && rect.height > 0) {
-                slots.push(rect);
-            }
-        }
+    if (!heading) {
+        return { x: 0.5, y: 0.35 };
     }
 
-    return slots;
-}
-
-function headingSlots(layer: HTMLElement): DOMRect[] {
-    const heading = layer.closest('.cc-form--success')?.querySelector('h1');
-
-    if (heading) {
-        const letters = letterSlots(heading);
-
-        if (letters.length) {
-            return letters;
-        }
-
-        const range = document.createRange();
-        range.selectNodeContents(heading);
-        const text = range.getBoundingClientRect();
-
-        if (text.width > 8) {
-            return [text];
-        }
-
-        return [heading.getBoundingClientRect()];
-    }
-
-    return [layer.getBoundingClientRect()];
-}
-
-function originFor(slots: DOMRect[], piece: Piece): { x: number; y: number } {
-    const slot = slots[Math.min(slots.length - 1, Math.floor(piece.along * slots.length))] ?? slots[0];
+    const box = heading.getBoundingClientRect();
 
     return {
-        x: slot.left + slot.width * piece.lift,
-        y: slot.top + slot.height * (0.15 + piece.lift * 0.7),
+        x: (box.left + box.width / 2) / window.innerWidth,
+        y: (box.top + box.height / 2) / window.innerHeight,
     };
 }
 
-function startBurst(): void {
-    const layer = root.value;
-
-    if (!layer || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+function fireBurst(origin: { x: number; y: number }): void {
+    if (!instance) {
         return;
     }
 
-    stopBurst();
+    instance({
+        particleCount: 90,
+        spread: 70,
+        startVelocity: 48,
+        gravity: 1.05,
+        ticks: 220,
+        origin,
+        colors: COLORS,
+        zIndex: 40,
+    });
 
-    const nodes = layer.querySelectorAll<HTMLElement>('[data-piece]');
-    const slots = headingSlots(layer);
+    instance({
+        particleCount: 40,
+        spread: 100,
+        startVelocity: 28,
+        gravity: 0.9,
+        ticks: 180,
+        origin,
+        colors: COLORS,
+        scalar: 0.85,
+        zIndex: 40,
+    });
+}
 
-    for (let index = 0; index < nodes.length; index++) {
-        const node = nodes[index];
-        const piece = pieces[index];
+/** Side cannons ~1.8s — patrón de Magic UI. */
+function fireSideCannons(): void {
+    if (!instance) {
+        return;
+    }
 
-        if (!node || !piece) {
-            continue;
+    const end = Date.now() + 1800;
+
+    const frame = () => {
+        if (!instance || Date.now() > end) {
+            return;
         }
 
-        const origin = originFor(slots, piece);
-        node.style.left = `${origin.x - piece.width / 2}px`;
-        node.style.top = `${origin.y - piece.height / 2}px`;
+        instance({
+            particleCount: 3,
+            angle: 60,
+            spread: 55,
+            startVelocity: 55,
+            origin: { x: 0, y: 0.55 },
+            colors: COLORS,
+            zIndex: 40,
+        });
 
-        const launch = piece.angle + (piece.along - 0.5) * 0.55;
-        const vx = Math.cos(launch) * piece.speed;
-        const vy = Math.sin(launch) * piece.speed;
-        const peakY = vy * 0.72;
-        const midY = peakY * 0.25 + piece.gravity * 0.22;
-        const endY = piece.gravity;
+        instance({
+            particleCount: 3,
+            angle: 120,
+            spread: 55,
+            startVelocity: 55,
+            origin: { x: 1, y: 0.55 },
+            colors: COLORS,
+            zIndex: 40,
+        });
 
-        controls.push(
-            animate(
-                node,
-                {
-                    x: [0, vx * 0.08, vx * 0.42, vx * 0.78 + piece.drift * 0.4, vx + piece.drift],
-                    y: [0, peakY * 0.12, peakY, midY, endY],
-                    rotate: [0, piece.spin * 0.08, piece.spin * 0.28, piece.spin * 0.68, piece.spin],
-                    scale: [0.55, 0.85, 1, 0.95, 0.65],
-                    opacity: [1, 1, 1, 1, 0],
-                },
-                {
-                    duration: piece.duration,
-                    delay: piece.delay,
-                    times: [0, 0.08, piece.peak, 0.62 + Math.random() * 0.12, 1],
-                    ease: [0.18, 0.72, 0.22, 1],
-                    onComplete: () => {
-                        node.style.willChange = 'auto';
-                    },
-                },
-            ),
-        );
+        rafId = requestAnimationFrame(frame);
+    };
+
+    frame();
+}
+
+function celebrate(): void {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        return;
     }
+
+    if (!canvas.value) {
+        return;
+    }
+
+    clearTimers();
+
+    instance ??= confetti.create(canvas.value, {
+        resize: true,
+        useWorker: true,
+    });
+
+    const origin = headingOrigin();
+    fireBurst(origin);
+    fireSideCannons();
+
+    timeoutIds.push(
+        window.setTimeout(() => {
+            fireBurst({
+                x: origin.x,
+                y: Math.max(0.12, origin.y - 0.08),
+            });
+        }, 280),
+    );
 }
 
 onMounted(() => {
-    startBurst();
-    document.addEventListener('cc-confetti-replay', startBurst);
+    timeoutIds.push(window.setTimeout(celebrate, 40));
 });
 
 onBeforeUnmount(() => {
-    document.removeEventListener('cc-confetti-replay', startBurst);
-    stopBurst();
+    clearTimers();
+    instance?.reset();
+    instance = null;
 });
 </script>
 
 <template>
-    <div ref="root" class="cc-confetti" aria-hidden="true">
-        <span
-            v-for="piece in pieces"
-            :key="piece.id"
-            data-piece
-            class="cc-confetti__piece"
-            :data-shape="piece.shape"
-            :style="{
-                width: `${piece.width}px`,
-                height: `${piece.height}px`,
-                background: piece.color,
-            }"
-        />
-    </div>
+    <!-- Teleport: evita que motion/layout (transform) atrape position:fixed -->
+    <Teleport to="body">
+        <canvas ref="canvas" class="cc-confetti" aria-hidden="true" />
+    </Teleport>
 </template>
