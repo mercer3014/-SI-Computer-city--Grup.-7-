@@ -138,7 +138,7 @@ onBeforeUnmount(() => {
                     required
                     v-focus
                     tabindex="1"
-                    autocomplete="email"
+                    autocomplete="username"
                     :disabled="throttled"
                 />
             </span>
@@ -165,29 +165,31 @@ onBeforeUnmount(() => {
             />
         </label>
 
-        <button
-            type="submit"
-            class="cc-button"
-            tabindex="3"
-            :disabled="processing || throttled"
-            data-test="login-button"
-        >
-            <Spinner v-if="processing" />
-            <AuthActionIcon v-else />
-            <span>{{ throttled ? `Esperá ${remaining}s` : 'Ingresar' }}</span>
-        </button>
-
-        <div class="cc-auth-links">
-            <TextLink :href="register()" :tabindex="4">
-                Crear cuenta
-            </TextLink>
-            <TextLink
-                v-if="canResetPassword"
-                :href="request()"
-                :tabindex="5"
+        <div class="cc-auth-actions">
+            <button
+                type="submit"
+                class="cc-button"
+                tabindex="3"
+                :disabled="processing || throttled"
+                data-test="login-button"
             >
-                Recuperar cuenta
-            </TextLink>
+                <Spinner v-if="processing" />
+                <AuthActionIcon v-else />
+                <span>{{ throttled ? `Esperá ${remaining}s` : 'Ingresar' }}</span>
+            </button>
+
+            <div class="cc-auth-links">
+                <TextLink :href="register()" :tabindex="4">
+                    Crear cuenta
+                </TextLink>
+                <TextLink
+                    v-if="canResetPassword"
+                    :href="request()"
+                    :tabindex="5"
+                >
+                    Recuperar cuenta
+                </TextLink>
+            </div>
         </div>
     </Form>
 </template>

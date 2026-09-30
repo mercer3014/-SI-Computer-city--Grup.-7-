@@ -148,18 +148,20 @@ onBeforeUnmount(() => {
                 />
             </label>
 
-            <button
-                type="submit"
-                class="cc-button"
-                :disabled="processing || throttled"
-                data-test="email-password-reset-link-button"
-            >
-                <Spinner v-if="processing" />
-                <AuthActionIcon v-else />
-                <span>{{ throttled ? `Esperá ${remaining}s` : 'Recuperar' }}</span>
-            </button>
+            <div class="cc-auth-actions">
+                <button
+                    type="submit"
+                    class="cc-button"
+                    :disabled="processing || throttled"
+                    data-test="email-password-reset-link-button"
+                >
+                    <Spinner v-if="processing" />
+                    <AuthActionIcon v-else />
+                    <span>{{ throttled ? `Esperá ${remaining}s` : 'Recuperar' }}</span>
+                </button>
 
-            <TextLink :href="login()">Iniciar sesión</TextLink>
+                <TextLink :href="login()">Iniciar sesión</TextLink>
+            </div>
         </Form>
 
         <Form
@@ -227,22 +229,24 @@ onBeforeUnmount(() => {
                 />
             </label>
 
-            <button
-                type="submit"
-                class="cc-button"
-                :disabled="processing || throttled"
-                data-test="reset-password-button"
-            >
-                <Spinner v-if="processing" />
-                <AuthActionIcon v-else />
-                <span>{{ throttled ? `Esperá ${remaining}s` : 'Guardar nueva clave' }}</span>
-            </button>
+            <div class="cc-auth-actions">
+                <button
+                    type="submit"
+                    class="cc-button"
+                    :disabled="processing || throttled"
+                    data-test="reset-password-button"
+                >
+                    <Spinner v-if="processing" />
+                    <AuthActionIcon v-else />
+                    <span>{{ throttled ? `Esperá ${remaining}s` : 'Guardar nueva clave' }}</span>
+                </button>
 
-            <div class="cc-auth-links">
-                <TextLink href="/forgot-password?otro=1">
-                    Usar otro correo
-                </TextLink>
-                <TextLink :href="login()">Iniciar sesión</TextLink>
+                <div class="cc-auth-links">
+                    <TextLink href="/forgot-password?otro=1">
+                        Usar otro correo
+                    </TextLink>
+                    <TextLink :href="login()">Iniciar sesión</TextLink>
+                </div>
             </div>
         </Form>
     </template>

@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import { motion } from 'motion-v';
 
-const props = defineProps<{
+defineProps<{
     brandSubtitle: string;
     infoTitle: string;
     infoText: string;
@@ -16,9 +15,6 @@ const spring = {
     damping: 20,
     stiffness: 300,
 } as const;
-
-const brandOrder = computed(() => (props.brandSide === 'right' ? 2 : 1));
-const formOrder = computed(() => (props.brandSide === 'right' ? 1 : 2));
 </script>
 
 <template>
@@ -28,9 +24,6 @@ const formOrder = computed(() => (props.brandSide === 'right' ? 1 : 2));
                 layout
                 class="cc-auth-brand"
                 :transition="spring"
-                :style="{
-                    order: brandOrder,
-                }"
             >
                 <strong>Computer City</strong>
                 <span>{{ brandSubtitle }}</span>
@@ -40,9 +33,6 @@ const formOrder = computed(() => (props.brandSide === 'right' ? 1 : 2));
                 layout
                 class="cc-auth-form"
                 :transition="spring"
-                :style="{
-                    order: formOrder,
-                }"
             >
                 <div class="cc-auth-form-track">
                     <div class="cc-auth-form-body" :data-step="step">

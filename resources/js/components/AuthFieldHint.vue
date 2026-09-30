@@ -12,16 +12,20 @@ let shakeTimer = 0;
 const text = computed(() => props.error || props.hint || '');
 const isError = computed(() => Boolean(props.error));
 
+function isElement(value: unknown): value is HTMLElement {
+    return typeof HTMLElement !== 'undefined' && value instanceof HTMLElement;
+}
+
 function fieldEls(): { field: HTMLElement; control: HTMLElement } | null {
     const field = root.value?.closest('.cc-field');
 
-    if (!(field instanceof HTMLElement)) {
+    if (!isElement(field)) {
         return null;
     }
 
     const control = field.querySelector('.cc-field__control');
 
-    if (!(control instanceof HTMLElement)) {
+    if (!isElement(control)) {
         return null;
     }
 

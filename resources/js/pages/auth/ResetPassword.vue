@@ -84,17 +84,19 @@ const props = defineProps<{
             />
         </label>
 
-        <button
-            type="submit"
-            class="cc-button"
-            :disabled="processing"
-            data-test="reset-password-button"
-        >
-            <Spinner v-if="processing" />
-            <AuthActionIcon v-else />
-            <span>Guardar nueva clave</span>
-        </button>
+        <div class="cc-auth-actions">
+            <button
+                type="submit"
+                class="cc-button"
+                :disabled="processing"
+                data-test="reset-password-button"
+            >
+                <Spinner v-if="processing" />
+                <AuthActionIcon v-else />
+                <span>Guardar nueva clave</span>
+            </button>
 
-        <TextLink :href="login()">Iniciar sesión</TextLink>
+            <TextLink :href="login()">Iniciar sesión</TextLink>
+        </div>
     </Form>
 </template>

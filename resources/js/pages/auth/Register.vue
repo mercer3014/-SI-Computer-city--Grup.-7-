@@ -355,12 +355,14 @@ onBeforeUnmount(() => {
                 />
             </label>
 
-            <button type="submit" class="cc-button">
-                <AuthActionIcon />
-                <span>Continuar</span>
-            </button>
+            <div class="cc-auth-actions">
+                <button type="submit" class="cc-button">
+                    <AuthActionIcon />
+                    <span>Continuar</span>
+                </button>
 
-            <TextLink :href="login()">Iniciar sesión</TextLink>
+                <TextLink :href="login()">Iniciar sesión</TextLink>
+            </div>
         </form>
 
         <form
@@ -445,7 +447,7 @@ onBeforeUnmount(() => {
                 />
             </label>
 
-            <div class="cc-auth-links">
+            <div class="cc-auth-actions cc-auth-links">
                 <button
                     type="submit"
                     class="cc-button"
@@ -515,7 +517,7 @@ onBeforeUnmount(() => {
                 />
             </label>
 
-            <div class="cc-auth-links">
+            <div class="cc-auth-actions cc-auth-links">
                 <button
                     type="submit"
                     class="cc-button"
