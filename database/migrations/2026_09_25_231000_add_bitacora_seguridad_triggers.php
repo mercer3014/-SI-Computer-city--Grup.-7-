@@ -13,6 +13,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::unprepared(<<<'SQL'
 CREATE OR REPLACE FUNCTION public.fn_app_usuario_id() RETURNS integer
     LANGUAGE plpgsql STABLE
@@ -367,6 +371,10 @@ SQL);
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::unprepared(<<<'SQL'
 DROP TRIGGER IF EXISTS trg_bitacora_permiso ON public.permiso;
 DROP TRIGGER IF EXISTS trg_bitacora_rol_permiso ON public.rol_permiso;
