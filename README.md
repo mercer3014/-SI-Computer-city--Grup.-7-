@@ -2,6 +2,8 @@
 
 Sistema de información para la tienda de periféricos Computer City: inventario, ventas, compras y reportes.
 
+No hay registro público. Las cuentas las da de alta un administrador (módulo de usuarios) con el correo real de cada persona. El primer ingreso pide una clave nueva si `primer_login` está en `true`.
+
 ## Cómo ejecutar para probar
 
 Hace falta **PHP 8.3+**, **Composer**, **Node**, **pnpm** y **PostgreSQL** con la base `tiendaDB` (o la que pongas en `.env`).
@@ -16,21 +18,24 @@ pnpm install
 php artisan key:generate
 ```
 
-En `.env` dejá:
+En `.env` local dejá:
 
 - `APP_URL=http://localhost:8000`
-- `DB_CONNECTION=pgsql`
+- `DB_CONNECTION=pgsql` (Postgres de tu máquina)
 - `SESSION_DRIVER=database`
 - `CACHE_STORE=file`
-- `MAIL_MAILER=log`
 
-Si faltan tablas de Laravel (`sessions`, `password_reset_tokens`):
+Producción usa la conexión `supabase` del mismo `.env` (`DB_CONNECTION=supabase`). En esta PC no la actives.
+
+Si faltan tablas:
 
 ```bash
 php artisan migrate
 ```
 
-### Probar
+
+
+### Probar 
 
 **1. Backend** — este es el que se abre en el navegador:
 
@@ -47,7 +52,6 @@ pnpm dev
 
 Entrá siempre a **[http://127.0.0.1:8000/login](http://127.0.0.1:8000/login)**.
 
-
 Opcional, para ver logs en vivo:
 
 ```bash
@@ -61,35 +65,67 @@ pnpm build
 php artisan serve
 ```
 
+
+
+## SMTP en local (recuperar cuenta)
+
+El OTP de **recuperar cuenta** sale por correo. En local podés:
+
+1. **Log** (sin Gmail): `MAIL_MAILER=log`. El código queda en `storage/logs/laravel.log`.
+2. **SMTP real** (Gmail), para que el código llegue a la bandeja.
+
+
+
+### Activar Gmail SMTP
+
+1. En la cuenta de Google: verificación en 2 pasos.
+2. Generá una [App Password](https://myaccount.google.com/apppasswords) de 16 caracteres (no uses la clave normal de Gmail).
+3. En `.env`:
+
+```env
+MAIL_MAILER=smtp
+MAIL_SCHEME=null
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=tu.correo@gmail.com
+MAIL_PASSWORD="xxxx xxxx xxxx xxxx"
+MAIL_FROM_ADDRESS="tu.correo@gmail.com"
+MAIL_FROM_NAME="Computer City"
+```
+
+`MAIL_FROM_ADDRESS` tiene que ser **el mismo** Gmail que `MAIL_USERNAME`. Si la App Password viene con espacios, dejala entre comillas.
+
+1. Recargá config y el serve:
+
+```bash
+php artisan config:clear
+```
+
+Reiniciá `php artisan serve` si estaba corriendo.
+
 ### Qué probar en auth
 
 | Flujo | URL | Qué esperar |
 | --- | --- | --- |
-| Login | `/login` | Correo + clave; ojito para ver/ocultar |
-| Registro | `/register` | 3 pasos (datos → correo/OTP → clave) y confeti al final |
-| Recuperar | `/forgot-password` | Correo → código de 6 dígitos + nueva clave → confeti |
-
-El OTP de **registro** y **recuperar** se escribe en `storage/logs/laravel.log` (líneas `OTP registro` / `OTP recuperar cuenta`). En Pail evitá `-v`: el correo HTML es enorme; el código útil es el de 6 dígitos, no el hash de `password_reset_tokens`.
-
-```bash
-grep "OTP " storage/logs/laravel.log | tail
-```
+| Login | `/login` | Correo y clave del alta de usuarios |
+| Primer ingreso | `/primer-ingreso` | Si `primer_login` es true |
+| Recuperar | `/forgot-password` | OTP al correo real vía SMTP |
 
 ## Estructura
 
 ```
 tienda-de-perifericos/
 ├── app/                    Backend PHP
-│   ├── Actions/Fortify/    Alta de usuario y reset de clave (tabla usuario)
-│   ├── Auth/               Broker OTP de 6 dígitos (no token hex)
+│   ├── Actions/Fortify/    Reset de clave (tabla usuario)
+│   ├── Auth/               Broker OTP de 6 dígitos
 │   ├── Http/
-│   │   ├── Controllers/    OTP de registro y settings
-│   │   └── Responses/      A dónde ir al terminar login/registro/recuperar
+│   │   ├── Controllers/    Primer ingreso y settings
+│   │   └── Responses/      Login → dashboard o /primer-ingreso
 │   ├── Models/             User, Personal, Rol… (BD de la tienda)
-│   ├── Providers/          Fortify + App (vistas Inertia y OTP)
-│   └── Services/           Envío/verificación del OTP de registro
+│   ├── Providers/          Fortify + App
+│   └── Services/           Bitácora
 ├── routes/
-│   ├── web.php             Home, OTP registro, pantallas de éxito
+│   ├── web.php             Home, primer ingreso, dashboard
 │   └── settings.php        Perfil / seguridad
 ├── resources/
 │   ├── css/app.css         Marca Computer City (auth, campos, confeti)
@@ -101,23 +137,28 @@ tienda-de-perifericos/
 │   │   └── routes/         Rutas tipadas (Wayfinder; no editar a mano)
 │   └── views/app.blade.php Hoja que monta Inertia
 ├── database/migrations/    Esquema de la tienda + sessions / reset tokens
-├── tests/Feature/Auth/     Pruebas de login, registro y recuperar
+├── tests/Feature/Auth/     Pruebas de login, primer ingreso y recuperar
 ├── public/                 Entrada HTTP; no abrir :5173 para “ver la app”
 ├── storage/logs/           laravel.log = OTPs cuando MAIL_MAILER=log
 ├── .env                    Config local (no commitear)
 └── vite.config.ts          Vite en 127.0.0.1:5173, abre el login de :8000
 ```
 
+
+
 ### Por qué está partido así
 
-- **`app/` y `routes/`** deciden qué hace el servidor (OTP, guardar clave, redirecciones).
-- **`resources/js/` y `resources/css/`** deciden cómo se ve (pasos, ojito, confeti).
-- **`database/`** es el modelo de la tienda (`usuario`, ventas, stock) más tablas que Laravel necesita (`sessions`, `password_reset_tokens`).
-- **`tests/`** cubre los flujos de auth para no romper el redirect al confeti.
+- `app/` **y** `routes/` deciden qué hace el servidor (OTP, guardar clave, redirecciones).
+- `resources/js/` **y** `resources/css/` deciden cómo se ve (pasos, ojito, confeti).
+- `database/` es el modelo de la tienda (`usuario`, ventas, stock) más tablas que Laravel necesita (`sessions`, `password_reset_tokens`).
+- `tests/` cubre los flujos de auth.
+
+
 
 ## Stack
 
 - Laravel 13, Fortify, Inertia Vue 3
 - Vite + Tailwind
-- PostgreSQL
-- Auth: login, registro con OTP.
+- PostgreSQL local; Supabase (también Postgres) para producción
+- Auth: login, primer ingreso, recuperar cuenta con OTP
+
