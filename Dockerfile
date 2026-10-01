@@ -1,16 +1,14 @@
-FROM php:8.3-cli-bookworm
+FROM php:8.4-cli-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
         unzip \
         libpq-dev \
         libzip-dev \
-        libicu-dev \
-        libpng-dev \
         curl \
         ca-certificates \
         gnupg \
-    && docker-php-ext-install -j$(nproc) pdo_pgsql pgsql zip intl bcmath pcntl opcache \
+    && docker-php-ext-install -j$(nproc) pdo_pgsql pgsql zip bcmath pcntl opcache \
     && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && corepack enable \

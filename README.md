@@ -164,7 +164,7 @@ tienda-de-perifericos/
 
 ## Deploy en Render
 
-Render no corre PHP nativo: el servicio es **Docker**. La base de producción es **Supabase** (pooler IPv4). El plan free se duerme; el primer hit tarda.
+Render no corre PHP nativo: el servicio es **Docker**. La imagen usa **PHP 8.4** (el `composer.lock` pide ≥ 8.4.1). La base de producción es **Supabase** (pooler IPv4). El plan free se duerme; el primer hit tarda.
 
 ### En el dashboard
 
