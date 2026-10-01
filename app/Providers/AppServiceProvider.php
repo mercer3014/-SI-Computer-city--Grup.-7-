@@ -12,6 +12,7 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -89,5 +90,9 @@ class AppServiceProvider extends ServiceProvider
             ->numbers()
             ->symbols(),
         );
+
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
     }
 }

@@ -162,3 +162,42 @@ tienda-de-perifericos/
 - PostgreSQL local; Supabase (también Postgres) para producción
 - Auth: login, primer ingreso, recuperar cuenta con OTP
 
+## Deploy en Render
+
+Render no corre PHP nativo: el servicio es **Docker**. La base de producción es **Supabase** (pooler IPv4). El plan free se duerme; el primer hit tarda.
+
+### En el dashboard
+
+1. New → Web Service → el repo. Runtime: **Docker**.
+2. Si el repo no es esta carpeta, Root Directory: `tienda-de-perifericos`.
+3. Health check: `/up`.
+4. Variables (Environment):
+
+| Variable | Valor |
+| --- | --- |
+| `APP_ENV` | `production` |
+| `APP_DEBUG` | `false` |
+| `APP_KEY` | salida de `php artisan key:generate --show` en tu PC |
+| `APP_URL` | `https://TU-SERVICIO.onrender.com` (la URL real de Render) |
+| `LOG_CHANNEL` | `stderr` |
+| `SESSION_DRIVER` | `database` |
+| `SESSION_SECURE_COOKIE` | `true` |
+| `CACHE_STORE` | `file` |
+| `QUEUE_CONNECTION` | `sync` |
+| `DB_CONNECTION` | `supabase` |
+| `SUPABASE_DB_HOST` | `aws-0-us-east-2.pooler.supabase.com` |
+| `SUPABASE_DB_PORT` | `5432` (session pooler, no 6543) |
+| `SUPABASE_DB_DATABASE` | `postgres` |
+| `SUPABASE_DB_USERNAME` | `postgres.tlrnckckioghlgufnnak` |
+| `SUPABASE_DB_PASSWORD` | Database password del proyecto Supabase |
+| `SUPABASE_DB_SSLMODE` | `require` |
+| `MAIL_*` | las mismas de SMTP local (Gmail App Password) |
+
+En Supabase: Database → Connect → **Session pooler**. Si hay Network restrictions, permití `0.0.0.0/0` para la demo.
+
+Hay un `render.yaml` con los valores fijos; **APP_KEY**, **APP_URL**, password y mail los cargás a mano.
+
+Al arrancar corre `migrate --force` (no borra datos) y sirve en `$PORT`.
+
+No commitees `.env`.
+

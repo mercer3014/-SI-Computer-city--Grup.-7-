@@ -21,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        $middleware->trustProxies(at: '*');
+
         $middleware->redirectUsersTo(function (Request $request) {
             return $request->user()?->primer_login
                 ? '/primer-ingreso'
