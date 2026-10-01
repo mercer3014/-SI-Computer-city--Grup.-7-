@@ -43,6 +43,31 @@ class PasswordResetTest extends TestCase
         });
     }
 
+    public function test_reset_code_is_found_with_different_email_case(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'arielgongoravalencia@gmail.com',
+        ]);
+
+        $this->from(route('password.request'))
+            ->post(route('password.email'), ['email' => 'ArielGongoraValencia@gmail.com'])
+            ->assertSessionHas('status');
+
+        Notification::assertSentTo($user, ResetPassword::class);
+    }
+
+    public function test_unknown_email_returns_spanish_error(): void
+    {
+        $this->from(route('password.request'))
+            ->post(route('password.email'), ['email' => 'nadie@computercity.com'])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHasErrors([
+                'email' => 'No existe una cuenta con ese correo.',
+            ]);
+    }
+
     public function test_password_can_be_reset_with_valid_code()
     {
         Notification::fake();

@@ -42,7 +42,17 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
 
-        // Fortify LoginRequest: ValidationException 429 → error bajo la clave + conteo.
+        $exceptions->render(function (\Symfony\Component\Mailer\Exception\TransportExceptionInterface $e, Request $request) {
+            if (! $request->routeIs('password.email')) {
+                return null;
+            }
+
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors([
+                    'email' => 'El correo no se pudo enviar. Revisá BREVO_KEY en Render o el código en Logs.',
+                ]);
+        });
         $exceptions->render(function (ValidationException $e, Request $request) {
             if ($e->status !== 429 || ! $request->hasSession()) {
                 return null;

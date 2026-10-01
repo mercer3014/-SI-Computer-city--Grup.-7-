@@ -95,6 +95,24 @@ MAIL_FROM_NAME="Computer City"
 
 `MAIL_FROM_ADDRESS` tiene que ser **el mismo** Gmail que `MAIL_USERNAME`. Si la App Password viene con espacios, dejala entre comillas.
 
+### Producción: Brevo (Render)
+
+Gmail SMTP desde Render se cuelga. En producción el mailer es la **API HTTPS de Brevo**.
+
+1. Cuenta en [Brevo](https://www.brevo.com/).
+2. Senders → verificá el Gmail que va a figurar como remitente (`MAIL_FROM_ADDRESS`).
+3. SMTP & API → API keys → creá una clave. Eso es `BREVO_KEY` (empieza con `xkeysib-`).
+4. En Render, Environment:
+
+```env
+MAIL_MAILER=brevo
+MAIL_FROM_ADDRESS=tu.correo@gmail.com
+MAIL_FROM_NAME=Computer City
+BREVO_KEY=xkeysib-...
+```
+
+Podés borrar `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME` y `MAIL_PASSWORD` de Render: ya no se usan. Local sigue con Gmail SMTP. El OTP también se escribe en Logs (`OTP recuperar cuenta`).
+
 1. Recargá config y el serve:
 
 ```bash
@@ -109,7 +127,7 @@ Reiniciá `php artisan serve` si estaba corriendo.
 | --- | --- | --- |
 | Login | `/login` | Correo y clave del alta de usuarios |
 | Primer ingreso | `/primer-ingreso` | Si `primer_login` es true |
-| Recuperar | `/forgot-password` | OTP al correo real vía SMTP |
+| Recuperar | `/forgot-password` | OTP al correo (Gmail local / Brevo en Render) |
 
 ## Estructura
 
@@ -191,7 +209,10 @@ Render no corre PHP nativo: el servicio es **Docker**. La imagen usa **PHP 8.4**
 | `SUPABASE_DB_USERNAME` | `postgres.tlrnckckioghlgufnnak` |
 | `SUPABASE_DB_PASSWORD` | Database password del proyecto Supabase |
 | `SUPABASE_DB_SSLMODE` | `require` |
-| `MAIL_*` | las mismas de SMTP local (Gmail App Password) |
+| `MAIL_MAILER` | `brevo` |
+| `MAIL_FROM_ADDRESS` | el Gmail **verificado** como sender en Brevo |
+| `MAIL_FROM_NAME` | `Computer City` |
+| `BREVO_KEY` | API key de Brevo (`xkeysib-...`) |
 
 En Supabase: Database → Connect → **Session pooler**. Si hay Network restrictions, permití `0.0.0.0/0` para la demo.
 

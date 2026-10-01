@@ -24,6 +24,10 @@ services:
         value: file
       - key: QUEUE_CONNECTION
         value: sync
+      - key: PHP_CLI_SERVER_WORKERS
+        value: "4"
+      - key: MAIL_TIMEOUT
+        value: "8"
       - key: DB_CONNECTION
         value: supabase
       - key: SUPABASE_DB_HOST
@@ -43,16 +47,10 @@ services:
       - key: SUPABASE_DB_PASSWORD
         sync: false
       - key: MAIL_MAILER
-        sync: false
-      - key: MAIL_HOST
-        sync: false
-      - key: MAIL_PORT
-        sync: false
-      - key: MAIL_USERNAME
-        sync: false
-      - key: MAIL_PASSWORD
-        sync: false
-      - key: MAIL_FROM_ADDRESS
-        sync: false
+        value: brevo
       - key: MAIL_FROM_NAME
         value: Computer City
+      - key: MAIL_FROM_ADDRESS
+        sync: false
+      - key: BREVO_KEY
+        sync: false

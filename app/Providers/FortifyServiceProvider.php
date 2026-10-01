@@ -6,6 +6,7 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Responses\LoginResponse;
 use App\Http\Responses\OtpFailedResponse;
+use App\Http\Responses\OtpLinkFailedResponse;
 use App\Http\Responses\OtpSentResponse;
 use App\Http\Responses\PasswordResetCompleteResponse;
 use App\Models\User;
@@ -23,6 +24,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse as FailedPasswordResetLinkRequestResponseContract;
 use Laravel\Fortify\Contracts\FailedPasswordResetResponse as FailedPasswordResetResponseContract;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 use Laravel\Fortify\Contracts\PasswordResetResponse as PasswordResetResponseContract;
@@ -38,6 +40,7 @@ class FortifyServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(SuccessfulPasswordResetLinkRequestResponseContract::class, OtpSentResponse::class);
+        $this->app->singleton(FailedPasswordResetLinkRequestResponseContract::class, OtpLinkFailedResponse::class);
         $this->app->singleton(FailedPasswordResetResponseContract::class, OtpFailedResponse::class);
         $this->app->singleton(PasswordResetResponseContract::class, PasswordResetCompleteResponse::class);
         $this->app->singleton(LoginResponseContract::class, LoginResponse::class);
