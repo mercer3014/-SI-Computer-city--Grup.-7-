@@ -19,6 +19,8 @@ COPY docker/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 
 ENV COMPOSER_ALLOW_SUPERUSER=1 \
     APP_ENV=production \
+    APP_NAME="Computer City" \
+    VITE_APP_NAME="Computer City" \
     LOG_CHANNEL=stderr
 
 WORKDIR /var/www/html

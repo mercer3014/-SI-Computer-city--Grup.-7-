@@ -8,6 +8,8 @@ services:
     dockerfilePath: ./Dockerfile
     healthCheckPath: /up
     envVars:
+      - key: APP_NAME
+        value: Computer City
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
