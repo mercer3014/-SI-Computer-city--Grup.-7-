@@ -14,7 +14,7 @@ return [
     |
     */
 
-    'default' => env('MAIL_MAILER', 'log'),
+    'default' => filled(env('BREVO_KEY')) ? 'brevo' : env('MAIL_MAILER', 'log'),
 
     /*
     |--------------------------------------------------------------------------

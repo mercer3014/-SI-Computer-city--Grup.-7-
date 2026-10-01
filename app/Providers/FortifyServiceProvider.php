@@ -194,6 +194,7 @@ class FortifyServiceProvider extends ServiceProvider
             Log::info('OTP recuperar cuenta', [
                 'email' => $notifiable->email,
                 'codigo' => $token,
+                'mailer' => config('mail.default'),
             ]);
 
             return (new MailMessage)
