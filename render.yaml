@@ -1,0 +1,56 @@
+# Blueprint de Render. Los secretos (APP_KEY, claves SMTP, password de Supabase)
+# se cargan en el dashboard: Environment → Add from render.yaml no pisa sync:false.
+services:
+  - type: web
+    name: computer-city
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: info
+      - key: SESSION_DRIVER
+        value: database
+      - key: SESSION_SECURE_COOKIE
+        value: "true"
+      - key: CACHE_STORE
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: PHP_CLI_SERVER_WORKERS
+        value: "4"
+      - key: MAIL_TIMEOUT
+        value: "8"
+      - key: DB_CONNECTION
+        value: supabase
+      - key: SUPABASE_DB_HOST
+        value: aws-0-us-east-2.pooler.supabase.com
+      - key: SUPABASE_DB_PORT
+        value: "5432"
+      - key: SUPABASE_DB_DATABASE
+        value: postgres
+      - key: SUPABASE_DB_USERNAME
+        value: postgres.tlrnckckioghlgufnnak
+      - key: SUPABASE_DB_SSLMODE
+        value: require
+      - key: APP_KEY
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: SUPABASE_DB_PASSWORD
+        sync: false
+      - key: MAIL_MAILER
+        value: brevo
+      - key: MAIL_FROM_NAME
+        value: Computer City
+      - key: MAIL_FROM_ADDRESS
+        sync: false
+      - key: BREVO_KEY
+        sync: false
