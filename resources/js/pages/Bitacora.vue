@@ -1,5 +1,18 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
+import { AnimatePresence, motion } from 'motion-v';
+import { adminSpring } from '@/lib/adminMotion';
+import {
+    cambiosDe,
+    etiquetaAccion,
+    fraseEvento,
+    iniciales,
+    tonoAccion,
+    type EventoBitacora,
+} from '@/lib/bitacoraLectura';
+import CcBitacoraDetalle from '@/components/admin/CcBitacoraDetalle.vue';
+import CcRadialFab from '@/components/admin/CcRadialFab.vue';
+import CcRevealSelect from '@/components/admin/CcRevealSelect.vue';
 import {
     Calendar,
     ChevronLeft,
@@ -9,11 +22,9 @@ import {
     RefreshCw,
     RotateCcw,
     Search,
-    SlidersHorizontal,
-    User,
     X,
 } from '@lucide/vue';
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import bitacora from '@/routes/bitacora';
 import {
     Dialog,
@@ -22,21 +33,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-
-type Evento = {
-    id: number;
-    fecha: string;
-    hora: string;
-    usuario: string;
-    modulo: string;
-    accion: string;
-    direccion_ip: string | null;
-    descripcion: string;
-    tipo_entidad: string | null;
-    entidad_id: number | null;
-    valor_anterior: unknown;
-    valor_nuevo: unknown;
-};
 
 type Filtros = {
     q: string;
@@ -49,7 +45,7 @@ type Filtros = {
 
 const props = defineProps<{
     eventos: {
-        data: Evento[];
+        data: EventoBitacora[];
         meta: {
             current_page: number;
             last_page: number;
@@ -81,7 +77,12 @@ defineOptions({
 
 const form = reactive<Filtros>({ ...props.filtros });
 const cargando = ref(false);
-const detalle = ref<Evento | null>(null);
+const detalle = ref<EventoBitacora | null>(null);
+let busquedaTimer = 0;
+const esqueletos = Array.from({ length: 6 }, (_, i) => i);
+const enCliente = ref(false);
+const ancho = ref(1024);
+
 const detalleAbierto = computed({
     get: () => detalle.value !== null,
     set: (abierto: boolean) => {
@@ -97,6 +98,21 @@ watch(
         Object.assign(form, filtros);
     },
 );
+
+function alRedimensionar(): void {
+    ancho.value = window.innerWidth;
+}
+
+onMounted(() => {
+    enCliente.value = true;
+    alRedimensionar();
+    window.addEventListener('resize', alRedimensionar);
+});
+
+onBeforeUnmount(() => {
+    window.clearTimeout(busquedaTimer);
+    window.removeEventListener('resize', alRedimensionar);
+});
 
 const cantidad = new Intl.NumberFormat('es-BO');
 
@@ -121,6 +137,68 @@ const mensajeVacio = computed(() => {
         ? 'No hay eventos que coincidan con los filtros. Probá con otro criterio o limpiá la búsqueda.'
         : 'No hay eventos registrados en la bitácora.';
 });
+
+const chips = computed(() => {
+    const lista: { clave: keyof Filtros; texto: string }[] = [];
+
+    if (form.q) {
+        lista.push({ clave: 'q', texto: `Buscar: ${form.q}` });
+    }
+
+    if (form.usuario) {
+        const quien = props.opciones.usuarios.find(
+            (u) => String(u.id) === form.usuario,
+        );
+        lista.push({ clave: 'usuario', texto: quien?.nombre ?? 'Usuario' });
+    }
+
+    if (form.modulo) {
+        lista.push({ clave: 'modulo', texto: form.modulo });
+    }
+
+    if (form.accion) {
+        lista.push({ clave: 'accion', texto: etiquetaAccion(form.accion) });
+    }
+
+    if (form.desde) {
+        lista.push({ clave: 'desde', texto: `Desde ${form.desde}` });
+    }
+
+    if (form.hasta) {
+        lista.push({ clave: 'hasta', texto: `Hasta ${form.hasta}` });
+    }
+
+    return lista;
+});
+
+const opcionesUsuario = computed(() => [
+    { value: '', label: 'Todos los usuarios' },
+    ...props.opciones.usuarios.map((usuario) => ({
+        value: String(usuario.id),
+        label: usuario.nombre,
+    })),
+]);
+
+const opcionesModulo = computed(() => [
+    { value: '', label: 'Todos los módulos' },
+    ...props.opciones.modulos.map((modulo) => ({
+        value: modulo,
+        label: modulo,
+    })),
+]);
+
+const opcionesAccion = computed(() => [
+    { value: '', label: 'Todas las acciones' },
+    ...props.opciones.acciones.map((accion) => ({
+        value: accion,
+        label: etiquetaAccion(accion),
+    })),
+]);
+
+const fabAcciones = [
+    { id: 'exportar', label: 'Exportar CSV', icon: Download },
+    { id: 'actualizar', label: 'Actualizar', icon: RefreshCw },
+];
 
 function parametros(pagina?: number): Record<string, string | number> {
     const consulta: Record<string, string | number> = {};
@@ -150,7 +228,18 @@ function aplicar(): void {
     });
 }
 
+function buscarLuego(): void {
+    window.clearTimeout(busquedaTimer);
+    busquedaTimer = window.setTimeout(() => aplicar(), 320);
+}
+
+function quitarFiltro(clave: keyof Filtros): void {
+    form[clave] = '';
+    aplicar();
+}
+
 function limpiar(): void {
+    window.clearTimeout(busquedaTimer);
     form.q = '';
     form.usuario = '';
     form.modulo = '';
@@ -171,7 +260,6 @@ function limpiarBusqueda(): void {
 function actualizar(): void {
     cargando.value = true;
     router.reload({
-        preserveScroll: true,
         onFinish: () => {
             cargando.value = false;
         },
@@ -222,99 +310,50 @@ function exportarCsv(): void {
     window.location.href = bitacora.exportar.url({ query });
 }
 
-function etiqueta(accion: string): string {
-    const mapa: Record<string, string> = {
-        LOGIN: 'INGRESAR',
-        LOGOUT: 'SALIR',
-        LOGIN_FALLIDO: 'FALLIDO',
-        BLOQUEAR_USUARIO: 'BLOQUEAR',
-        DESBLOQUEAR_USUARIO: 'HABILITAR',
-        CAMBIAR_ESTADO_USUARIO: 'ESTADO',
-        CAMBIAR_ROL: 'ROL',
-        CAMBIAR_CLAVE: 'CLAVE',
-        ACTUALIZAR_PRECIO: 'PRECIO',
-        ELIMINAR_USUARIO: 'ELIMINAR',
-    };
+function fabElegir(id: string): void {
+    if (id === 'exportar') {
+        exportarCsv();
+        return;
+    }
 
-    return mapa[accion] ?? (accion.split('_')[0] || accion);
+    actualizar();
 }
 
-function tono(accion: string): string {
-    if (
-        accion.includes('FALLID') ||
-        accion.startsWith('ELIMIN') ||
-        accion.startsWith('BLOQUEAR')
-    ) {
-        return 'error';
+function resumenCambio(evento: EventoBitacora): string {
+    const cambios = cambiosDe(evento.valor_anterior, evento.valor_nuevo);
+
+    if (cambios.length === 0) {
+        return evento.descripcion;
     }
 
-    if (
-        accion.startsWith('DESHABIL') ||
-        accion.startsWith('ANUL') ||
-        accion === 'LOGOUT'
-    ) {
-        return 'alerta';
-    }
-
-    if (accion.startsWith('CREAR') || accion.startsWith('APROB') || accion === 'LOGIN') {
-        return 'crear';
-    }
-
-    if (accion.startsWith('REGIST')) {
-        return 'registrar';
-    }
-
-    if (accion.includes('AJUST')) {
-        return 'ajustar';
-    }
-
-    if (accion.startsWith('ACTUAL') || accion.startsWith('CAMBI')) {
-        return 'actualizar';
-    }
-
-    return 'neutro';
-}
-
-function textoJson(valor: unknown): string {
-    if (valor === null || valor === undefined || valor === '') {
-        return '—';
-    }
-
-    if (typeof valor === 'string') {
-        return valor;
-    }
-
-    return JSON.stringify(valor, null, 2);
-}
-
-function entidad(evento: Evento): string {
-    if (!evento.tipo_entidad) {
-        return '—';
-    }
-
-    return evento.entidad_id
-        ? `${evento.tipo_entidad} #${evento.entidad_id}`
-        : evento.tipo_entidad;
+    return cambios
+        .slice(0, 2)
+        .map((cambio) =>
+            cambio.ahora
+                ? `${cambio.etiqueta}: ${cambio.ahora}`
+                : `${cambio.etiqueta}: ${cambio.antes ?? '—'}`,
+        )
+        .join(' · ');
 }
 </script>
 
 <template>
+    <div>
     <Head title="Consultar bitácora" />
 
-    <section class="cc-log">
-        <header class="cc-log__head">
-            <div>
-                
+    <section class="cc-admin cc-log cc-admin--pins cc-admin--log">
+        <motion.div layout class="cc-log__head" :transition="adminSpring">
+            <motion.div layout :transition="adminSpring">
+                <p class="cc-log__kicker">Sistema</p>
                 <h1>Consultar bitácora</h1>
                 <p>
-                    Revisá las acciones realizadas en el sistema y rastreá cada
-                    evento administrativo.
+                    Quién hizo qué, en qué módulo y qué valor quedó.
                 </p>
-            </div>
-            <div class="cc-log__actions">
+            </motion.div>
+            <motion.div layout class="cc-log__actions" :transition="adminSpring">
                 <button
                     type="button"
-                    class="cc-button cc-button--ghost cc-log__btn"
+                    class="cc-button cc-button--ghost"
                     @click="exportarCsv"
                 >
                     <Download />
@@ -322,25 +361,51 @@ function entidad(evento: Evento): string {
                 </button>
                 <button
                     type="button"
-                    class="cc-button cc-log__btn cc-log__btn--solid"
+                    class="cc-button"
+                    :class="{ 'is-load': cargando }"
                     :disabled="cargando"
                     @click="actualizar"
                 >
                     <RefreshCw :class="{ 'animate-spin': cargando }" />
                     Actualizar
                 </button>
-            </div>
-        </header>
+            </motion.div>
+        </motion.div>
 
-        <form class="cc-log__filters" @submit.prevent="aplicar">
+        <motion.div
+            layout
+            class="cc-admin__kpis"
+            aria-label="Resumen"
+            :transition="adminSpring"
+        >
+            <motion.div layout class="cc-admin__kpi" :transition="adminSpring">
+                <b>{{ cantidad.format(eventos.meta.total) }}</b>
+                <span>Eventos</span>
+            </motion.div>
+            <motion.div layout class="cc-admin__kpi" :transition="adminSpring">
+                <b>{{ eventos.meta.current_page }}</b>
+                <span>Página actual</span>
+            </motion.div>
+            <motion.div layout class="cc-admin__kpi" :transition="adminSpring">
+                <b>{{ chips.length }}</b>
+                <span>Filtros activos</span>
+            </motion.div>
+        </motion.div>
+
+        <motion.div layout :transition="adminSpring">
+        <form
+            class="cc-log__filters"
+            @submit.prevent="aplicar"
+        >
             <div class="cc-log__row">
                 <label class="cc-log__control cc-log__search">
                     <Search :size="16" />
                     <input
                         v-model="form.q"
-                        type="text"
-                        placeholder="Buscar en la descripción..."
+                        type="search"
+                        placeholder="Buscar quién o qué cambió..."
                         maxlength="200"
+                        @input="buscarLuego"
                     />
                     <button
                         v-if="form.q"
@@ -353,66 +418,56 @@ function entidad(evento: Evento): string {
                     </button>
                 </label>
 
-                <label class="cc-log__control cc-log__select">
-                    <span class="sr-only">Usuario</span>
-                    <select v-model="form.usuario">
-                        <option value="">Todos los usuarios</option>
-                        <option
-                            v-for="usuario in opciones.usuarios"
-                            :key="usuario.id"
-                            :value="String(usuario.id)"
-                        >
-                            {{ usuario.nombre }}
-                        </option>
-                    </select>
-                </label>
-
-                <label class="cc-log__control cc-log__select">
-                    <span class="sr-only">Módulo</span>
-                    <select v-model="form.modulo">
-                        <option value="">Todos los módulos</option>
-                        <option
-                            v-for="modulo in opciones.modulos"
-                            :key="modulo"
-                            :value="modulo"
-                        >
-                            {{ modulo }}
-                        </option>
-                    </select>
-                </label>
-
-                <label class="cc-log__control cc-log__select">
-                    <span class="sr-only">Acción</span>
-                    <select v-model="form.accion">
-                        <option value="">Todas las acciones</option>
-                        <option
-                            v-for="accion in opciones.acciones"
-                            :key="accion"
-                            :value="accion"
-                        >
-                            {{ accion }}
-                        </option>
-                    </select>
-                </label>
+                <CcRevealSelect
+                    v-model="form.usuario"
+                    etiqueta="Todos los usuarios"
+                    :opciones="opcionesUsuario"
+                    @change="aplicar"
+                />
+                <CcRevealSelect
+                    v-model="form.modulo"
+                    etiqueta="Todos los módulos"
+                    :opciones="opcionesModulo"
+                    @change="aplicar"
+                />
+                <CcRevealSelect
+                    v-model="form.accion"
+                    etiqueta="Todas las acciones"
+                    :opciones="opcionesAccion"
+                    @change="aplicar"
+                />
             </div>
 
             <div class="cc-log__row">
-                <label class="cc-log__control cc-log__dates">
-                    <Calendar :size="16" />
-                    <span>Desde</span>
-                    <input v-model="form.desde" type="date" />
-                    <span>Hasta</span>
-                    <input v-model="form.hasta" type="date" />
-                </label>
+                <div class="cc-log__dates-par">
+                    <label class="cc-modal-field">
+                        <span>Desde</span>
+                        <span class="cc-log__control">
+                            <Calendar :size="16" />
+                            <input
+                                v-model="form.desde"
+                                type="date"
+                                @change="aplicar"
+                            />
+                        </span>
+                    </label>
+                    <label class="cc-modal-field">
+                        <span>Hasta</span>
+                        <span class="cc-log__control">
+                            <Calendar :size="16" />
+                            <input
+                                v-model="form.hasta"
+                                type="date"
+                                @change="aplicar"
+                            />
+                        </span>
+                    </label>
+                </div>
 
                 <div class="cc-log__row-actions">
-                    <button type="submit" class="cc-button cc-log__btn">
-                        <SlidersHorizontal />
-                        Aplicar filtros
-                    </button>
                     <button
                         type="button"
-                        class="cc-button cc-button--ghost cc-log__btn"
+                        class="cc-button cc-button--ghost"
                         @click="limpiar"
                     >
                         <RotateCcw />
@@ -420,25 +475,94 @@ function entidad(evento: Evento): string {
                     </button>
                 </div>
             </div>
+            <div v-if="chips.length" class="cc-admin__chips">
+                <button
+                    v-for="chip in chips"
+                    :key="chip.clave"
+                    type="button"
+                    class="cc-admin__chip"
+                    :aria-label="`Quitar filtro ${chip.texto}`"
+                    @click="quitarFiltro(chip.clave)"
+                >
+                    {{ chip.texto }}
+                    <X :size="12" />
+                </button>
+            </div>
         </form>
+        </motion.div>
 
-        <div class="cc-log__panel">
+        <motion.div
+            layout
+            class="cc-log__panel"
+            :class="{ 'is-loading': cargando }"
+            :aria-busy="cargando"
+            :transition="adminSpring"
+        >
+            <div class="cc-log-board">
+                <p v-if="eventos.data.length === 0" class="cc-log__empty">
+                    <strong>
+                        {{
+                            error
+                                ? 'No se pudo leer la bitácora'
+                                : 'Sin registros'
+                        }}
+                    </strong>
+                    {{ mensajeVacio }}
+                </p>
+                <button
+                    v-for="evento in eventos.data"
+                    :key="`pin-${evento.id}`"
+                    type="button"
+                    class="cc-log-pin"
+                    @click="detalle = evento"
+                >
+                    <span class="cc-user-initials">
+                        {{ iniciales(evento.usuario) }}
+                    </span>
+                    <span class="cc-log-pin__cuerpo">
+                        <strong>{{ evento.usuario }}</strong>
+                        <p>{{ fraseEvento(evento) }}</p>
+                        <span
+                            v-if="resumenCambio(evento)"
+                            class="cc-log-pin__valor"
+                        >
+                            {{ resumenCambio(evento) }}
+                        </span>
+                        <small>
+                            {{ evento.fecha }} · {{ evento.hora }}
+                            · {{ evento.modulo }}
+                        </small>
+                    </span>
+                </button>
+            </div>
+
             <div class="cc-log__table-wrap">
                 <table class="cc-log__table">
                     <thead>
                         <tr>
-                            <th>Fecha / hora</th>
-                            <th>Usuario</th>
+                            <th>Cuándo</th>
+                            <th>Quién</th>
+                            <th>Qué pasó</th>
                             <th>Módulo</th>
-                            <th>Acción</th>
-                            <th>Dirección IP</th>
-                            <th>Descripción</th>
                             <th>Detalle</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="eventos.data.length === 0">
-                            <td class="cc-log__empty" colspan="7">
+                        <template v-if="cargando && eventos.data.length === 0">
+                            <tr
+                                v-for="fila in esqueletos"
+                                :key="`sk-${fila}`"
+                                class="cc-admin__skel"
+                            >
+                                <td><span class="cc-admin__bone cc-admin__bone--sm" /></td>
+                                <td><span class="cc-admin__bone" /></td>
+                                <td><span class="cc-admin__bone" /></td>
+                                <td><span class="cc-admin__bone cc-admin__bone--sm" /></td>
+                                <td><span class="cc-admin__bone cc-admin__bone--sm" /></td>
+                            </tr>
+                        </template>
+                        <tr v-else-if="eventos.data.length === 0">
+                            <td class="cc-log__empty" colspan="5">
                                 <strong>
                                     {{
                                         error
@@ -458,31 +582,34 @@ function entidad(evento: Evento): string {
                             </td>
                             <td>
                                 <span class="cc-log__who">
-                                    <span class="cc-log__avatar" aria-hidden="true">
-                                        <User :size="12" />
+                                    <span class="cc-user-initials">
+                                        {{ iniciales(evento.usuario) }}
                                     </span>
                                     {{ evento.usuario }}
                                 </span>
                             </td>
-                            <td>{{ evento.modulo }}</td>
+                            <td>
+                                <span class="cc-log__hecho">
+                                    {{ fraseEvento(evento) }}
+                                    <small v-if="resumenCambio(evento)">
+                                        {{ resumenCambio(evento) }}
+                                    </small>
+                                </span>
+                            </td>
                             <td>
                                 <span
                                     class="cc-log__badge"
-                                    :class="`cc-log__badge--${tono(evento.accion)}`"
+                                    :class="`cc-log__badge--${tonoAccion(evento.accion)}`"
                                     :title="evento.accion"
                                 >
-                                    {{ etiqueta(evento.accion) }}
+                                    {{ evento.modulo }}
                                 </span>
                             </td>
-                            <td class="cc-log__ip">
-                                {{ evento.direccion_ip ?? '—' }}
-                            </td>
-                            <td>{{ evento.descripcion }}</td>
                             <td>
                                 <button
                                     type="button"
                                     class="cc-log__eye"
-                                    :aria-label="`Ver detalle de ${evento.descripcion}`"
+                                    :aria-label="`Ver qué cambió: ${fraseEvento(evento)}`"
                                     @click="detalle = evento"
                                 >
                                     <Eye :size="16" />
@@ -520,41 +647,72 @@ function entidad(evento: Evento): string {
                     </button>
                 </div>
             </footer>
-        </div>
+        </motion.div>
     </section>
 
-    <Dialog v-model:open="detalleAbierto">
+    <Teleport v-if="enCliente" to="#cc-portal">
+        <CcRadialFab
+            v-show="ancho <= 768 && !detalle"
+            :acciones="fabAcciones"
+            @elegir="fabElegir"
+        />
+    </Teleport>
+
+    <Teleport v-if="enCliente" to="#cc-portal">
+        <AnimatePresence>
+            <motion.div
+                v-if="detalle && ancho <= 768"
+                key="ficha-log"
+                class="cc-user-sheet"
+            >
+                <motion.button
+                    type="button"
+                    class="cc-user-sheet__velo"
+                    aria-label="Cerrar"
+                    :initial="{ opacity: 0 }"
+                    :animate="{ opacity: 1 }"
+                    :exit="{ opacity: 0 }"
+                    @click="detalle = null"
+                />
+                <motion.section
+                    class="cc-user-sheet__panel cc-theme cc-admin"
+                    :initial="{ y: '100%' }"
+                    :animate="{ y: 0 }"
+                    :exit="{ y: '100%' }"
+                    :transition="adminSpring"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="cc-log-ficha"
+                >
+                    <div class="cc-user-sheet__asa" />
+                    <CcBitacoraDetalle :evento="detalle" />
+                    <div class="cc-modal-actions">
+                        <button
+                            type="button"
+                            class="cc-button"
+                            @click="detalle = null"
+                        >
+                            Cerrar
+                        </button>
+                    </div>
+                </motion.section>
+            </motion.div>
+        </AnimatePresence>
+    </Teleport>
+
+    <Dialog v-if="enCliente && ancho > 768" v-model:open="detalleAbierto">
         <DialogContent
             v-if="detalle"
-            class="cc-theme cc-log-dialog"
+            class="cc-theme cc-admin cc-log-dialog"
         >
             <DialogHeader>
-                <DialogTitle>Detalle del evento</DialogTitle>
-                <DialogDescription>
-                    {{ detalle.fecha }} {{ detalle.hora }} · {{ detalle.modulo }}
+                <DialogTitle>Qué pasó</DialogTitle>
+                <DialogDescription class="sr-only">
+                    {{ fraseEvento(detalle) }}
                 </DialogDescription>
             </DialogHeader>
-
-            <dl class="cc-log-dialog__grid">
-                <dt>Usuario</dt>
-                <dd>{{ detalle.usuario }}</dd>
-                <dt>Acción</dt>
-                <dd>{{ detalle.accion }}</dd>
-                <dt>Dirección IP</dt>
-                <dd>{{ detalle.direccion_ip ?? '—' }}</dd>
-                <dt>Descripción</dt>
-                <dd>{{ detalle.descripcion }}</dd>
-                <dt>Entidad</dt>
-                <dd>{{ entidad(detalle) }}</dd>
-                <dt>Valor anterior</dt>
-                <dd>
-                    <pre>{{ textoJson(detalle.valor_anterior) }}</pre>
-                </dd>
-                <dt>Valor nuevo</dt>
-                <dd>
-                    <pre>{{ textoJson(detalle.valor_nuevo) }}</pre>
-                </dd>
-            </dl>
+            <CcBitacoraDetalle :evento="detalle" />
         </DialogContent>
     </Dialog>
+    </div>
 </template>

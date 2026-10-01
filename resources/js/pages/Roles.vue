@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
+import { AnimatePresence, motion } from 'motion-v';
+import { adminSpring } from '@/lib/adminMotion';
 import {
-    ChevronRight,
+    ChevronLeft,
     Lock,
-    Pencil,
     Plus,
-    Power,
     Save,
     Search,
     ShieldCheck,
@@ -48,12 +48,12 @@ defineOptions({
 });
 
 const busqueda = ref('');
-const seleccionId = ref<number | null>(
-    props.seleccionado ?? props.roles[0]?.id ?? null,
-);
+const seleccionId = ref<number | null>(props.seleccionado);
+const editandoVista = ref(props.seleccionado !== null);
 const marcados = ref<Set<number>>(new Set());
 const errorPermisos = ref<string | null>(null);
 const guardando = ref(false);
+const editar = useForm({ nombre: '', descripcion: '' });
 
 const rol = computed(
     () => props.roles.find((r) => r.id === seleccionId.value) ?? null,
@@ -78,12 +78,11 @@ const modulos = computed(() => {
         mapa.set(clave, [...(mapa.get(clave) ?? []), permiso]);
     });
 
-    return [...mapa.entries()].map(([nombre, permisos]) => ({ nombre, permisos }));
+    return [...mapa.entries()].map(([nombre, permisos]) => ({
+        nombre,
+        permisos,
+    }));
 });
-
-const idsEsenciales = computed(
-    () => new Set(props.permisos.filter((p) => props.esenciales.includes(p.clave)).map((p) => p.id)),
-);
 
 function bloqueado(permiso: Permiso): boolean {
     return !!rol.value?.protegido && props.esenciales.includes(permiso.clave);
@@ -92,6 +91,11 @@ function bloqueado(permiso: Permiso): boolean {
 function sincronizar(): void {
     marcados.value = new Set(rol.value?.permisos ?? []);
     errorPermisos.value = null;
+
+    if (rol.value) {
+        editar.nombre = rol.value.nombre;
+        editar.descripcion = rol.value.descripcion ?? '';
+    }
 }
 
 watch(() => [props.roles, seleccionId.value], sincronizar, { immediate: true });
@@ -101,12 +105,17 @@ watch(
     (id) => {
         if (id) {
             seleccionId.value = id;
+            editandoVista.value = true;
         }
     },
 );
 
 const cambios = computed(() => {
-    const original = new Set(rol.value?.permisos ?? []);
+    if (!rol.value) {
+        return 0;
+    }
+
+    const original = new Set(rol.value.permisos);
     let total = 0;
 
     marcados.value.forEach((id) => {
@@ -120,8 +129,26 @@ const cambios = computed(() => {
         }
     });
 
+    if (editar.nombre !== rol.value.nombre) {
+        total++;
+    }
+
+    if ((editar.descripcion ?? '') !== (rol.value.descripcion ?? '')) {
+        total++;
+    }
+
     return total;
 });
+
+function abrirFicha(item: Rol): void {
+    seleccionId.value = item.id;
+    editandoVista.value = true;
+}
+
+function volver(): void {
+    editandoVista.value = false;
+    seleccionId.value = null;
+}
 
 function alternar(permiso: Permiso): void {
     if (bloqueado(permiso)) {
@@ -150,7 +177,9 @@ function seleccionarTodo(): void {
 function revocarTodo(): void {
     marcados.value = new Set(
         rol.value?.protegido
-            ? props.permisos.filter((p) => props.esenciales.includes(p.clave)).map((p) => p.id)
+            ? props.permisos
+                  .filter((p) => props.esenciales.includes(p.clave))
+                  .map((p) => p.id)
             : [],
     );
 }
@@ -168,15 +197,18 @@ function guardar(): void {
     router.put(
         `/roles/${rol.value.id}`,
         {
-            nombre: rol.value.nombre,
-            descripcion: rol.value.descripcion ?? '',
+            nombre: editar.nombre,
+            descripcion: editar.descripcion,
             permisos: [...marcados.value],
         },
         {
             preserveScroll: true,
             onError: (errores) => {
                 errorPermisos.value =
-                    errores.permisos ?? errores.nombre ?? errores.descripcion ?? 'No se pudo guardar.';
+                    errores.permisos ??
+                    errores.nombre ??
+                    errores.descripcion ??
+                    'No se pudo guardar.';
             },
             onFinish: () => {
                 guardando.value = false;
@@ -197,7 +229,6 @@ function cambiarEstado(): void {
     );
 }
 
-// ---- Crear ----
 const crearAbierto = ref(false);
 const crear = useForm({
     nombre: '',
@@ -226,174 +257,256 @@ function enviarCrear(): void {
         },
     });
 }
-
-// ---- Editar ----
-const editarAbierto = ref(false);
-const editar = useForm({ nombre: '', descripcion: '' });
-
-function abrirEditar(): void {
-    if (!rol.value) {
-        return;
-    }
-
-    editar.nombre = rol.value.nombre;
-    editar.descripcion = rol.value.descripcion ?? '';
-    editar.clearErrors();
-    editarAbierto.value = true;
-}
-
-function enviarEditar(): void {
-    if (!rol.value) {
-        return;
-    }
-
-    editar
-        .transform((datos) => ({ ...datos, permisos: rol.value?.permisos ?? [] }))
-        .put(`/roles/${rol.value.id}`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                editarAbierto.value = false;
-            },
-        });
-}
 </script>
 
 <template>
+    <div>
     <Head title="Roles y permisos" />
 
-    <section class="cc-log">
-        <header class="cc-log__head">
+    <section class="cc-admin cc-log">
+        <motion.div layout class="cc-log__head" :transition="adminSpring">
             <div>
+                <p class="cc-log__kicker">Sistema</p>
                 <h1>Roles y permisos</h1>
                 <p>
                     Definí responsabilidades y controlá el acceso a cada módulo
                     del sistema.
                 </p>
             </div>
-            <div class="cc-log__actions">
-                <button
-                    type="button"
-                    class="cc-button cc-log__btn cc-log__btn--solid"
-                    @click="abrirCrear"
-                >
+            <div v-if="!editandoVista" class="cc-log__actions">
+                <button type="button" class="cc-button" @click="abrirCrear">
                     <Plus />
                     Crear rol
                 </button>
             </div>
-        </header>
+        </motion.div>
 
-        <div class="cc-roles">
-            <aside class="cc-log__panel cc-roles__list">
-                <div class="cc-roles__list-head">
-                    <strong>Roles</strong>
-                    <span class="cc-log__badge cc-log__badge--ajustar">
-                        {{ roles.length }} REGISTRADOS
-                    </span>
-                </div>
-                <label class="cc-log__control">
+        <AnimatePresence mode="wait">
+            <motion.div
+                v-if="!editandoVista"
+                key="tablero"
+                :initial="{ opacity: 0, y: 12 }"
+                :animate="{ opacity: 1, y: 0 }"
+                :exit="{ opacity: 0, y: -12 }"
+                :transition="adminSpring"
+            >
+                <label class="cc-log__control cc-log__search cc-role-search">
                     <Search :size="16" />
-                    <input v-model="busqueda" type="text" placeholder="Buscar rol..." />
+                    <input
+                        v-model="busqueda"
+                        type="search"
+                        placeholder="Buscar rol..."
+                    />
                 </label>
-                <button
-                    v-for="item in rolesFiltrados"
-                    :key="item.id"
-                    type="button"
-                    class="cc-roles__item"
-                    :class="{ active: item.id === seleccionId }"
-                    @click="seleccionId = item.id"
-                >
-                    <span class="cc-roles__icon"><ShieldCheck :size="16" /></span>
-                    <span class="cc-roles__text">
-                        <strong>{{ item.nombre }}</strong>
-                        <small>{{ item.descripcion || 'Sin descripción' }}</small>
-                        <small>{{ item.usuarios }} usuario(s)</small>
-                    </span>
-                    <ChevronRight :size="16" />
-                </button>
+
                 <p v-if="rolesFiltrados.length === 0" class="cc-log__empty">
                     No hay roles que coincidan.
                 </p>
-            </aside>
 
-            <div v-if="rol" class="cc-log__panel cc-roles__detail">
-                <div class="cc-roles__detail-head">
-                    <div>
-                        <h2>
-                            {{ rol.nombre }}
-                            <span
-                                class="cc-log__badge"
-                                :class="
-                                    rol.estado === 'ACTIVO'
-                                        ? 'cc-log__badge--crear'
-                                        : 'cc-log__badge--error'
-                                "
+                <div v-else class="cc-role-board">
+                    <article
+                        v-for="item in rolesFiltrados"
+                        :key="item.id"
+                        class="cc-role-pin"
+                        :class="{ 'is-off': item.estado === 'INACTIVO' }"
+                    >
+                        <div class="cc-role-pin__foto" aria-hidden="true">
+                            <ShieldCheck />
+                        </div>
+                        <div class="cc-role-pin__cuerpo">
+                            <h2>{{ item.nombre }}</h2>
+                            <p>
+                                {{
+                                    item.descripcion ||
+                                    'Sin descripción. Definí el alcance de este rol.'
+                                }}
+                            </p>
+                            <div class="cc-role-pin__meta">
+                                <span
+                                    class="cc-log__badge"
+                                    :class="
+                                        item.estado === 'ACTIVO'
+                                            ? 'cc-log__badge--crear'
+                                            : 'cc-log__badge--error'
+                                    "
+                                >
+                                    {{ item.estado }}
+                                </span>
+                                <span class="cc-log__badge cc-log__badge--neutro">
+                                    {{ item.usuarios }} usuario(s)
+                                </span>
+                                <span
+                                    v-if="item.protegido"
+                                    class="cc-log__badge cc-log__badge--dot"
+                                >
+                                    Sistema
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                class="cc-button"
+                                @click="abrirFicha(item)"
                             >
-                                {{ rol.estado }}
-                            </span>
-                        </h2>
-                        <p>{{ rol.descripcion || 'Sin descripción' }}</p>
-                    </div>
-                    <div class="cc-log__actions">
-                        <button
-                            type="button"
-                            class="cc-button cc-button--ghost cc-log__btn"
-                            @click="abrirEditar"
-                        >
-                            <Pencil />
-                            Editar rol
-                        </button>
-                        <button
-                            type="button"
-                            class="cc-button cc-button--ghost cc-log__btn"
-                            :disabled="rol.protegido"
-                            :title="rol.protegido ? 'El rol Administrador no se puede desactivar' : ''"
-                            @click="cambiarEstado"
-                        >
-                            <Power />
-                            {{ rol.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}
-                        </button>
+                                Editar
+                            </button>
+                        </div>
+                    </article>
+                </div>
+            </motion.div>
+
+            <motion.div
+                v-else-if="rol"
+                key="ficha"
+                class="cc-role-edit"
+                :initial="{ opacity: 0, y: 16 }"
+                :animate="{ opacity: 1, y: 0 }"
+                :exit="{ opacity: 0, y: 16 }"
+                :transition="adminSpring"
+            >
+                <header class="cc-role-edit__head">
+                    <button
+                        type="button"
+                        class="cc-button cc-button--ghost"
+                        @click="volver"
+                    >
+                        <ChevronLeft />
+                        Roles
+                    </button>
+                    <span
+                        class="cc-log__badge"
+                        :class="
+                            rol.estado === 'ACTIVO'
+                                ? 'cc-log__badge--crear'
+                                : 'cc-log__badge--error'
+                        "
+                    >
+                        {{ rol.estado }}
+                    </span>
+                </header>
+
+                <div class="cc-role-edit__hero">
+                    <span class="cc-role-pin__foto" aria-hidden="true">
+                        <ShieldCheck />
+                    </span>
+                    <div>
+                        <h2>{{ rol.nombre }}</h2>
+                        <p>{{ rol.usuarios }} usuario(s) con este rol</p>
                     </div>
                 </div>
 
-                <div class="cc-roles__bulk">
-                    <button type="button" @click="seleccionarTodo">Seleccionar todo</button>
-                    <button type="button" @click="revocarTodo">Revocar todo</button>
+                <div class="cc-role-edit__campos">
+                    <label class="cc-modal-field">
+                        <span>Nombre del rol</span>
+                        <span class="cc-log__control">
+                            <input
+                                v-model="editar.nombre"
+                                type="text"
+                                maxlength="100"
+                                :disabled="rol.protegido"
+                            />
+                        </span>
+                        <small v-if="rol.protegido">
+                            El rol Administrador no se puede renombrar.
+                        </small>
+                    </label>
+                    <label class="cc-modal-field">
+                        <span>Descripción</span>
+                        <span class="cc-log__control cc-log__control--area">
+                            <textarea
+                                v-model="editar.descripcion"
+                                maxlength="500"
+                            />
+                        </span>
+                    </label>
+                    <button
+                        type="button"
+                        class="cc-sw"
+                        :class="{ 'is-on': rol.estado === 'ACTIVO' }"
+                        :disabled="rol.protegido"
+                        :title="
+                            rol.protegido
+                                ? 'El rol Administrador no se puede desactivar'
+                                : ''
+                        "
+                        @click="cambiarEstado"
+                    >
+                        <span class="cc-sw__pista">
+                            <i />
+                        </span>
+                        <span>
+                            Rol activo
+                            <small>Disponible para asignar a usuarios</small>
+                        </span>
+                    </button>
+                </div>
+
+                <div class="cc-role-edit__bulk">
+                    <button type="button" class="cc-button" @click="seleccionarTodo">
+                        Seleccionar todo
+                    </button>
+                    <button
+                        type="button"
+                        class="cc-button cc-button--ghost"
+                        @click="revocarTodo"
+                    >
+                        Revocar todo
+                    </button>
                 </div>
 
                 <p v-if="errorPermisos" class="cc-roles__alert" role="alert">
                     {{ errorPermisos }}
                 </p>
 
-                <div class="cc-roles__matrix">
-                    <div v-for="modulo in modulos" :key="modulo.nombre" class="cc-roles__module">
-                        <div class="cc-roles__module-name">
+                <div class="cc-role-edit__mods">
+                    <section
+                        v-for="modulo in modulos"
+                        :key="modulo.nombre"
+                        class="cc-role-mod"
+                    >
+                        <header>
                             <strong>{{ modulo.nombre }}</strong>
                             <small>
                                 {{ moduloMarcados(modulo.permisos) }} de
                                 {{ modulo.permisos.length }}
                             </small>
-                        </div>
-                        <div class="cc-roles__perms">
-                            <label
+                        </header>
+                        <div class="cc-role-mod__list">
+                            <button
                                 v-for="permiso in modulo.permisos"
                                 :key="permiso.id"
-                                class="cc-roles__perm"
+                                type="button"
+                                class="cc-ck"
                                 :class="{
-                                    on: marcados.has(permiso.id),
-                                    locked: bloqueado(permiso),
+                                    'is-on': marcados.has(permiso.id),
+                                    'is-off': bloqueado(permiso),
                                 }"
+                                :disabled="bloqueado(permiso)"
+                                @click="alternar(permiso)"
                             >
-                                <input
-                                    type="checkbox"
-                                    :checked="marcados.has(permiso.id)"
-                                    :disabled="bloqueado(permiso)"
-                                    @change="alternar(permiso)"
-                                />
-                                <span>{{ permiso.nombre }}</span>
+                                <span class="cc-ck__box">
+                                    <svg
+                                        class="cc-ck__tick"
+                                        viewBox="0 0 24 24"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            d="M5 12l5 5L20 7"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2.5"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        />
+                                    </svg>
+                                </span>
+                                <span class="cc-ck__txt">
+                                    {{ permiso.nombre }}
+                                    <small>{{ permiso.clave }}</small>
+                                </span>
                                 <Lock v-if="bloqueado(permiso)" :size="12" />
-                            </label>
+                            </button>
                         </div>
-                    </div>
+                    </section>
                 </div>
 
                 <footer class="cc-log__foot">
@@ -405,7 +518,8 @@ function enviarEditar(): void {
                     </p>
                     <button
                         type="button"
-                        class="cc-button cc-log__btn cc-log__btn--solid"
+                        class="cc-button"
+                        :class="{ 'is-load': guardando }"
                         :disabled="cambios === 0 || guardando"
                         @click="guardar"
                     >
@@ -413,18 +527,12 @@ function enviarEditar(): void {
                         Guardar cambios
                     </button>
                 </footer>
-            </div>
-
-            <div v-else class="cc-log__panel cc-log__empty">
-                <strong>Sin roles</strong>
-                Creá el primer rol para empezar.
-            </div>
-        </div>
+            </motion.div>
+        </AnimatePresence>
     </section>
 
-    <!-- Crear rol -->
     <Dialog v-model:open="crearAbierto">
-        <DialogContent class="cc-theme cc-log-dialog cc-roles__dialog">
+        <DialogContent class="cc-theme cc-admin cc-log-dialog cc-roles__dialog">
             <DialogHeader>
                 <DialogTitle>Crear rol</DialogTitle>
                 <DialogDescription>
@@ -451,10 +559,18 @@ function enviarEditar(): void {
                         {{ crear.errors.descripcion }}
                     </small>
                 </label>
-                <label class="cc-roles__switch">
-                    <input v-model="crear.activo" type="checkbox" />
-                    <span>Rol activo (disponible para asignar a usuarios)</span>
-                </label>
+                <button
+                    type="button"
+                    class="cc-sw"
+                    :class="{ 'is-on': crear.activo }"
+                    @click="crear.activo = !crear.activo"
+                >
+                    <span class="cc-sw__pista"><i /></span>
+                    <span>
+                        Rol activo
+                        <small>Disponible para asignar a usuarios</small>
+                    </span>
+                </button>
 
                 <div class="cc-roles__create-perms">
                     <div class="cc-roles__list-head">
@@ -463,26 +579,43 @@ function enviarEditar(): void {
                             {{ crear.permisos.length }} PERMISOS
                         </span>
                     </div>
-                    <div v-for="modulo in modulos" :key="modulo.nombre" class="cc-roles__module">
-                        <div class="cc-roles__module-name">
+                    <section
+                        v-for="modulo in modulos"
+                        :key="modulo.nombre"
+                        class="cc-role-mod"
+                    >
+                        <header>
                             <strong>{{ modulo.nombre }}</strong>
-                        </div>
-                        <div class="cc-roles__perms">
-                            <label
+                        </header>
+                        <div class="cc-role-mod__list">
+                            <button
                                 v-for="permiso in modulo.permisos"
                                 :key="permiso.id"
-                                class="cc-roles__perm"
-                                :class="{ on: crear.permisos.includes(permiso.id) }"
+                                type="button"
+                                class="cc-ck"
+                                :class="{ 'is-on': crear.permisos.includes(permiso.id) }"
+                                @click="alternarNuevo(permiso.id)"
                             >
-                                <input
-                                    type="checkbox"
-                                    :checked="crear.permisos.includes(permiso.id)"
-                                    @change="alternarNuevo(permiso.id)"
-                                />
-                                <span>{{ permiso.nombre }}</span>
-                            </label>
+                                <span class="cc-ck__box">
+                                    <svg
+                                        class="cc-ck__tick"
+                                        viewBox="0 0 24 24"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            d="M5 12l5 5L20 7"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2.5"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        />
+                                    </svg>
+                                </span>
+                                <span class="cc-ck__txt">{{ permiso.nombre }}</span>
+                            </button>
                         </div>
-                    </div>
+                    </section>
                     <small v-if="crear.errors.permisos" class="cc-modal-error">
                         {{ crear.errors.permisos }}
                     </small>
@@ -491,7 +624,7 @@ function enviarEditar(): void {
                 <div class="cc-modal-actions">
                     <button
                         type="button"
-                        class="cc-button cc-button--ghost cc-log__btn"
+                        class="cc-button cc-button--ghost"
                         @click="crearAbierto = false"
                     >
                         <X />
@@ -499,7 +632,7 @@ function enviarEditar(): void {
                     </button>
                     <button
                         type="submit"
-                        class="cc-button cc-log__btn cc-log__btn--solid"
+                        class="cc-button"
                         :disabled="crear.processing"
                     >
                         <Save />
@@ -509,59 +642,5 @@ function enviarEditar(): void {
             </form>
         </DialogContent>
     </Dialog>
-
-    <!-- Editar rol -->
-    <Dialog v-model:open="editarAbierto">
-        <DialogContent class="cc-theme cc-log-dialog">
-            <DialogHeader>
-                <DialogTitle>Editar rol</DialogTitle>
-                <DialogDescription>
-                    Actualizá el nombre y la descripción. Los permisos se guardan desde la matriz.
-                </DialogDescription>
-            </DialogHeader>
-
-            <form class="cc-modal-form" @submit.prevent="enviarEditar">
-                <label class="cc-modal-field">
-                    <span>Nombre del rol</span>
-                    <span class="cc-log__control">
-                        <input
-                            v-model="editar.nombre"
-                            type="text"
-                            maxlength="100"
-                            :disabled="rol?.protegido"
-                        />
-                    </span>
-                    <small v-if="rol?.protegido">El rol Administrador no se puede renombrar.</small>
-                    <small v-if="editar.errors.nombre" class="cc-modal-error">
-                        {{ editar.errors.nombre }}
-                    </small>
-                </label>
-                <label class="cc-modal-field">
-                    <span>Descripción</span>
-                    <span class="cc-log__control cc-log__control--area">
-                        <textarea v-model="editar.descripcion" maxlength="500" />
-                    </span>
-                    <small v-if="editar.errors.descripcion" class="cc-modal-error">
-                        {{ editar.errors.descripcion }}
-                    </small>
-                </label>
-                <div class="cc-modal-actions">
-                    <button
-                        type="button"
-                        class="cc-button cc-button--ghost cc-log__btn"
-                        @click="editarAbierto = false"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        class="cc-button cc-log__btn cc-log__btn--solid"
-                        :disabled="editar.processing"
-                    >
-                        Guardar
-                    </button>
-                </div>
-            </form>
-        </DialogContent>
-    </Dialog>
+    </div>
 </template>

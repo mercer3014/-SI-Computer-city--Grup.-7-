@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 
 @import 'tw-animate-css';
+@import './cc-admin.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -981,7 +982,7 @@
             min-height: 44px;
         }
 
-        .cc-button {
+        .cc-auth-page .cc-button {
             width: 100%;
             min-height: 48px;
         }

@@ -35,9 +35,11 @@ class BitacoraController extends Controller
 
             return Inertia::render('Bitacora', [
                 'eventos' => [
-                    'data' => $pagina->getCollection()
-                        ->map(fn (object $fila) => $this->presentar($fila))
-                        ->values(),
+                    'data' => $this->nombrarObjetivos(
+                        $pagina->getCollection()
+                            ->map(fn (object $fila) => $this->presentar($fila))
+                            ->values(),
+                    ),
                     'meta' => [
                         'current_page' => $pagina->currentPage(),
                         'last_page' => max(1, $pagina->lastPage()),
@@ -107,18 +109,32 @@ class BitacoraController extends Controller
                 'Usuario',
                 'Módulo',
                 'Acción',
+                'Producto / registro',
                 'Dirección IP',
                 'Descripción',
             ]);
 
+            $nombres = $this->mapaObjetivos(
+                (clone $consulta)
+                    ->reorder()
+                    ->select('b.tipo_entidad', 'b.entidad_id')
+                    ->distinct()
+                    ->get(),
+            );
+
             foreach ($consulta->cursor() as $fila) {
                 $evento = $this->presentar($fila);
+                $clave = $this->claveObjetivo(
+                    $evento['tipo_entidad'] ?? null,
+                    $evento['entidad_id'] ?? null,
+                );
 
                 fputcsv($salida, [
                     trim($evento['fecha'].' '.$evento['hora']),
                     $evento['usuario'],
                     $evento['modulo'],
                     $evento['accion'],
+                    $clave !== null ? ($nombres[$clave] ?? '') : '',
                     $evento['direccion_ip'] ?? '',
                     $evento['descripcion'],
                 ]);
@@ -206,7 +222,13 @@ class BitacoraController extends Controller
                 'u.email',
             ])
             ->when($busqueda !== '', function (Builder $query) use ($busqueda, $operador): void {
-                $query->where('b.motivo', $operador, $busqueda);
+                $query->where(function (Builder $grupo) use ($busqueda, $operador): void {
+                    $grupo->where('b.motivo', $operador, $busqueda)
+                        ->orWhere('p.nombre_completo', $operador, $busqueda)
+                        ->orWhere('u.email', $operador, $busqueda)
+                        ->orWhere('b.modulo', $operador, $busqueda)
+                        ->orWhere('b.accion', $operador, $busqueda);
+                });
             })
             ->when($filtros['usuario'] !== '', function (Builder $query) use ($filtros): void {
                 $query->where('b.usuario_id', $filtros['usuario']);
@@ -268,6 +290,233 @@ class BitacoraController extends Controller
     }
 
     /**
+     * @param  Collection<int, array<string, mixed>>  $eventos
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function nombrarObjetivos(Collection $eventos): Collection
+    {
+        $nombres = $this->mapaObjetivos($eventos);
+
+        return $eventos->map(function (array $evento) use ($nombres): array {
+            $clave = $this->claveObjetivo(
+                $evento['tipo_entidad'] ?? null,
+                $evento['entidad_id'] ?? null,
+            );
+            $evento['objetivo'] = $clave !== null ? ($nombres[$clave] ?? null) : null;
+
+            return $evento;
+        });
+    }
+
+    /**
+     * @param  Collection<int, array<string, mixed>|object>  $filas
+     * @return array<string, string>
+     */
+    private function mapaObjetivos(Collection $filas): array
+    {
+        $idsPorTipo = [];
+
+        foreach ($filas as $fila) {
+            $tipo = is_array($fila)
+                ? ($fila['tipo_entidad'] ?? null)
+                : ($fila->tipo_entidad ?? null);
+            $id = is_array($fila)
+                ? ($fila['entidad_id'] ?? null)
+                : ($fila->entidad_id ?? null);
+
+            if (! is_string($tipo) || $tipo === '' || $id === null || $id === '') {
+                continue;
+            }
+
+            $idsPorTipo[$tipo][(int) $id] = (int) $id;
+        }
+
+        $nombres = [];
+
+        foreach ($idsPorTipo as $tipo => $ids) {
+            foreach ($this->nombresDe($tipo, array_values($ids)) as $id => $nombre) {
+                $nombres[$tipo.':'.$id] = $nombre;
+            }
+        }
+
+        return $nombres;
+    }
+
+    /**
+     * @param  list<int>  $ids
+     * @return array<int, string>
+     */
+    private function nombresDe(string $tipo, array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        try {
+            return match ($tipo) {
+                'variante_producto' => $this->nombresVariante($ids),
+                'producto' => $this->nombresProducto($ids),
+                'usuario' => $this->nombresUsuarioEntidad($ids),
+                'personal' => $this->nombresPersonal($ids),
+                'rol' => $this->nombresRol($ids),
+                default => [],
+            };
+        } catch (Throwable $excepcion) {
+            report($excepcion);
+
+            return [];
+        }
+    }
+
+    /**
+     * @param  list<int>  $ids
+     * @return array<int, string>
+     */
+    private function nombresVariante(array $ids): array
+    {
+        $filas = DB::table('variante_producto as vp')
+            ->join('producto as p', 'p.id', '=', 'vp.producto_id')
+            ->leftJoin('marca as m', 'm.id', '=', 'p.marca_id')
+            ->whereIn('vp.id', $ids)
+            ->get(['vp.id', 'p.nombre', 'm.nombre as marca', 'vp.sku']);
+
+        $atributos = DB::table('variante_valor_atributo as vva')
+            ->join('valor_atributo as va', 'va.id', '=', 'vva.valor_atributo_id')
+            ->whereIn('vva.variante_id', $ids)
+            ->orderBy('va.id')
+            ->get(['vva.variante_id', 'va.valor']);
+
+        $porVariante = [];
+
+        foreach ($atributos as $atributo) {
+            $valor = trim((string) $atributo->valor);
+
+            if ($valor !== '') {
+                $porVariante[(int) $atributo->variante_id][] = $valor;
+            }
+        }
+
+        $nombres = [];
+
+        foreach ($filas as $fila) {
+            $nombres[(int) $fila->id] = $this->tituloProducto(
+                (string) $fila->nombre,
+                $fila->marca !== null ? (string) $fila->marca : null,
+                $fila->sku !== null ? (string) $fila->sku : null,
+                $porVariante[(int) $fila->id] ?? [],
+            );
+        }
+
+        return $nombres;
+    }
+
+    /**
+     * @param  list<int>  $ids
+     * @return array<int, string>
+     */
+    private function nombresProducto(array $ids): array
+    {
+        return DB::table('producto as p')
+            ->leftJoin('marca as m', 'm.id', '=', 'p.marca_id')
+            ->whereIn('p.id', $ids)
+            ->get(['p.id', 'p.nombre', 'm.nombre as marca'])
+            ->mapWithKeys(fn (object $fila): array => [
+                (int) $fila->id => $this->tituloProducto(
+                    (string) $fila->nombre,
+                    $fila->marca !== null ? (string) $fila->marca : null,
+                    null,
+                    [],
+                ),
+            ])
+            ->all();
+    }
+
+    /**
+     * @param  list<int>  $ids
+     * @return array<int, string>
+     */
+    private function nombresUsuarioEntidad(array $ids): array
+    {
+        return DB::table('usuario as u')
+            ->leftJoin('personal as p', 'p.id', '=', 'u.personal_id')
+            ->whereIn('u.id', $ids)
+            ->get(['u.id', 'p.nombre_completo', 'u.email'])
+            ->mapWithKeys(fn (object $fila): array => [
+                (int) $fila->id => $this->nombreUsuario($fila),
+            ])
+            ->all();
+    }
+
+    /**
+     * @param  list<int>  $ids
+     * @return array<int, string>
+     */
+    private function nombresPersonal(array $ids): array
+    {
+        return DB::table('personal')
+            ->whereIn('id', $ids)
+            ->get(['id', 'nombre_completo'])
+            ->mapWithKeys(fn (object $fila): array => [
+                (int) $fila->id => trim((string) $fila->nombre_completo),
+            ])
+            ->filter()
+            ->all();
+    }
+
+    /**
+     * @param  list<int>  $ids
+     * @return array<int, string>
+     */
+    private function nombresRol(array $ids): array
+    {
+        return DB::table('rol')
+            ->whereIn('id', $ids)
+            ->get(['id', 'nombre'])
+            ->mapWithKeys(fn (object $fila): array => [
+                (int) $fila->id => trim((string) $fila->nombre),
+            ])
+            ->filter()
+            ->all();
+    }
+
+    /**
+     * @param  list<string>  $atributos
+     */
+    private function tituloProducto(string $nombre, ?string $marca, ?string $sku, array $atributos): string
+    {
+        $nombre = trim($nombre);
+        $marca = trim((string) $marca);
+        $sku = trim((string) $sku);
+
+        if ($marca !== '' && $nombre !== '' && ! str_contains(mb_strtolower($nombre), mb_strtolower($marca))) {
+            $nombre = $marca.' '.$nombre;
+        } elseif ($nombre === '' && $marca !== '') {
+            $nombre = $marca;
+        }
+
+        $attrs = array_values(array_filter($atributos, fn (string $valor): bool => trim($valor) !== ''));
+
+        if ($attrs !== []) {
+            $nombre = trim($nombre.' · '.implode(' / ', $attrs));
+        }
+
+        if ($nombre !== '') {
+            return $nombre;
+        }
+
+        return $sku !== '' ? $sku : 'Producto';
+    }
+
+    private function claveObjetivo(mixed $tipo, mixed $id): ?string
+    {
+        if (! is_string($tipo) || $tipo === '' || $id === null || $id === '') {
+            return null;
+        }
+
+        return $tipo.':'.(int) $id;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function presentar(object $fila): array
@@ -287,6 +536,7 @@ class BitacoraController extends Controller
             'descripcion' => $this->descripcion($fila),
             'tipo_entidad' => $fila->tipo_entidad !== null ? (string) $fila->tipo_entidad : null,
             'entidad_id' => $fila->entidad_id !== null ? (int) $fila->entidad_id : null,
+            'objetivo' => null,
             'valor_anterior' => $this->decodificar($fila->valor_anterior ?? null),
             'valor_nuevo' => $this->decodificar($fila->valor_nuevo ?? null),
         ];
