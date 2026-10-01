@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsurePrimerLoginCompleto;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequierePermiso;
 use App\Http\Middleware\SetPostgresAuditContext;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -11,6 +12,7 @@ use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -22,6 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->trustProxies(at: '*');
+
+        $middleware->alias([
+            'permiso' => RequierePermiso::class,
+        ]);
 
         $middleware->redirectUsersTo(function (Request $request) {
             return $request->user()?->primer_login
@@ -42,7 +48,7 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
 
-        $exceptions->render(function (\Symfony\Component\Mailer\Exception\TransportExceptionInterface $e, Request $request) {
+        $exceptions->render(function (TransportExceptionInterface $e, Request $request) {
             if (! $request->routeIs('password.email')) {
                 return null;
             }

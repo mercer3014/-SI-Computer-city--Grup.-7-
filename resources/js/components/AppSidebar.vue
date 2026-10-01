@@ -3,6 +3,7 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import { computed, watch } from 'vue';
 import { Sidebar, useSidebar } from '@/components/ui/sidebar';
 import { dashboard, logout } from '@/routes';
+import bitacora from '@/routes/bitacora';
 
 type Modulo = {
     titulo: string;
@@ -67,20 +68,23 @@ const modulos: Modulo[] = [
     },
     {
         titulo: 'Usuarios',
+        href: '/usuarios',
         permisos: ['usuarios.administrar'],
         icono: 'nav-user.svg',
         grupo: 'SISTEMA',
     },
     {
-        titulo: 'Bitácora',
-        permisos: ['usuarios.administrar'],
-        icono: 'nav-log.svg',
+        titulo: 'Roles y permisos',
+        href: '/roles',
+        permisos: ['roles.administrar'],
+        icono: 'nav-settings.svg',
         grupo: 'SISTEMA',
     },
     {
-        titulo: 'Configuración',
-        permisos: ['usuarios.administrar'],
-        icono: 'nav-settings.svg',
+        titulo: 'Bitácora',
+        href: bitacora.index().url,
+        permisos: ['bitacora.ver'],
+        icono: 'nav-log.svg',
         grupo: 'SISTEMA',
     },
 ];
