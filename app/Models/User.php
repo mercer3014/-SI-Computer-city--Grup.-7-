@@ -98,6 +98,17 @@ class User extends Authenticatable
         return $this->belongsTo(Rol::class, 'rol_id');
     }
 
+    public function tienePermiso(string $clave): bool
+    {
+        $this->loadMissing('rol.permisos');
+
+        if ($this->rol === null || $this->rol->estado !== 'ACTIVO') {
+            return false;
+        }
+
+        return $this->rol->permisos->contains('clave', $clave);
+    }
+
     public function puedeIniciarSesion(): bool
     {
         $activo = $this->estado === null || $this->estado === 'ACTIVO';

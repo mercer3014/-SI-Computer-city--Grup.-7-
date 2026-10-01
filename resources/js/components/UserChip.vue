@@ -23,7 +23,7 @@ const user = computed(() => page.props.auth.user);
         </DropdownMenuTrigger>
         <DropdownMenuContent
             align="end"
-            class="min-w-56 border-[var(--cc-border)] bg-[var(--cc-surface)] text-[var(--cc-text)]"
+            class="cc-theme cc-user-menu min-w-56 border-[#e8dccb] bg-[#fffdf8] text-[#1c1410] shadow-xl dark:border-[#5c3348] dark:bg-[#2a1622] dark:text-[#fdecf3]"
         >
             <UserMenuContent :user="user" />
         </DropdownMenuContent>
