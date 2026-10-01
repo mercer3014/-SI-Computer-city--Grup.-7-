@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsurePrimerLoginCompleto;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetPostgresAuditContext;
@@ -20,11 +21,18 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        $middleware->redirectUsersTo(function (Request $request) {
+            return $request->user()?->primer_login
+                ? '/primer-ingreso'
+                : '/dashboard';
+        });
+
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,
             SetPostgresAuditContext::class,
             AddLinkHeadersForPreloadedAssets::class,
+            EnsurePrimerLoginCompleto::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

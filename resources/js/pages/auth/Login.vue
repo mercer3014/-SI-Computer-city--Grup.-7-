@@ -7,7 +7,6 @@ import AuthPasswordControl from '@/components/AuthPasswordControl.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Spinner } from '@/components/ui/spinner';
 import PasskeyVerify from '@/components/PasskeyVerify.vue';
-import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 
@@ -160,7 +159,7 @@ onBeforeUnmount(() => {
                 :disabled="throttled"
             />
             <AuthFieldHint
-                hint="Mínimo 8 caracteres"
+                hint="La clave que te enviaron o la tuya"
                 :error="throttled ? throttleLabel : errors.password"
             />
         </label>
@@ -179,9 +178,6 @@ onBeforeUnmount(() => {
             </button>
 
             <div class="cc-auth-links">
-                <TextLink :href="register()" :tabindex="4">
-                    Crear cuenta
-                </TextLink>
                 <TextLink
                     v-if="canResetPassword"
                     :href="request()"

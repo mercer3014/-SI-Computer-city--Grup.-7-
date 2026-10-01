@@ -4,10 +4,10 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Responses\LoginResponse;
 use App\Http\Responses\OtpFailedResponse;
 use App\Http\Responses\OtpSentResponse;
 use App\Http\Responses\PasswordResetCompleteResponse;
-use App\Http\Responses\RegisteredResponse;
 use App\Models\User;
 use App\Services\BitacoraService;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -24,8 +24,8 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\FailedPasswordResetResponse as FailedPasswordResetResponseContract;
+use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 use Laravel\Fortify\Contracts\PasswordResetResponse as PasswordResetResponseContract;
-use Laravel\Fortify\Contracts\RegisterResponse as RegisterResponseContract;
 use Laravel\Fortify\Contracts\SuccessfulPasswordResetLinkRequestResponse as SuccessfulPasswordResetLinkRequestResponseContract;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
@@ -40,7 +40,7 @@ class FortifyServiceProvider extends ServiceProvider
         $this->app->singleton(SuccessfulPasswordResetLinkRequestResponseContract::class, OtpSentResponse::class);
         $this->app->singleton(FailedPasswordResetResponseContract::class, OtpFailedResponse::class);
         $this->app->singleton(PasswordResetResponseContract::class, PasswordResetCompleteResponse::class);
-        $this->app->singleton(RegisterResponseContract::class, RegisteredResponse::class);
+        $this->app->singleton(LoginResponseContract::class, LoginResponse::class);
     }
 
     /**
@@ -72,7 +72,13 @@ class FortifyServiceProvider extends ServiceProvider
 
             $password = $request->string('password')->toString();
 
-            if (! $user || ! Hash::check($password, $user->password_hash)) {
+            if ($user === null) {
+                throw ValidationException::withMessages([
+                    Fortify::username() => 'No existe una cuenta con ese correo.',
+                ]);
+            }
+
+            if (! Hash::check($password, $user->password_hash)) {
                 return null;
             }
 
@@ -141,13 +147,6 @@ class FortifyServiceProvider extends ServiceProvider
 
         Fortify::verifyEmailView(fn (Request $request) => Inertia::render('auth/VerifyEmail', [
             'status' => $request->session()->get('status'),
-        ]));
-
-        Fortify::registerView(fn (Request $request) => Inertia::render('auth/Register', [
-            'passwordRules' => Password::defaults()->toPasswordRulesString(),
-            'registered' => false,
-            'status' => $request->session()->get('status'),
-            'throttleSeconds' => $request->session()->pull('throttleSeconds'),
         ]));
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/TwoFactorChallenge'));

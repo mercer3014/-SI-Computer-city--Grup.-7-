@@ -1,23 +1,18 @@
 <?php
 
-use App\Http\Controllers\RegisterOtpController;
+use App\Http\Controllers\FirstLoginController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return auth()->check()
-        ? redirect()->route('dashboard')
-        : redirect()->route('login');
+    if (! auth()->check()) {
+        return redirect()->route('login');
+    }
+
+    return auth()->user()?->primer_login
+        ? redirect()->route('password.first')
+        : redirect()->route('dashboard');
 })->name('home');
-
-Route::post('register/otp', [RegisterOtpController::class, 'store'])
-    ->middleware(['guest', 'throttle:otp'])
-    ->name('register.otp');
-
-Route::post('register/otp/verificar', [RegisterOtpController::class, 'verify'])
-    ->middleware(['guest', 'throttle:otp'])
-    ->name('register.otp.verify');
 
 Route::middleware('guest')->group(function () {
     Route::get('cuenta-recuperada', function () {
@@ -28,12 +23,8 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('registro-completo', function () {
-        return Inertia::render('auth/Register', [
-            'passwordRules' => Password::defaults()->toPasswordRulesString(),
-            'registered' => true,
-        ]);
-    })->name('register.complete');
+    Route::get('primer-ingreso', [FirstLoginController::class, 'show'])->name('password.first');
+    Route::post('primer-ingreso', [FirstLoginController::class, 'update'])->name('password.first.update');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

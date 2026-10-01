@@ -17,10 +17,10 @@ const defaultChrome: AuthChrome = {
 
 const chromeByPage: Record<string, AuthChrome> = {
     'auth/Login': defaultChrome,
-    'auth/Register': {
-        brandSubtitle: 'Alta de usuario',
-        infoTitle: 'Alta interna de la tienda',
-        infoText: 'Este registro no es público: solo personal de Computer City. Si nadie te invitó, pedile el alta a un administrador.',
+    'auth/FirstLogin': {
+        brandSubtitle: 'Primer ingreso',
+        infoTitle: 'Clave de la tienda',
+        infoText: 'La clave temporal del correo es de un solo uso. Definí la tuya y recién ahí entras al POS.',
     },
     'auth/ForgotPassword': {
         brandSubtitle: 'Recuperar acceso',
@@ -41,12 +41,6 @@ const forgotOtpChrome: AuthChrome = {
         'Ingresá el código de 6 dígitos que enviamos al correo y definí una nueva clave.',
 };
 
-const registerDoneChrome: AuthChrome = {
-    brandSubtitle: 'Alta de usuario',
-    infoTitle: 'Ya estás en el equipo',
-    infoText: 'Tu cuenta quedó lista. Entrá al POS con el correo que verificaste.',
-};
-
 const recoverDoneChrome: AuthChrome = {
     brandSubtitle: 'Recuperar acceso',
     infoTitle: 'Clave actualizada',
@@ -55,15 +49,7 @@ const recoverDoneChrome: AuthChrome = {
 
 const registerStep = ref(1);
 
-export function useRegisterStep() {
-    return registerStep;
-}
-
 export function authModeFor(component: string): AuthMode {
-    if (component === 'auth/Register') {
-        return 'register';
-    }
-
     if (
         component === 'auth/ForgotPassword' ||
         component === 'auth/ResetPassword'
@@ -80,7 +66,6 @@ export function useAuthChrome() {
     return computed(() => {
         const component = page.component;
         const mode = authModeFor(component);
-        const registered = Boolean(page.props.registered);
         const recovered = Boolean(page.props.recovered);
         let chrome = chromeByPage[component] ?? defaultChrome;
 
@@ -90,10 +75,6 @@ export function useAuthChrome() {
 
         if (component === 'auth/ForgotPassword' && recovered) {
             chrome = recoverDoneChrome;
-        }
-
-        if (component === 'auth/Register' && registered) {
-            chrome = registerDoneChrome;
         }
 
         return {
