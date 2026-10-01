@@ -1,8 +1,8 @@
 packages:
     - '.'
 
-allowBuilds:
-    vue-demi: false
+ignoredBuiltDependencies:
+    - vue-demi
 
 publicHoistPattern:
     - '@inertiajs/core'

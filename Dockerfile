@@ -26,8 +26,8 @@ WORKDIR /var/www/html
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction
 
-COPY package.json pnpm-lock.yaml ./
-RUN corepack prepare pnpm@latest --activate && pnpm install --frozen-lockfile
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+RUN corepack prepare pnpm@10 --activate && pnpm install --frozen-lockfile
 
 COPY . .
 
