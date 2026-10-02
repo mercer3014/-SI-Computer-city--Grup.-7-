@@ -377,18 +377,10 @@
         overflow: hidden;
         flex: 0 0 302px;
         width: 302px;
-        background: #0a0608;
-        color: #fffdf8;
+        background: var(--cc-accent);
+        color: var(--cc-on-accent);
         padding: 32px;
         transition: none;
-    }
-
-    .cc-auth-brand__logo {
-        width: min(220px, 100%);
-        height: auto;
-        margin-bottom: 16px;
-        object-fit: contain;
-        object-position: left bottom;
     }
 
     .cc-auth-brand strong {
@@ -926,17 +918,12 @@
             width: 100%;
             min-height: 34svh;
             margin-inline: 0;
-            background: #0a0608;
-            color: #fffdf8;
+            background: transparent;
+            color: var(--cc-text);
             padding:
                 max(72px, env(safe-area-inset-top))
                 24px
                 56px;
-        }
-
-        .cc-auth-brand__logo {
-            width: min(240px, 72vw);
-            margin-bottom: 8px;
         }
 
         .cc-auth-brand strong,
