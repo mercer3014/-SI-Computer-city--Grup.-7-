@@ -97,7 +97,7 @@ const rightNavItems: NavItem[] = [
                             >
                             <SheetHeader class="flex justify-start text-left">
                                 <AppLogoIcon
-                                    class="size-6 fill-current text-black dark:text-white"
+                                    class="h-7 w-auto max-w-[148px] object-contain"
                                 />
                             </SheetHeader>
                             <div

@@ -3,7 +3,6 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import { computed, watch } from 'vue';
 import { Sidebar, useSidebar } from '@/components/ui/sidebar';
 import { dashboard, logout } from '@/routes';
-import bitacora from '@/routes/bitacora';
 
 type Modulo = {
     titulo: string;
@@ -82,7 +81,7 @@ const modulos: Modulo[] = [
     },
     {
         titulo: 'Bitácora',
-        href: bitacora.index().url,
+        href: '/bitacora',
         permisos: ['bitacora.ver'],
         icono: 'nav-log.svg',
         grupo: 'SISTEMA',
@@ -142,18 +141,11 @@ function cerrarSesion(): void {
         class="cc-theme cc-sidebar"
     >
         <div class="cc-sidebar__brand">
-            <span class="cc-sidebar__logo">
-                <img
-                    src="/images/computer-city/nav-inventory.svg"
-                    width="16"
-                    height="16"
-                    alt=""
-                />
-            </span>
-            <div>
-                <strong>Computer City</strong>
-                <small>GESTIÓN DE TIENDA</small>
-            </div>
+            <img
+                class="cc-sidebar__wordmark"
+                src="/images/computer-city/logo.png?v=5"
+                alt="Computer City"
+            />
         </div>
 
         <nav class="cc-sidebar__nav" aria-label="Módulos">

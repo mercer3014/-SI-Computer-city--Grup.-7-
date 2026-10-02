@@ -25,7 +25,11 @@ const spring = {
                 class="cc-auth-brand"
                 :transition="spring"
             >
-                <strong>Computer City</strong>
+                <img
+                    class="cc-auth-brand__logo"
+                    src="/images/computer-city/logo.png?v=5"
+                    alt="Computer City"
+                />
                 <span>{{ brandSubtitle }}</span>
             </motion.div>
 

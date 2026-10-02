@@ -5,9 +5,8 @@
 <img
     src="{{ url('/images/computer-city/logo.png') }}"
     alt="Computer City"
-    width="96"
-    height="96"
-    style="display:block;margin:15px auto 10px;width:96px;height:96px;border:0;border-radius:16px;background:#0a0608;"
+    width="180"
+    style="display:block;margin:15px auto 10px;width:180px;height:auto;border:0;border-radius:16px;background:#0a0608;padding:16px 20px;"
 >
 </a>
 </td>

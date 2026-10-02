@@ -377,10 +377,18 @@
         overflow: hidden;
         flex: 0 0 302px;
         width: 302px;
-        background: var(--cc-accent);
-        color: var(--cc-on-accent);
+        background: #0a0608;
+        color: #fffdf8;
         padding: 32px;
         transition: none;
+    }
+
+    .cc-auth-brand__logo {
+        width: min(220px, 100%);
+        height: auto;
+        margin-bottom: 16px;
+        object-fit: contain;
+        object-position: left bottom;
     }
 
     .cc-auth-brand strong {
@@ -918,11 +926,17 @@
             width: 100%;
             min-height: 34svh;
             margin-inline: 0;
-            background: transparent;
+            background: #0a0608;
+            color: #fffdf8;
             padding:
                 max(72px, env(safe-area-inset-top))
                 24px
                 56px;
+        }
+
+        .cc-auth-brand__logo {
+            width: min(240px, 72vw);
+            margin-bottom: 8px;
         }
 
         .cc-auth-brand strong,
@@ -1078,45 +1092,19 @@
         display: flex;
         width: 100%;
         align-items: center;
-        gap: 10px;
         overflow: hidden;
-        padding: 28px 16px 20px;
+        padding: 24px 20px 16px;
     }
 
-    .cc-sidebar__logo {
-        display: grid;
-        width: 32px;
-        height: 32px;
-        flex: none;
-        place-items: center;
-        border-radius: 999px;
-        background: var(--cc-accent);
-    }
-
-    .cc-sidebar__logo img {
-        width: 16px;
-        height: 16px;
-    }
-
-    .cc-sidebar__brand div {
-        display: flex;
-        min-width: 0;
-        flex-direction: column;
-        gap: 2px;
-    }
-
-    .cc-sidebar__brand strong {
-        color: var(--cc-text);
-        font-size: 14px;
-        line-height: 18px;
-        font-weight: 500;
-    }
-
-    .cc-sidebar__brand small {
-        color: var(--cc-muted);
-        font-size: 9px;
-        line-height: 12px;
-        letter-spacing: 0.04em;
+    .cc-sidebar__wordmark {
+        display: block;
+        width: 138px;
+        max-width: 100%;
+        height: auto;
+        margin-inline: 4px;
+        background: transparent;
+        object-fit: contain;
+        object-position: left center;
     }
 
     .cc-sidebar__nav {
@@ -1181,8 +1169,7 @@
     }
 
     html:not(.dark) .cc-sidebar__item img,
-    html:not(.dark) .cc-sidebar__logout img,
-    html:not(.dark) .cc-sidebar__logo img {
+    html:not(.dark) .cc-sidebar__logout img {
         filter: brightness(0.22);
     }
 

@@ -39,6 +39,7 @@ export default defineConfig({
             fonts: [
                 bunny('IBM Plex Sans', {
                     weights: [400, 500, 600],
+                    preload: [{ weight: 400 }],
                 }),
             ],
         }),
