@@ -7,6 +7,7 @@ use App\Models\Personal;
 use App\Models\Rol;
 use App\Models\User;
 use App\Services\BitacoraService;
+use App\Services\BloqueoLoginService;
 use App\Services\ClaveTemporalService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -23,7 +24,10 @@ class UsuarioController extends Controller
 {
     private const POR_PAGINA = 8;
 
-    public function __construct(private ClaveTemporalService $claves) {}
+    public function __construct(
+        private ClaveTemporalService $claves,
+        private BloqueoLoginService $bloqueo,
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -183,6 +187,34 @@ class UsuarioController extends Controller
         return back();
     }
 
+    public function desbloquear(User $usuario): RedirectResponse
+    {
+        if (! $this->bloqueo->estaBloqueadoPorAdmin($usuario)) {
+            return $this->rechazar('Ese usuario no está bloqueado por intentos fallidos.');
+        }
+
+        $this->bloqueo->resetear($usuario);
+        DB::table('sessions')->where('user_id', $usuario->id)->delete();
+
+        BitacoraService::registrar(
+            'Seguridad',
+            'DESBLOQUEAR_USUARIO',
+            'usuario',
+            $usuario->id,
+            ['bloqueado' => true, 'nivel_bloqueo' => BloqueoLoginService::NIVEL_MAXIMO],
+            ['bloqueado' => false, 'nivel_bloqueo' => 0],
+            'Administrador desbloqueó la cuenta',
+            auth()->id(),
+        );
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Usuario desbloqueado. Ya puede ingresar.',
+        ]);
+
+        return back();
+    }
+
     public function reenviarClave(User $usuario): RedirectResponse
     {
         if (($usuario->estado ?? 'ACTIVO') !== 'ACTIVO') {
@@ -313,6 +345,8 @@ class UsuarioController extends Controller
             'ci' => $u->personal?->ci,
             'telefono' => $u->personal?->telefono,
             'estado' => $u->estado ?? 'ACTIVO',
+            'bloqueado' => (bool) $u->bloqueado || (int) $u->nivel_bloqueo >= BloqueoLoginService::NIVEL_MAXIMO,
+            'nivel_bloqueo' => (int) ($u->nivel_bloqueo ?? 0),
             'primer_login' => (bool) $u->primer_login,
             'es_actual' => $actual !== null && $u->id === $actual->id,
             'protegido' => $unicoAdminId !== null && $u->id === $unicoAdminId,

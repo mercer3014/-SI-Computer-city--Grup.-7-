@@ -41,6 +41,7 @@ use Illuminate\Support\Carbon;
     'bloqueado',
     'primer_login',
     'nivel_bloqueo',
+    'fecha_bloqueo',
 ])]
 #[Hidden(['password_hash'])]
 #[Appends(['name'])]

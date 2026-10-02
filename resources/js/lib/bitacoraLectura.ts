@@ -80,6 +80,7 @@ const ACCIONES: Record<string, string> = {
     LOGIN: 'Ingreso',
     LOGOUT: 'Salida',
     LOGIN_FALLIDO: 'Ingreso fallido',
+    LOGIN_BLOQUEADO: 'Ingreso bloqueado',
     CREAR_USUARIO: 'Alta de usuario',
     ACTUALIZAR_USUARIO: 'Usuario actualizado',
     ELIMINAR_USUARIO: 'Baja de usuario',

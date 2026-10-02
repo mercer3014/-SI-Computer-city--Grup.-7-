@@ -14,6 +14,7 @@ import {
     Plus,
     RotateCcw,
     Search,
+    Unlock,
     UserCheck,
     UserX,
     X,
@@ -39,6 +40,8 @@ type Usuario = {
     ci: string | null;
     telefono: string | null;
     estado: 'ACTIVO' | 'INACTIVO';
+    bloqueado: boolean;
+    nivel_bloqueo: number;
     primer_login: boolean;
     es_actual: boolean;
     protegido: boolean;
@@ -167,11 +170,13 @@ const kpis = computed(() => {
     const filas = props.usuarios.data;
     const activos = filas.filter((u) => u.estado === 'ACTIVO').length;
     const pendientes = filas.filter((u) => u.primer_login).length;
+    const bloqueados = filas.filter((u) => u.bloqueado).length;
 
     return [
         { label: 'En esta página', valor: cantidad.format(filas.length) },
         { label: 'Activos', valor: cantidad.format(activos) },
         { label: 'Pendiente 1er ingreso', valor: cantidad.format(pendientes) },
+        { label: 'Bloqueados', valor: cantidad.format(bloqueados) },
     ];
 });
 
@@ -343,6 +348,7 @@ const objetivoAbierto = computed({
 });
 const procesando = ref(false);
 const reenviando = ref<number | null>(null);
+const desbloqueando = ref<number | null>(null);
 
 async function copiarCorreo(email: string): Promise<void> {
     try {
@@ -363,6 +369,20 @@ function cambiarEstado(usuario: Usuario, estado: 'ACTIVO' | 'INACTIVO'): void {
             onFinish: () => {
                 procesando.value = false;
                 objetivo.value = null;
+            },
+        },
+    );
+}
+
+function desbloquear(usuario: Usuario): void {
+    desbloqueando.value = usuario.id;
+    router.post(
+        `/usuarios/${usuario.id}/desbloquear`,
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                desbloqueando.value = null;
             },
         },
     );
@@ -578,6 +598,12 @@ function reenviar(usuario: Usuario): void {
                                 >
                                     1er ingreso
                                 </span>
+                                <span
+                                    v-if="usuario.bloqueado"
+                                    class="cc-log__badge cc-log__badge--error"
+                                >
+                                    Bloqueado
+                                </span>
                             </td>
                             <td>
                                 <span class="cc-row-actions">
@@ -589,6 +615,17 @@ function reenviar(usuario: Usuario): void {
                                         @click="abrirEditar(usuario)"
                                     >
                                         <Pencil :size="15" />
+                                    </button>
+                                    <button
+                                        v-if="usuario.bloqueado"
+                                        type="button"
+                                        class="cc-log__eye"
+                                        title="Desbloquear por intentos fallidos"
+                                        :disabled="desbloqueando === usuario.id"
+                                        :aria-label="`Desbloquear a ${usuario.nombre}`"
+                                        @click="desbloquear(usuario)"
+                                    >
+                                        <Unlock :size="15" />
                                     </button>
                                     <button
                                         v-if="usuario.estado === 'ACTIVO'"
@@ -676,6 +713,12 @@ function reenviar(usuario: Usuario): void {
                             class="cc-log__badge cc-log__badge--dot"
                         >
                             1er ingreso
+                        </span>
+                        <span
+                            v-if="usuario.bloqueado"
+                            class="cc-log__badge cc-log__badge--error"
+                        >
+                            Bloqueado
                         </span>
                     </span>
                     <small class="cc-users-pin__cargo">{{

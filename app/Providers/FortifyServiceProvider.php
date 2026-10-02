@@ -11,6 +11,7 @@ use App\Http\Responses\OtpSentResponse;
 use App\Http\Responses\PasswordResetCompleteResponse;
 use App\Models\User;
 use App\Services\BitacoraService;
+use App\Services\BloqueoLoginService;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -68,6 +69,7 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::authenticateUsing(function (Request $request): ?User {
             $email = Str::lower($request->string(Fortify::username())->toString());
+            $bloqueo = app(BloqueoLoginService::class);
 
             $user = User::query()
                 ->whereRaw('lower(email) = ?', [$email])
@@ -81,25 +83,10 @@ class FortifyServiceProvider extends ServiceProvider
                 ]);
             }
 
+            $bloqueo->rechazarSiNoPuedeIntentar($user);
+
             if (! Hash::check($password, $user->password_hash)) {
-                return null;
-            }
-
-            if (! $user->puedeIniciarSesion()) {
-                BitacoraService::registrar(
-                    'Seguridad',
-                    'LOGIN_BLOQUEADO',
-                    'usuario',
-                    (int) $user->id,
-                    null,
-                    ['email' => $user->email, 'estado' => $user->estado, 'bloqueado' => $user->bloqueado],
-                    'Intento de login con cuenta inactiva o bloqueada',
-                    (int) $user->id,
-                );
-
-                throw ValidationException::withMessages([
-                    Fortify::username() => 'Tu cuenta está inactiva o bloqueada.',
-                ]);
+                $bloqueo->registrarFallo($user);
             }
 
             BitacoraService::bindContext((int) $user->id);
@@ -108,10 +95,8 @@ class FortifyServiceProvider extends ServiceProvider
                 $user->password_hash = $password;
             }
 
-            $user->forceFill([
-                'fecha_ultimo_login' => now(),
-                'intentos_fallidos' => 0,
-            ])->save();
+            $user->forceFill(['fecha_ultimo_login' => now()]);
+            $bloqueo->resetear($user);
 
             return $user;
         });
@@ -169,7 +154,7 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
 
-            return Limit::perMinute(3)->by($throttleKey);
+            return Limit::perMinute(30)->by($throttleKey);
         });
 
         RateLimiter::for('passkeys', function (Request $request) {

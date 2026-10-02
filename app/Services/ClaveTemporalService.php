@@ -50,6 +50,9 @@ class ClaveTemporalService
             'password_hash' => $clave,
             'primer_login' => true,
             'intentos_fallidos' => 0,
+            'nivel_bloqueo' => 0,
+            'bloqueado' => false,
+            'fecha_bloqueo' => null,
         ])->save();
 
         return $clave;

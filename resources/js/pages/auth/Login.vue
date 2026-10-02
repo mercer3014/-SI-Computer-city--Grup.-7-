@@ -174,7 +174,13 @@ onBeforeUnmount(() => {
             >
                 <Spinner v-if="processing" />
                 <AuthActionIcon v-else />
-                <span>{{ throttled ? `Esperá ${remaining}s` : 'Ingresar' }}</span>
+                <span>{{
+                    throttled
+                        ? remaining >= 60
+                            ? `Esperá ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`
+                            : `Esperá ${remaining}s`
+                        : 'Ingresar'
+                }}</span>
             </button>
 
             <div class="cc-auth-links">

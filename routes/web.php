@@ -45,6 +45,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('{usuario}', [UsuarioController::class, 'update'])->whereNumber('usuario')->name('update');
         Route::patch('{usuario}/estado', [UsuarioController::class, 'estado'])->whereNumber('usuario')->name('estado');
         Route::post('{usuario}/reenviar-clave', [UsuarioController::class, 'reenviarClave'])->whereNumber('usuario')->name('reenviar');
+        Route::post('{usuario}/desbloquear', [UsuarioController::class, 'desbloquear'])->whereNumber('usuario')->name('desbloquear');
     });
 
     Route::middleware('permiso:roles.administrar')->prefix('roles')->name('roles.')->group(function () {
