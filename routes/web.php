@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\FirstLoginController;
+use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
@@ -53,6 +54,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/', [RolController::class, 'store'])->name('store');
         Route::put('{rol}', [RolController::class, 'update'])->whereNumber('rol')->name('update');
         Route::patch('{rol}/estado', [RolController::class, 'estado'])->whereNumber('rol')->name('estado');
+    });
+
+    // ── CU07: Módulo Productos / Inventario ──────────────────────────────
+    // Vendedor: acceso de solo lectura (inventario.ver)
+    // Administrador: gestión completa (productos.gestionar)
+    Route::middleware('permiso:inventario.ver')->prefix('productos')->name('productos.')->group(function () {
+        Route::get('/', [ProductoController::class, 'index'])->name('index');
+
+        // Las siguientes rutas requieren permiso adicional de escritura
+        Route::middleware('permiso:productos.gestionar')->group(function () {
+            Route::post('/', [ProductoController::class, 'store'])->name('store');
+            Route::put('{producto}', [ProductoController::class, 'update'])->whereNumber('producto')->name('update');
+            Route::patch('{producto}/estado', [ProductoController::class, 'estado'])->whereNumber('producto')->name('estado');
+
+            // Imágenes
+            Route::post('{producto}/imagenes', [ProductoController::class, 'subirImagen'])->whereNumber('producto')->name('imagenes.store');
+            Route::delete('imagenes/{imagen}', [ProductoController::class, 'eliminarImagen'])->whereNumber('imagen')->name('imagenes.destroy');
+
+            // Categorías y marcas (gestión inline)
+            Route::post('categorias', [ProductoController::class, 'storeCategoria'])->name('categorias.store');
+            Route::post('marcas', [ProductoController::class, 'storeMarca'])->name('marcas.store');
+        });
     });
 });
 

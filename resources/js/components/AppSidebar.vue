@@ -27,6 +27,7 @@ const modulos: Modulo[] = [
     },
     {
         titulo: 'Productos',
+        href: '/productos',
         permisos: [
             'inventario.ver',
             'inventario.ajustar',
