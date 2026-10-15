@@ -10,8 +10,10 @@ import {
     Search,
     Trash2,
     UserRound,
+    X,
 } from '@lucide/vue';
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import CcRadialFab from '@/components/admin/CcRadialFab.vue';
 import CcRevealSelect from '@/components/admin/CcRevealSelect.vue';
 import {
     Dialog,
@@ -104,7 +106,23 @@ watch(
     (filtros) => Object.assign(form, filtros),
 );
 
-onBeforeUnmount(() => window.clearTimeout(busquedaTimer));
+const enCliente = ref(false);
+const ancho = ref(1024);
+
+function alRedimensionar(): void {
+    ancho.value = window.innerWidth;
+}
+
+onMounted(() => {
+    enCliente.value = true;
+    alRedimensionar();
+    window.addEventListener('resize', alRedimensionar);
+});
+
+onBeforeUnmount(() => {
+    window.clearTimeout(busquedaTimer);
+    window.removeEventListener('resize', alRedimensionar);
+});
 
 function consulta(
     origen: Filtros,
@@ -149,6 +167,52 @@ const opcionesEstado = [
     { value: 'ACTIVO', label: 'Activos' },
     { value: 'INACTIVO', label: 'Inactivos' },
 ];
+
+const chips = computed(() => {
+    const lista: { clave: 'q' | 'estado'; texto: string }[] = [];
+
+    if (form.q) {
+        lista.push({ clave: 'q', texto: `Buscar: ${form.q}` });
+    }
+
+    if (form.estado) {
+        lista.push({
+            clave: 'estado',
+            texto: form.estado === 'ACTIVO' ? 'Activos' : 'Inactivos',
+        });
+    }
+
+    return lista;
+});
+
+function quitarFiltro(clave: 'q' | 'estado'): void {
+    form[clave] = '';
+    aplicar();
+}
+
+function limpiar(): void {
+    window.clearTimeout(busquedaTimer);
+    form.q = '';
+    form.estado = '';
+    aplicar({ q: '', estado: '' });
+}
+
+function iniciales(nombre: string): string {
+    return nombre
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((parte) => parte[0]?.toUpperCase() ?? '')
+        .join('');
+}
+
+const fabAcciones = [{ id: 'crear', label: 'Nuevo cliente', icon: Plus }];
+
+function fabElegir(id: string): void {
+    if (id === 'crear') {
+        proporcionarDatos();
+    }
+}
 
 const opcionesTipo = [
     { value: 'CI', label: 'CI' },
@@ -281,7 +345,7 @@ function eliminar(cliente: Cliente): void {
     <div>
         <Head title="Clientes" />
 
-        <section class="cc-admin cc-log">
+        <section class="cc-admin cc-log cc-admin--pins cc-admin--log">
             <motion.div layout class="cc-log__head" :transition="adminSpring">
                 <motion.div layout :transition="adminSpring">
                     <p class="cc-log__kicker">Ventas</p>
@@ -353,6 +417,15 @@ function eliminar(cliente: Cliente): void {
                                 maxlength="150"
                                 @input="buscarLuego"
                             />
+                            <button
+                                v-if="form.q"
+                                type="button"
+                                class="cc-log__clear"
+                                aria-label="Limpiar búsqueda"
+                                @click="quitarFiltro('q')"
+                            >
+                                <X :size="14" />
+                            </button>
                         </label>
                         <CcRevealSelect
                             v-model="form.estado"
@@ -368,16 +441,25 @@ function eliminar(cliente: Cliente): void {
                             <button
                                 type="button"
                                 class="cc-button cc-button--ghost"
-                                @click="
-                                    form.q = '';
-                                    form.estado = '';
-                                    aplicar({ q: '', estado: '' });
-                                "
+                                @click="limpiar"
                             >
                                 <RotateCcw :size="16" />
                                 Limpiar
                             </button>
                         </div>
+                    </div>
+                    <div v-if="chips.length" class="cc-admin__chips">
+                        <button
+                            v-for="chip in chips"
+                            :key="chip.clave"
+                            type="button"
+                            class="cc-admin__chip"
+                            :aria-label="`Quitar filtro ${chip.texto}`"
+                            @click="quitarFiltro(chip.clave)"
+                        >
+                            {{ chip.texto }}
+                            <X :size="12" />
+                        </button>
                     </div>
                 </form>
 
@@ -511,11 +593,82 @@ function eliminar(cliente: Cliente): void {
                             </tbody>
                         </table>
                     </div>
+                    <div class="cc-log-board">
+                        <p v-if="clientes.data.length === 0" class="cc-log__empty">
+                            <strong>Sin clientes</strong>
+                            No hay registros que coincidan con la búsqueda.
+                        </p>
+                        <article
+                            v-for="cliente in clientes.data"
+                            :key="`pin-${cliente.id}`"
+                            class="cc-log-pin"
+                            :class="{ 'is-off': cliente.estado === 'INACTIVO' }"
+                        >
+                            <button
+                                type="button"
+                                class="cc-log-pin__abrir"
+                                @click="abrirFicha(cliente)"
+                            >
+                                <span class="cc-user-initials">
+                                    {{ iniciales(cliente.nombre) }}
+                                </span>
+                                <span class="cc-log-pin__cuerpo">
+                                    <strong>{{ cliente.nombre }}</strong>
+                                    <p>
+                                        {{ cliente.tipo_documento ?? 'Documento' }}
+                                        {{ cliente.numero_documento ?? 'sin número' }}
+                                    </p>
+                                    <small>
+                                        {{ cliente.telefono ?? 'Sin teléfono' }}
+                                        · {{ cliente.email ?? 'sin correo' }}
+                                    </small>
+                                </span>
+                            </button>
+                            <span class="cc-row-actions">
+                                <span
+                                    class="cc-log__badge"
+                                    :class="badgeEstado(cliente.estado)"
+                                >
+                                    {{ cliente.estado }}
+                                </span>
+                                <button
+                                    type="button"
+                                    class="cc-log__eye"
+                                    :aria-label="`Editar a ${cliente.nombre}`"
+                                    @click="proporcionarDatos(cliente)"
+                                >
+                                    <Pencil :size="15" />
+                                </button>
+                                <button
+                                    v-if="
+                                        cliente.estado === 'ACTIVO' &&
+                                        !cliente.es_generico
+                                    "
+                                    type="button"
+                                    class="cc-log__eye cc-log__eye--danger"
+                                    :aria-label="`Dar de baja a ${cliente.nombre}`"
+                                    @click="objetivoBaja = cliente"
+                                >
+                                    <Trash2 :size="15" />
+                                </button>
+                                <button
+                                    v-else-if="cliente.estado === 'INACTIVO'"
+                                    type="button"
+                                    class="cc-log__eye"
+                                    :aria-label="`Reactivar a ${cliente.nombre}`"
+                                    @click="cambiarEstado(cliente, 'ACTIVO')"
+                                >
+                                    <RotateCcw :size="15" />
+                                </button>
+                            </span>
+                        </article>
+                    </div>
                     <footer class="cc-log__foot">
                         <p>{{ resumen }}</p>
                         <div class="cc-log__pager">
                             <button
                                 type="button"
+                                aria-label="Página anterior"
                                 :disabled="clientes.meta.current_page <= 1"
                                 @click="ir(clientes.meta.current_page - 1)"
                             >
@@ -527,6 +680,7 @@ function eliminar(cliente: Cliente): void {
                             </span>
                             <button
                                 type="button"
+                                aria-label="Página siguiente"
                                 :disabled="
                                     clientes.meta.current_page >=
                                     clientes.meta.last_page
@@ -551,14 +705,20 @@ function eliminar(cliente: Cliente): void {
                     @submit.prevent="aplicar({ tab: 'frecuentes' })"
                 >
                     <div class="cc-log__row">
-                        <label class="cc-log__control">
-                            <span class="cc-log__label">Desde</span>
-                            <input v-model="form.desde" type="date" />
-                        </label>
-                        <label class="cc-log__control">
-                            <span class="cc-log__label">Hasta</span>
-                            <input v-model="form.hasta" type="date" />
-                        </label>
+                        <div class="cc-log__dates-par">
+                            <label class="cc-modal-field">
+                                <span>Desde</span>
+                                <span class="cc-log__control">
+                                    <input v-model="form.desde" type="date" />
+                                </span>
+                            </label>
+                            <label class="cc-modal-field">
+                                <span>Hasta</span>
+                                <span class="cc-log__control">
+                                    <input v-model="form.hasta" type="date" />
+                                </span>
+                            </label>
+                        </div>
                         <div class="cc-log__row-actions">
                             <button type="submit" class="cc-button">
                                 Consultar período
@@ -618,8 +778,49 @@ function eliminar(cliente: Cliente): void {
                         </tbody>
                     </table>
                 </div>
+                <div class="cc-log-board">
+                    <p v-if="frecuentes.length === 0" class="cc-log__empty">
+                        <strong>Sin compras en el período</strong>
+                        Todavía no hay ventas asociadas a clientes nominados.
+                    </p>
+                    <article
+                        v-for="(item, indice) in frecuentes"
+                        :key="`freq-${item.id}`"
+                        class="cc-log-pin"
+                    >
+                        <button
+                            type="button"
+                            class="cc-log-pin__abrir"
+                            @click="aplicar({ ficha: String(item.id) })"
+                        >
+                            <span class="cc-user-initials">{{ indice + 1 }}</span>
+                            <span class="cc-log-pin__cuerpo">
+                                <strong>{{ item.nombre }}</strong>
+                                <p>
+                                    {{ cantidad.format(item.compras) }} compras ·
+                                    {{ moneda.format(item.monto) }}
+                                </p>
+                                <small>
+                                    {{
+                                        item.numero_documento ??
+                                        item.razon_social ??
+                                        'Sin documento'
+                                    }}
+                                </small>
+                            </span>
+                        </button>
+                    </article>
+                </div>
             </motion.div>
         </section>
+
+        <Teleport v-if="enCliente" to="#cc-portal">
+            <CcRadialFab
+                v-show="ancho <= 768 && !formAbierto && !objetivoBaja && !ficha"
+                :acciones="fabAcciones"
+                @elegir="fabElegir"
+            />
+        </Teleport>
 
         <Dialog v-model:open="formAbierto">
             <DialogContent
@@ -638,9 +839,7 @@ function eliminar(cliente: Cliente): void {
                 <form class="cc-modal-form" @submit.prevent="registrarCliente">
                     <div class="cc-cli__pareja">
                         <div class="cc-modal-field">
-                            <span class="cc-log__label"
-                                >Tipo de documento <b class="cc-req">*</b></span
-                            >
+                            <span>Tipo de documento <b class="cc-req">*</b></span>
                             <CcRevealSelect
                                 v-model="alta.tipo_documento"
                                 etiqueta="CI o NIT"
@@ -648,18 +847,15 @@ function eliminar(cliente: Cliente): void {
                             />
                         </div>
                         <div class="cc-modal-field">
-                            <label class="cc-log__control">
-                                <span class="cc-log__label"
-                                    >Número de documento
-                                    <b class="cc-req">*</b></span
-                                >
+                            <span>Número de documento <b class="cc-req">*</b></span>
+                            <span class="cc-log__control">
                                 <input
                                     v-model="alta.numero_documento"
                                     type="text"
                                     maxlength="50"
                                     required
                                 />
-                            </label>
+                            </span>
                             <p
                                 v-if="alta.errors.numero_documento"
                                 class="cc-modal-error"
@@ -677,87 +873,85 @@ function eliminar(cliente: Cliente): void {
                         </div>
                     </div>
 
-                    <div class="cc-modal-field">
-                        <label class="cc-log__control">
-                            <span class="cc-log__label"
-                                >Nombre <b class="cc-req">*</b></span
-                            >
+                    <label class="cc-modal-field">
+                        <span>Nombre <b class="cc-req">*</b></span>
+                        <span class="cc-log__control">
                             <input
                                 v-model="alta.nombre"
                                 type="text"
                                 maxlength="200"
                                 required
                             />
-                        </label>
+                        </span>
                         <p v-if="alta.errors.nombre" class="cc-modal-error">
                             {{ alta.errors.nombre }}
                         </p>
-                    </div>
+                    </label>
 
-                    <div class="cc-modal-field">
-                        <label class="cc-log__control">
-                            <span class="cc-log__label">Razón social</span>
+                    <label class="cc-modal-field">
+                        <span>Razón social</span>
+                        <span class="cc-log__control">
                             <input
                                 v-model="alta.razon_social"
                                 type="text"
                                 maxlength="200"
                             />
-                        </label>
-                    </div>
+                        </span>
+                    </label>
 
                     <div class="cc-cli__pareja">
-                        <div class="cc-modal-field">
-                            <label class="cc-log__control">
-                                <span class="cc-log__label">Teléfono</span>
+                        <label class="cc-modal-field">
+                            <span>Teléfono</span>
+                            <span class="cc-log__control">
                                 <input
                                     v-model="alta.telefono"
                                     type="tel"
                                     maxlength="15"
                                     inputmode="tel"
                                 />
-                            </label>
+                            </span>
                             <p
                                 v-if="alta.errors.telefono"
                                 class="cc-modal-error"
                             >
                                 {{ alta.errors.telefono }}
                             </p>
-                        </div>
-                        <div class="cc-modal-field">
-                            <label class="cc-log__control">
-                                <span class="cc-log__label">Email</span>
+                        </label>
+                        <label class="cc-modal-field">
+                            <span>Email</span>
+                            <span class="cc-log__control">
                                 <input
                                     v-model="alta.email"
                                     type="email"
                                     maxlength="150"
                                 />
-                            </label>
+                            </span>
                             <p v-if="alta.errors.email" class="cc-modal-error">
                                 {{ alta.errors.email }}
                             </p>
-                        </div>
+                        </label>
                     </div>
 
-                    <div class="cc-modal-field">
-                        <label class="cc-log__control cc-log__control--area">
-                            <span class="cc-log__label">Dirección</span>
+                    <label class="cc-modal-field">
+                        <span>Dirección</span>
+                        <span class="cc-log__control cc-log__control--area">
                             <textarea
                                 v-model="alta.direccion"
                                 rows="2"
                                 maxlength="500"
                             />
-                        </label>
-                    </div>
-                    <div class="cc-modal-field">
-                        <label class="cc-log__control cc-log__control--area">
-                            <span class="cc-log__label">Observación</span>
+                        </span>
+                    </label>
+                    <label class="cc-modal-field">
+                        <span>Observación</span>
+                        <span class="cc-log__control cc-log__control--area">
                             <textarea
                                 v-model="alta.observacion"
                                 rows="2"
                                 maxlength="1000"
                             />
-                        </label>
-                    </div>
+                        </span>
+                    </label>
 
                     <div class="cc-modal-actions">
                         <button
@@ -946,7 +1140,9 @@ function eliminar(cliente: Cliente): void {
     gap: 8px;
     align-items: center;
     margin-bottom: -1px;
+    min-height: 44px;
     padding: 10px 14px;
+    white-space: nowrap;
     border: 0;
     border-bottom: 2px solid transparent;
     background: none;
@@ -1025,15 +1221,6 @@ function eliminar(cliente: Cliente): void {
     padding-top: 8px;
 }
 
-.cc-log__label {
-    display: block;
-    margin-bottom: 4px;
-    color: var(--cc-muted);
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-}
 
 .cc-req {
     color: var(--cc-error);

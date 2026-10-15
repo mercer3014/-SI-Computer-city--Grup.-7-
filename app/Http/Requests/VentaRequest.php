@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Models\VarianteProducto;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class VentaRequest extends FormRequest
@@ -25,9 +27,14 @@ class VentaRequest extends FormRequest
     {
         return [
             'cliente_id' => [
-                'required',
+                'nullable',
                 'integer',
+                'required_without:cliente_nuevo',
                 function (string $atributo, mixed $valor, Closure $fail): void {
+                    if ($valor === null || $valor === '') {
+                        return;
+                    }
+
                     $cliente = Cliente::query()->find($valor);
 
                     if ($cliente === null) {
@@ -41,6 +48,29 @@ class VentaRequest extends FormRequest
                     }
                 },
             ],
+            'cliente_nuevo' => ['nullable', 'array', 'required_without:cliente_id'],
+            'cliente_nuevo.tipo_documento' => ['required_with:cliente_nuevo', Rule::in(['CI', 'NIT'])],
+            'cliente_nuevo.numero_documento' => [
+                'required_with:cliente_nuevo',
+                'string',
+                'max:50',
+                function (string $atributo, mixed $valor, Closure $fail): void {
+                    if (! is_string($valor) || trim($valor) === '') {
+                        return;
+                    }
+
+                    $existe = DB::table('cliente')
+                        ->whereRaw('lower(numero_documento) = ?', [mb_strtolower(trim($valor))])
+                        ->exists();
+
+                    if ($existe) {
+                        $fail('Ya existe un cliente registrado con el documento indicado.');
+                    }
+                },
+            ],
+            'cliente_nuevo.nombre' => ['required_with:cliente_nuevo', 'string', 'max:200'],
+            'cliente_nuevo.telefono' => ['nullable', 'string', 'max:50', 'regex:/^[0-9+\-\s]{7,15}$/'],
+            'cliente_nuevo.email' => ['nullable', 'string', 'max:150', 'email'],
             'descuento_global' => ['nullable', 'numeric', 'min:0'],
             'observacion' => ['nullable', 'string', 'max:1000'],
             'enviar_email' => ['sometimes', 'boolean'],
@@ -142,7 +172,14 @@ class VentaRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'cliente_id.required' => 'Seleccioná un cliente para confirmar la venta.',
+            'cliente_id.required_without' => 'Seleccioná un cliente para confirmar la venta.',
+            'cliente_nuevo.required_without' => 'Completá los datos del cliente nuevo.',
+            'cliente_nuevo.tipo_documento.required_with' => 'Elegí el tipo de documento (CI o NIT).',
+            'cliente_nuevo.tipo_documento.in' => 'El tipo de documento debe ser CI o NIT.',
+            'cliente_nuevo.numero_documento.required_with' => 'Ingresá el número de documento.',
+            'cliente_nuevo.nombre.required_with' => 'Ingresá el nombre del cliente.',
+            'cliente_nuevo.telefono.regex' => 'El teléfono debe tener entre 7 y 15 dígitos.',
+            'cliente_nuevo.email.email' => 'El email no es válido.',
             'items.required' => 'La venta debe incluir al menos un producto.',
             'items.min' => 'La venta debe incluir al menos un producto.',
             'pagos.required' => 'Registrá al menos un pago.',
@@ -172,6 +209,18 @@ class VentaRequest extends FormRequest
                     return $item;
                 }, $items),
             ]);
+        }
+
+        $nuevo = $this->input('cliente_nuevo');
+
+        if (is_array($nuevo)) {
+            foreach (['numero_documento', 'nombre', 'telefono', 'email'] as $campo) {
+                if (isset($nuevo[$campo]) && is_string($nuevo[$campo])) {
+                    $nuevo[$campo] = trim($nuevo[$campo]) ?: null;
+                }
+            }
+
+            $this->merge(['cliente_nuevo' => $nuevo]);
         }
 
         if (is_array($pagos)) {

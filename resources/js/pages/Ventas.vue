@@ -3,20 +3,26 @@ import { Head, router, useForm } from '@inertiajs/vue3';
 import { motion } from 'motion-v';
 import {
     Ban,
+    Calendar,
+    ChevronDown,
     ChevronLeft,
     ChevronRight,
     Download,
+    Eye,
     Mail,
     Plus,
     RotateCcw,
     Search,
     ShoppingCart,
     Trash2,
+    UserPlus,
     UserRound,
+    X,
 } from '@lucide/vue';
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import CcRevealSelect from '@/components/admin/CcRevealSelect.vue';
+import CcRadialFab from '@/components/admin/CcRadialFab.vue';
 import {
     Dialog,
     DialogContent,
@@ -148,6 +154,7 @@ const props = defineProps<{
     ficha: Ficha | null;
     kpis: { hoy: number; completadas: number; anuladas: number };
     filtros: Filtros;
+    abrirAlta: boolean;
     puedeCrear: boolean;
     puedeAnular: boolean;
     puedeClientes: boolean;
@@ -174,7 +181,11 @@ watch(
     (filtros) => Object.assign(formFiltro, filtros),
 );
 
-onBeforeUnmount(() => window.clearTimeout(busquedaTimer));
+onBeforeUnmount(() => {
+    window.clearTimeout(busquedaTimer);
+    window.removeEventListener('resize', alRedimensionar);
+    document.removeEventListener('pointerdown', cerrarMenuVenta);
+});
 
 function consulta(origen: Filtros, pagina?: number): Record<string, string | number> {
     const query: Record<string, string | number> = {};
@@ -198,7 +209,53 @@ function buscarLuego(): void {
     busquedaTimer = window.setTimeout(() => aplicar(), 320);
 }
 
-const pestana = computed(() => props.filtros.tab || 'nueva');
+const ventaAbierta = ref(props.abrirAlta);
+const modoCliente = ref<'frecuente' | 'nuevo'>('frecuente');
+const menuVenta = ref(false);
+const menuRaiz = ref<HTMLElement | null>(null);
+
+function abrirVenta(modo: 'frecuente' | 'nuevo'): void {
+    limpiarVenta();
+    modoCliente.value = modo;
+    menuVenta.value = false;
+    ventaAbierta.value = true;
+}
+
+const fabAcciones = [
+    { id: 'frecuente', label: 'Cliente frecuente', icon: UserRound },
+    { id: 'nuevo', label: 'Nuevo cliente', icon: UserPlus },
+];
+
+function elegirFab(id: string): void {
+    if (id === 'frecuente' || id === 'nuevo') abrirVenta(id);
+}
+
+function cerrarMenuVenta(evento: PointerEvent): void {
+    if (!menuRaiz.value?.contains(evento.target as Node)) {
+        menuVenta.value = false;
+    }
+}
+
+const enCliente = ref(false);
+const ancho = ref(1024);
+
+function alRedimensionar(): void {
+    ancho.value = window.innerWidth;
+}
+
+onMounted(() => {
+    enCliente.value = true;
+    alRedimensionar();
+    window.addEventListener('resize', alRedimensionar);
+    document.addEventListener('pointerdown', cerrarMenuVenta);
+});
+
+watch(
+    () => props.abrirAlta,
+    (abrir) => {
+        if (abrir) ventaAbierta.value = true;
+    },
+);
 const kpis = computed(() => [
     { label: 'Ventas de hoy', valor: cantidadFmt.format(props.kpis.hoy) },
     { label: 'Completadas', valor: cantidadFmt.format(props.kpis.completadas) },
@@ -242,16 +299,16 @@ const reservado = computed(() => {
 
 const catalogoFiltrado = computed(() => {
     const q = busquedaProducto.value.trim().toLowerCase();
-    const lista = props.catalogo.filter((item) => {
-        if (q === '') return true;
-        return (
-            item.sku.toLowerCase().includes(q) ||
-            (item.codigo_barras ?? '').toLowerCase().includes(q) ||
-            (item.producto ?? '').toLowerCase().includes(q) ||
-            item.atributos.toLowerCase().includes(q)
-        );
-    });
-    return lista.slice(0, 40);
+    if (q === '') return [];
+    return props.catalogo
+        .filter(
+            (item) =>
+                item.sku.toLowerCase().includes(q) ||
+                (item.codigo_barras ?? '').toLowerCase().includes(q) ||
+                (item.producto ?? '').toLowerCase().includes(q) ||
+                item.atributos.toLowerCase().includes(q),
+        )
+        .slice(0, 6);
 });
 
 function disponible(item: VariantePos): number {
@@ -338,15 +395,16 @@ const clienteElegido = computed(
 
 const clientesFiltrados = computed(() => {
     const q = clienteQ.value.trim().toLowerCase();
-    if (q === '') return props.clientes.slice(0, 8);
+    if (q === '') return [];
     return props.clientes
         .filter(
             (c) =>
-                c.nombre.toLowerCase().includes(q) ||
-                (c.numero_documento ?? '').toLowerCase().includes(q) ||
-                (c.razon_social ?? '').toLowerCase().includes(q),
+                !c.es_generico &&
+                (c.nombre.toLowerCase().includes(q) ||
+                    (c.numero_documento ?? '').toLowerCase().includes(q) ||
+                    (c.razon_social ?? '').toLowerCase().includes(q)),
         )
-        .slice(0, 8);
+        .slice(0, 5);
 });
 
 function agregarPago(): void {
@@ -382,7 +440,14 @@ type PagoVentaForm = {
 };
 
 const formVenta = useForm({
-    cliente_id: 0,
+    cliente_id: null as number | null,
+    cliente_nuevo: null as null | {
+        tipo_documento: string;
+        numero_documento: string;
+        nombre: string;
+        telefono: string;
+        email: string;
+    },
     descuento_global: 0,
     observacion: '',
     enviar_email: false,
@@ -390,10 +455,18 @@ const formVenta = useForm({
     pagos: [] as PagoVentaForm[],
 });
 
+function clienteEstaListo(): boolean {
+    if (modoCliente.value === 'nuevo') {
+        return alta.nombre.trim() !== '' && alta.numero_documento.trim() !== '';
+    }
+
+    return clienteId.value !== null && !(clienteElegido.value?.es_generico ?? false);
+}
+
 const puedeConfirmar = computed(() => {
     if (!props.puedeCrear) return false;
     if (carrito.value.length === 0) return false;
-    if (clienteId.value === null) return false;
+    if (!clienteEstaListo()) return false;
     if (!pagosOk.value) return false;
     if (total.value < 0) return false;
     return carrito.value.every((linea) => linea.cantidad <= linea.stock);
@@ -401,8 +474,12 @@ const puedeConfirmar = computed(() => {
 
 function confirmarVenta(): void {
     if (!puedeConfirmar.value) {
-        if (carrito.value.length === 0 || clienteId.value === null) {
-            toast.error('La venta necesita productos y un cliente.');
+        if (carrito.value.length === 0 || !clienteEstaListo()) {
+            toast.error(
+                modoCliente.value === 'nuevo'
+                    ? 'La venta necesita productos y los datos del cliente.'
+                    : 'La venta necesita productos y un cliente frecuente.',
+            );
         } else if (!pagosOk.value) {
             toast.error(
                 `Los pagos no coinciden con el total. Saldo: ${moneda.format(saldo.value)}.`,
@@ -411,7 +488,19 @@ function confirmarVenta(): void {
         return;
     }
 
-    formVenta.cliente_id = clienteId.value as number;
+    if (modoCliente.value === 'nuevo') {
+        formVenta.cliente_id = null;
+        formVenta.cliente_nuevo = {
+            tipo_documento: alta.tipo_documento,
+            numero_documento: alta.numero_documento.trim(),
+            nombre: alta.nombre.trim(),
+            telefono: alta.telefono.trim(),
+            email: alta.email.trim(),
+        };
+    } else {
+        formVenta.cliente_id = clienteId.value;
+        formVenta.cliente_nuevo = null;
+    }
     formVenta.descuento_global = Number(descuentoGlobal.value || 0);
     formVenta.observacion = observacion.value;
     formVenta.enviar_email = enviarEmail.value;
@@ -427,7 +516,13 @@ function confirmarVenta(): void {
         monto: Number(pago.monto),
         referencia: pago.referencia,
     }));
-    formVenta.post('/ventas', { preserveScroll: true });
+    formVenta.post('/ventas', {
+        preserveScroll: true,
+        onSuccess: () => {
+            ventaAbierta.value = false;
+            limpiarVenta();
+        },
+    });
 }
 
 const alta = useForm({
@@ -440,6 +535,28 @@ const alta = useForm({
     direccion: '',
     observacion: '',
 });
+
+function limpiarVenta(): void {
+    carrito.value = [];
+    clienteId.value = null;
+    clienteQ.value = '';
+    busquedaProducto.value = '';
+    descuentoGlobal.value = 0;
+    observacion.value = '';
+    enviarEmail.value = false;
+    pagos.value = [
+        {
+            clave: uid(),
+            metodo_pago_id: metodoInicial.value,
+            monto: '',
+            referencia: '',
+        },
+    ];
+    alta.reset();
+    alta.clearErrors();
+    formVenta.reset();
+    formVenta.clearErrors();
+}
 const clienteNuevo = ref(false);
 
 function registrarCliente(): void {
@@ -511,23 +628,95 @@ const resumen = computed(() => {
     return `Mostrando ${from}–${to} de ${cantidadFmt.format(total)}`;
 });
 
+const chips = computed(() => {
+    const lista: { clave: 'q' | 'estado' | 'desde' | 'hasta'; texto: string }[] = [];
+
+    if (formFiltro.q) {
+        lista.push({ clave: 'q', texto: `Buscar: ${formFiltro.q}` });
+    }
+
+    if (formFiltro.estado) {
+        lista.push({
+            clave: 'estado',
+            texto: formFiltro.estado === 'ANULADA' ? 'Anuladas' : 'Completadas',
+        });
+    }
+
+    if (formFiltro.desde) {
+        lista.push({ clave: 'desde', texto: `Desde ${formFiltro.desde}` });
+    }
+
+    if (formFiltro.hasta) {
+        lista.push({ clave: 'hasta', texto: `Hasta ${formFiltro.hasta}` });
+    }
+
+    return lista;
+});
+
+function quitarFiltro(clave: 'q' | 'estado' | 'desde' | 'hasta'): void {
+    formFiltro[clave] = '';
+    aplicar();
+}
+
+function limpiarConsulta(): void {
+    window.clearTimeout(busquedaTimer);
+    formFiltro.q = '';
+    formFiltro.estado = '';
+    formFiltro.desde = '';
+    formFiltro.hasta = '';
+    aplicar({ q: '', estado: '', desde: '', hasta: '' });
+}
+
 const erroresVenta = computed(() => Object.values(formVenta.errors));
+
+watch(erroresVenta, (errores) => {
+    if (errores.length > 0) ventaAbierta.value = true;
+});
 </script>
 
 <template>
     <div>
         <Head title="Ventas" />
 
-        <section class="cc-admin cc-log">
+        <section class="cc-admin cc-log cc-admin--pins cc-admin--log">
             <motion.div layout class="cc-log__head" :transition="adminSpring">
                 <motion.div layout :transition="adminSpring">
                     <p class="cc-log__kicker">Punto de venta</p>
                     <h1>Ventas</h1>
                     <p>
-                        Registrá la venta en un solo paso: productos con stock,
-                        serie, garantía, cliente y pagos. El inventario se
-                        actualiza al confirmar.
+                        Consultá las notas de venta. El alta se carga en un
+                        formulario, sin ocupar la pantalla.
                     </p>
+                </motion.div>
+                <motion.div
+                    v-if="puedeCrear"
+                    layout
+                    class="cc-log__actions cc-pos__alta"
+                    :transition="adminSpring"
+                >
+                    <div ref="menuRaiz" class="cc-pos__menu">
+                        <button
+                            type="button"
+                            class="cc-button"
+                            :aria-expanded="menuVenta"
+                            aria-haspopup="menu"
+                            @click="menuVenta = !menuVenta"
+                        >
+                            <Plus :size="16" />
+                            Nueva venta
+                            <ChevronDown :size="16" />
+                        </button>
+                        <div v-if="menuVenta" class="cc-pos__menu-panel" role="menu">
+                            <button type="button" role="menuitem" @click="abrirVenta('frecuente')">
+                                <UserRound :size="16" />
+                                Cliente frecuente
+                            </button>
+                            <button type="button" role="menuitem" @click="abrirVenta('nuevo')">
+                                <UserPlus :size="16" />
+                                Nuevo cliente
+                            </button>
+                        </div>
+                    </div>
                 </motion.div>
             </motion.div>
 
@@ -544,262 +733,353 @@ const erroresVenta = computed(() => Object.values(formVenta.errors));
                 </motion.div>
             </motion.div>
 
-            <div class="cc-pos__tabs" role="tablist">
-                <button
-                    type="button"
-                    class="cc-pos__tab"
-                    :class="{ 'is-activa': pestana === 'nueva' }"
-                    @click="aplicar({ tab: 'nueva' })"
-                >
-                    Nueva venta
-                </button>
-                <button
-                    type="button"
-                    class="cc-pos__tab"
-                    :class="{ 'is-activa': pestana === 'consultar' }"
-                    @click="aplicar({ tab: 'consultar' })"
-                >
-                    Consultar
-                    <span>{{ cantidadFmt.format(props.ventas.meta.total) }}</span>
-                </button>
-            </div>
+            <Dialog v-if="!filtros.creada" v-model:open="ventaAbierta">
+                <DialogContent class="cc-theme cc-admin cc-log-dialog cc-pos-form">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {{
+                                modoCliente === 'nuevo'
+                                    ? 'Venta a cliente nuevo'
+                                    : 'Venta a cliente frecuente'
+                            }}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {{
+                                modoCliente === 'nuevo'
+                                    ? 'Cargá los datos del cliente, los productos y el pago.'
+                                    : 'Elegí un cliente que ya está registrado, los productos y el pago.'
+                            }}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form class="cc-pos-sheet" @submit.prevent="confirmarVenta">
+                        <div class="cc-pos-sheet__cuerpo">
+                            <div v-if="erroresVenta.length" class="cc-pos__alertas">
+                                <p v-for="(error, i) in erroresVenta" :key="i">{{ error }}</p>
+                            </div>
 
-            <template v-if="pestana === 'nueva'">
-                <div v-if="erroresVenta.length" class="cc-pos__alertas">
-                    <p v-for="(error, i) in erroresVenta" :key="i">{{ error }}</p>
-                </div>
-
-                <div class="cc-pos__grid">
-                    <div class="cc-log__panel cc-pos__col">
-                        <label class="cc-log__control cc-log__search">
-                            <Search :size="16" />
-                            <input
-                                v-model="busquedaProducto"
-                                type="search"
-                                placeholder="SKU, código de barras o nombre..."
-                            />
-                        </label>
-                        <div class="cc-pos__lista">
-                            <button
-                                v-for="item in catalogoFiltrado"
-                                :key="item.id"
-                                type="button"
-                                class="cc-pos__prod"
-                                :disabled="disponible(item) <= 0 || !puedeCrear"
-                                @click="agregar(item)"
-                            >
-                                <div>
-                                    <b>{{ item.producto }}</b>
-                                    <small>{{ item.sku }} · {{ item.atributos || '—' }}</small>
+                            <section class="cc-pos__bloque">
+                                <h2 class="cc-pos__h">Productos</h2>
+                                <label class="cc-log__control cc-log__search">
+                                    <Search :size="16" />
+                                    <input
+                                        v-model="busquedaProducto"
+                                        type="search"
+                                        placeholder="SKU, código de barras o nombre..."
+                                    />
+                                </label>
+                                <div v-if="catalogoFiltrado.length" class="cc-pos__lista">
+                                    <button
+                                        v-for="item in catalogoFiltrado"
+                                        :key="item.id"
+                                        type="button"
+                                        class="cc-pos__prod"
+                                        :disabled="disponible(item) <= 0 || !puedeCrear"
+                                        @click="agregar(item)"
+                                    >
+                                        <div>
+                                            <b>{{ item.producto }}</b>
+                                            <small>{{ item.sku }} · {{ item.atributos || '—' }}</small>
+                                        </div>
+                                        <div class="cc-pos__prod-meta">
+                                            <span>{{ moneda.format(item.precio_venta) }}</span>
+                                            <em :class="['cc-log__badge', tonoStock(item)]">
+                                                {{ disponible(item) }} uds.
+                                            </em>
+                                        </div>
+                                    </button>
                                 </div>
-                                <div class="cc-pos__prod-meta">
-                                    <span>{{ moneda.format(item.precio_venta) }}</span>
-                                    <em :class="['cc-log__badge', tonoStock(item)]">
-                                        {{ disponible(item) }} uds.
-                                    </em>
-                                </div>
-                            </button>
-                            <p v-if="catalogoFiltrado.length === 0" class="cc-pos__vacio">
-                                No hay variantes que coincidan.
-                            </p>
-                        </div>
-                    </div>
+                                <p v-else class="cc-pos__vacio">
+                                    {{
+                                        busquedaProducto.trim()
+                                            ? 'No hay variantes que coincidan.'
+                                            : 'Escribí para ver productos. No se vende más de lo que hay en stock.'
+                                    }}
+                                </p>
+                            </section>
 
-                    <div class="cc-log__panel cc-pos__col">
-                        <h2 class="cc-pos__h">
-                            <ShoppingCart :size="16" />
-                            Carrito
-                        </h2>
-                        <div v-if="carrito.length === 0" class="cc-pos__vacio">
-                            Agregá productos desde el buscador. No se puede
-                            vender más de lo que hay en stock.
-                        </div>
-                        <div v-else class="cc-pos__carrito">
-                            <article
-                                v-for="linea in carrito"
-                                :key="linea.clave"
-                                class="cc-pos__linea"
-                            >
-                                <header>
-                                    <div>
-                                        <b>{{ linea.producto }}</b>
-                                        <small>{{ linea.sku }}</small>
+                            <section class="cc-pos__bloque">
+                                <h2 class="cc-pos__h">
+                                    <ShoppingCart :size="16" />
+                                    Carrito
+                                    <span v-if="carrito.length" class="cc-pos__cuenta">{{ carrito.length }}</span>
+                                </h2>
+                                <p v-if="carrito.length === 0" class="cc-pos__vacio">
+                                    Todavía no hay productos.
+                                </p>
+                                <div v-else class="cc-pos__carrito">
+                                    <article
+                                        v-for="linea in carrito"
+                                        :key="linea.clave"
+                                        class="cc-pos__linea"
+                                    >
+                                        <header>
+                                            <div>
+                                                <b>{{ linea.producto }}</b>
+                                                <small>{{ linea.sku }}</small>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                class="cc-log__eye"
+                                                aria-label="Quitar del carrito"
+                                                @click="quitar(linea.clave)"
+                                            >
+                                                <Trash2 :size="14" />
+                                            </button>
+                                        </header>
+                                        <div class="cc-pos__campos">
+                                            <label class="cc-modal-field">
+                                                <span>Cant.</span>
+                                                <span class="cc-log__control">
+                                                    <input
+                                                        v-model.number="linea.cantidad"
+                                                        type="number"
+                                                        min="1"
+                                                        :max="linea.stock"
+                                                        @change="ajustarCantidad(linea)"
+                                                    />
+                                                </span>
+                                            </label>
+                                            <label class="cc-modal-field">
+                                                <span>Desc. Bs</span>
+                                                <span class="cc-log__control">
+                                                    <input
+                                                        v-model.number="linea.descuento"
+                                                        type="number"
+                                                        min="0"
+                                                        step="0.01"
+                                                    />
+                                                </span>
+                                            </label>
+                                            <label class="cc-modal-field">
+                                                <span>Serie</span>
+                                                <span class="cc-log__control">
+                                                    <input
+                                                        v-model="linea.numero_serie"
+                                                        type="text"
+                                                        maxlength="100"
+                                                        placeholder="Opcional"
+                                                    />
+                                                </span>
+                                            </label>
+                                            <label class="cc-modal-field">
+                                                <span>Garantía</span>
+                                                <span class="cc-log__control">
+                                                    <input
+                                                        v-model.number="linea.meses_garantia"
+                                                        type="number"
+                                                        min="0"
+                                                        max="60"
+                                                    />
+                                                </span>
+                                            </label>
+                                        </div>
+                                        <p class="cc-pos__sub">
+                                            {{ moneda.format(linea.cantidad * linea.precio - linea.descuento) }}
+                                            · stock {{ linea.stock }}
+                                        </p>
+                                    </article>
+                                </div>
+                            </section>
+
+                            <section class="cc-pos__bloque">
+                                <h2 class="cc-pos__h">
+                                    <UserRound :size="16" />
+                                    {{ modoCliente === 'nuevo' ? 'Cliente nuevo' : 'Cliente frecuente' }}
+                                </h2>
+                                <template v-if="modoCliente === 'frecuente'">
+                                    <label class="cc-log__control cc-log__search">
+                                        <Search :size="16" />
+                                        <input
+                                            v-model="clienteQ"
+                                            type="search"
+                                            placeholder="Nombre o CI/NIT..."
+                                        />
+                                    </label>
+                                    <div v-if="clientesFiltrados.length" class="cc-pos__chips">
+                                        <button
+                                            v-for="c in clientesFiltrados"
+                                            :key="c.id"
+                                            type="button"
+                                            class="cc-pos__chip"
+                                            :class="{ 'is-on': clienteId === c.id }"
+                                            @click="clienteId = c.id"
+                                        >
+                                            {{ c.nombre }}
+                                        </button>
                                     </div>
+                                    <p v-else-if="clienteQ.trim()" class="cc-pos__vacio">
+                                        No hay clientes con ese dato.
+                                    </p>
+                                    <p v-else class="cc-pos__vacio">
+                                        Buscá por nombre o documento.
+                                    </p>
+                                    <p v-if="clienteElegido && !clienteElegido.es_generico" class="cc-pos__elegido">
+                                        {{ clienteElegido.nombre }}
+                                        <small>
+                                            {{ clienteElegido.tipo_documento }}
+                                            {{ clienteElegido.numero_documento }}
+                                        </small>
+                                    </p>
+                                </template>
+                                <template v-else>
+                                    <label class="cc-modal-field">
+                                        <span>Nombre</span>
+                                        <span class="cc-log__control">
+                                            <input v-model="alta.nombre" type="text" maxlength="200" required />
+                                        </span>
+                                        <small v-if="formVenta.errors['cliente_nuevo.nombre']" class="cc-modal-error">
+                                            {{ formVenta.errors['cliente_nuevo.nombre'] }}
+                                        </small>
+                                    </label>
+                                    <div class="cc-pos__pareja">
+                                        <div class="cc-modal-field">
+                                            <span>Tipo de documento</span>
+                                            <CcRevealSelect
+                                                v-model="alta.tipo_documento"
+                                                etiqueta="CI o NIT"
+                                                :opciones="[
+                                                    { value: 'CI', label: 'CI' },
+                                                    { value: 'NIT', label: 'NIT' },
+                                                ]"
+                                            />
+                                        </div>
+                                        <label class="cc-modal-field">
+                                            <span>Número de documento</span>
+                                            <span class="cc-log__control">
+                                                <input
+                                                    v-model="alta.numero_documento"
+                                                    type="text"
+                                                    maxlength="50"
+                                                    required
+                                                />
+                                            </span>
+                                            <small v-if="formVenta.errors['cliente_nuevo.numero_documento']" class="cc-modal-error">
+                                                {{ formVenta.errors['cliente_nuevo.numero_documento'] }}
+                                            </small>
+                                        </label>
+                                    </div>
+                                    <div class="cc-pos__pareja">
+                                        <label class="cc-modal-field">
+                                            <span>Teléfono</span>
+                                            <span class="cc-log__control">
+                                                <input v-model="alta.telefono" type="tel" maxlength="15" />
+                                            </span>
+                                            <small v-if="formVenta.errors['cliente_nuevo.telefono']" class="cc-modal-error">
+                                                {{ formVenta.errors['cliente_nuevo.telefono'] }}
+                                            </small>
+                                        </label>
+                                        <label class="cc-modal-field">
+                                            <span>Email</span>
+                                            <span class="cc-log__control">
+                                                <input v-model="alta.email" type="email" maxlength="150" />
+                                            </span>
+                                            <small v-if="formVenta.errors['cliente_nuevo.email']" class="cc-modal-error">
+                                                {{ formVenta.errors['cliente_nuevo.email'] }}
+                                            </small>
+                                        </label>
+                                    </div>
+                                </template>
+                            </section>
+
+                            <section class="cc-pos__bloque">
+                                <h2 class="cc-pos__h">Pago</h2>
+                                <p v-if="carrito.length > 0 && !pagosOk" class="cc-pos__aviso">
+                                    El pago tiene que coincidir con el total. Saldo
+                                    {{ moneda.format(saldo) }}.
+                                </p>
+                                <div
+                                    v-for="pago in pagos"
+                                    :key="pago.clave"
+                                    class="cc-pos__pago"
+                                >
+                                    <div class="cc-modal-field">
+                                        <span>Método</span>
+                                        <CcRevealSelect
+                                            v-model="pago.metodo_pago_id"
+                                            etiqueta="Método"
+                                            :opciones="opcionesMetodo"
+                                        />
+                                    </div>
+                                    <label class="cc-modal-field">
+                                        <span>Monto</span>
+                                        <span class="cc-log__control">
+                                            <input
+                                                v-model="pago.monto"
+                                                type="number"
+                                                min="0.01"
+                                                step="0.01"
+                                                placeholder="0,00"
+                                            />
+                                        </span>
+                                    </label>
+                                    <label class="cc-modal-field">
+                                        <span>Referencia</span>
+                                        <span class="cc-log__control">
+                                            <input
+                                                v-model="pago.referencia"
+                                                type="text"
+                                                maxlength="100"
+                                                placeholder="Opcional"
+                                            />
+                                        </span>
+                                    </label>
                                     <button
                                         type="button"
-                                        class="cc-button cc-button--ghost"
-                                        @click="quitar(linea.clave)"
+                                        class="cc-log__eye"
+                                        aria-label="Quitar pago"
+                                        :disabled="pagos.length === 1"
+                                        @click="quitarPago(pago.clave)"
                                     >
                                         <Trash2 :size="14" />
                                     </button>
-                                </header>
-                                <div class="cc-pos__campos">
-                                    <label>
-                                        Cant.
-                                        <input
-                                            v-model.number="linea.cantidad"
-                                            type="number"
-                                            min="1"
-                                            :max="linea.stock"
-                                            @change="ajustarCantidad(linea)"
-                                        />
+                                </div>
+                                <button type="button" class="cc-button cc-button--ghost" @click="agregarPago">
+                                    <Plus :size="14" />
+                                    Otro pago
+                                </button>
+                                <div class="cc-pos__extra">
+                                    <label class="cc-modal-field">
+                                        <span>Descuento global</span>
+                                        <span class="cc-log__control">
+                                            <input
+                                                v-model.number="descuentoGlobal"
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                            />
+                                        </span>
                                     </label>
-                                    <label>
-                                        Desc. Bs
-                                        <input
-                                            v-model.number="linea.descuento"
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                        />
-                                    </label>
-                                    <label>
-                                        Serie
-                                        <input
-                                            v-model="linea.numero_serie"
-                                            type="text"
-                                            maxlength="100"
-                                            placeholder="N° de serie"
-                                        />
-                                    </label>
-                                    <label>
-                                        Garantía (meses)
-                                        <input
-                                            v-model.number="linea.meses_garantia"
-                                            type="number"
-                                            min="0"
-                                            max="60"
-                                        />
+                                    <label class="cc-pos__check">
+                                        <input v-model="enviarEmail" type="checkbox" />
+                                        Enviar nota por email
                                     </label>
                                 </div>
-                                <p class="cc-pos__sub">
-                                    {{ moneda.format(linea.cantidad * linea.precio - linea.descuento) }}
-                                    · stock {{ linea.stock }}
-                                </p>
-                            </article>
+                                <label class="cc-modal-field">
+                                    <span>Observación</span>
+                                    <span class="cc-log__control cc-log__control--area">
+                                        <textarea v-model="observacion" rows="2" maxlength="1000" />
+                                    </span>
+                                </label>
+                            </section>
                         </div>
-
-                        <h2 class="cc-pos__h">
-                            <UserRound :size="16" />
-                            Cliente
-                        </h2>
-                        <div class="cc-pos__cliente">
-                            <label class="cc-log__control cc-log__search">
-                                <Search :size="16" />
-                                <input
-                                    v-model="clienteQ"
-                                    type="search"
-                                    placeholder="Buscar por nombre o CI/NIT..."
-                                />
-                            </label>
+                        <div class="cc-pos__cierre">
+                            <div class="cc-pos__totales">
+                                <span>Subtotal {{ moneda.format(subtotal) }}</span>
+                                <b>Total {{ moneda.format(total) }}</b>
+                            </div>
                             <button
-                                v-if="puedeClientes"
-                                type="button"
-                                class="cc-button cc-button--ghost"
-                                @click="clienteNuevo = true"
+                                type="submit"
+                                class="cc-button cc-pos__confirmar"
+                                :class="{ 'is-load': formVenta.processing }"
+                                :disabled="!puedeConfirmar || formVenta.processing"
                             >
-                                <Plus :size="14" />
-                                Nuevo
+                                Confirmar venta
                             </button>
                         </div>
-                        <p v-if="clienteElegido" class="cc-pos__elegido">
-                            {{ clienteElegido.nombre }}
-                            <small>
-                                {{ clienteElegido.tipo_documento }}
-                                {{ clienteElegido.numero_documento }}
-                            </small>
-                        </p>
-                        <div class="cc-pos__chips">
-                            <button
-                                v-for="c in clientesFiltrados"
-                                :key="c.id"
-                                type="button"
-                                class="cc-pos__chip"
-                                :class="{ 'is-on': clienteId === c.id }"
-                                @click="clienteId = c.id"
-                            >
-                                {{ c.nombre }}
-                            </button>
-                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
-                        <h2 class="cc-pos__h">Pagos</h2>
-                        <p v-if="!pagosOk" class="cc-pos__aviso">
-                            EX-02 · El total pagado debe coincidir con el total
-                            de la venta. Saldo: {{ moneda.format(saldo) }}.
-                        </p>
-                        <div
-                            v-for="pago in pagos"
-                            :key="pago.clave"
-                            class="cc-pos__pago"
-                        >
-                            <CcRevealSelect
-                                v-model="pago.metodo_pago_id"
-                                etiqueta="Método"
-                                :opciones="opcionesMetodo"
-                            />
-                            <label class="cc-log__control">
-                                <input
-                                    v-model="pago.monto"
-                                    type="number"
-                                    min="0.01"
-                                    step="0.01"
-                                    placeholder="Monto"
-                                />
-                            </label>
-                            <label class="cc-log__control">
-                                <input
-                                    v-model="pago.referencia"
-                                    type="text"
-                                    maxlength="100"
-                                    placeholder="Referencia / voucher"
-                                />
-                            </label>
-                            <button
-                                type="button"
-                                class="cc-button cc-button--ghost"
-                                :disabled="pagos.length === 1"
-                                @click="quitarPago(pago.clave)"
-                            >
-                                <Trash2 :size="14" />
-                            </button>
-                        </div>
-                        <button type="button" class="cc-button cc-button--ghost" @click="agregarPago">
-                            <Plus :size="14" />
-                            Otro pago
-                        </button>
-
-                        <label class="cc-log__control">
-                            <span class="cc-log__label">Descuento global</span>
-                            <input v-model.number="descuentoGlobal" type="number" min="0" step="0.01" />
-                        </label>
-                        <label class="cc-log__control cc-log__control--area">
-                            <span class="cc-log__label">Observación</span>
-                            <textarea v-model="observacion" rows="2" maxlength="1000" />
-                        </label>
-                        <label class="cc-pos__check">
-                            <input v-model="enviarEmail" type="checkbox" />
-                            Enviar nota de venta por email
-                        </label>
-
-                        <div class="cc-pos__totales">
-                            <span>Subtotal {{ moneda.format(subtotal) }}</span>
-                            <b>Total {{ moneda.format(total) }}</b>
-                            <span>Pagado {{ moneda.format(pagado) }}</span>
-                        </div>
-                        <button
-                            type="button"
-                            class="cc-button"
-                            :class="{ 'is-load': formVenta.processing }"
-                            :disabled="!puedeConfirmar || formVenta.processing"
-                            @click="confirmarVenta"
-                        >
-                            Confirmar venta
-                        </button>
-                    </div>
-                </div>
-            </template>
-
-            <template v-else>
                 <form class="cc-log__filters" @submit.prevent="aplicar()">
                     <div class="cc-log__row">
                         <label class="cc-log__control cc-log__search">
@@ -810,19 +1090,22 @@ const erroresVenta = computed(() => Object.values(formVenta.errors));
                                 placeholder="N° de venta, cliente o serie..."
                                 @input="buscarLuego"
                             />
+                            <button
+                                v-if="formFiltro.q"
+                                type="button"
+                                class="cc-log__clear"
+                                aria-label="Limpiar búsqueda"
+                                @click="quitarFiltro('q')"
+                            >
+                                <X :size="14" />
+                            </button>
                         </label>
                         <CcRevealSelect
                             v-model="formFiltro.estado"
-                            etiqueta="Estado"
+                            etiqueta="Todos los estados"
                             :opciones="opcionesEstado"
                             @change="aplicar()"
                         />
-                        <label class="cc-log__control">
-                            <input v-model="formFiltro.desde" type="date" @change="aplicar()" />
-                        </label>
-                        <label class="cc-log__control">
-                            <input v-model="formFiltro.hasta" type="date" @change="aplicar()" />
-                        </label>
                         <div class="cc-log__row-actions">
                             <button type="submit" class="cc-button">
                                 <Search :size="16" />
@@ -831,18 +1114,43 @@ const erroresVenta = computed(() => Object.values(formVenta.errors));
                             <button
                                 type="button"
                                 class="cc-button cc-button--ghost"
-                                @click="
-                                    formFiltro.q = '';
-                                    formFiltro.estado = '';
-                                    formFiltro.desde = '';
-                                    formFiltro.hasta = '';
-                                    aplicar({ q: '', estado: '', desde: '', hasta: '' });
-                                "
+                                @click="limpiarConsulta"
                             >
                                 <RotateCcw :size="16" />
                                 Limpiar
                             </button>
                         </div>
+                    </div>
+                    <div class="cc-log__row">
+                        <div class="cc-log__dates-par cc-ventas-fechas">
+                            <label class="cc-modal-field">
+                                <span>Desde</span>
+                                <span class="cc-log__control">
+                                    <Calendar :size="16" />
+                                    <input v-model="formFiltro.desde" type="date" @change="aplicar()" />
+                                </span>
+                            </label>
+                            <label class="cc-modal-field">
+                                <span>Hasta</span>
+                                <span class="cc-log__control">
+                                    <Calendar :size="16" />
+                                    <input v-model="formFiltro.hasta" type="date" @change="aplicar()" />
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    <div v-if="chips.length" class="cc-admin__chips">
+                        <button
+                            v-for="chip in chips"
+                            :key="chip.clave"
+                            type="button"
+                            class="cc-admin__chip"
+                            :aria-label="`Quitar filtro ${chip.texto}`"
+                            @click="quitarFiltro(chip.clave)"
+                        >
+                            {{ chip.texto }}
+                            <X :size="12" />
+                        </button>
                     </div>
                 </form>
 
@@ -889,54 +1197,128 @@ const erroresVenta = computed(() => Object.values(formVenta.errors));
                                         </em>
                                     </td>
                                     <td>
-                                        <button
-                                            type="button"
-                                            class="cc-button cc-button--ghost"
-                                            @click="aplicar({ ficha: String(venta.id) })"
-                                        >
-                                            Ver
-                                        </button>
-                                        <button
-                                            v-if="puedeAnular && venta.estado !== 'ANULADA'"
-                                            type="button"
-                                            class="cc-button cc-button--ghost"
-                                            @click="pedirAnular(venta)"
-                                        >
-                                            <Ban :size="14" />
-                                            Anular
-                                        </button>
+                                        <span class="cc-row-actions">
+                                            <button
+                                                type="button"
+                                                class="cc-log__eye"
+                                                :aria-label="`Ver nota ${venta.numero}`"
+                                                @click="aplicar({ ficha: String(venta.id) })"
+                                            >
+                                                <Eye :size="15" />
+                                            </button>
+                                            <button
+                                                v-if="puedeAnular && venta.estado !== 'ANULADA'"
+                                                type="button"
+                                                class="cc-log__eye cc-log__eye--danger"
+                                                :aria-label="`Anular nota ${venta.numero}`"
+                                                @click="pedirAnular(venta)"
+                                            >
+                                                <Ban :size="15" />
+                                            </button>
+                                        </span>
                                     </td>
                                 </tr>
                                 <tr v-if="ventas.data.length === 0">
-                                    <td colspan="6">No hay ventas con esos filtros.</td>
+                                    <td class="cc-log__empty" colspan="6">
+                                        <strong>Sin ventas</strong>
+                                        No hay ventas con esos filtros.
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <div class="cc-log__pager">
-                        <span>{{ resumen }}</span>
-                        <div>
+                    <div class="cc-log-board">
+                        <p v-if="ventas.data.length === 0" class="cc-log__empty">
+                            <strong>Sin ventas</strong>
+                            No hay ventas con esos filtros.
+                        </p>
+                        <article
+                            v-for="venta in ventas.data"
+                            :key="`pin-${venta.id}`"
+                            class="cc-log-pin"
+                            :class="{ 'is-off': venta.estado === 'ANULADA' }"
+                        >
                             <button
                                 type="button"
-                                class="cc-button cc-button--ghost"
+                                class="cc-log-pin__abrir"
+                                @click="aplicar({ ficha: String(venta.id) })"
+                            >
+                                <span class="cc-log-pin__cuerpo">
+                                    <strong>{{ venta.numero }}</strong>
+                                    <p>
+                                        {{ venta.cliente }}
+                                        · {{ moneda.format(venta.total) }}
+                                    </p>
+                                    <small>
+                                        {{ venta.fecha }}
+                                        · {{ venta.documento || 'Sin documento' }}
+                                    </small>
+                                </span>
+                            </button>
+                            <span class="cc-row-actions">
+                                <span
+                                    class="cc-log__badge"
+                                    :class="
+                                        venta.estado === 'ANULADA'
+                                            ? 'cc-log__badge--error'
+                                            : 'cc-log__badge--crear'
+                                    "
+                                >
+                                    {{ venta.estado }}
+                                </span>
+                                <button
+                                    v-if="puedeAnular && venta.estado !== 'ANULADA'"
+                                    type="button"
+                                    class="cc-log__eye cc-log__eye--danger"
+                                    :aria-label="`Anular nota ${venta.numero}`"
+                                    @click="pedirAnular(venta)"
+                                >
+                                    <Ban :size="15" />
+                                </button>
+                            </span>
+                        </article>
+                    </div>
+                    <footer class="cc-log__foot">
+                        <p>{{ resumen }}</p>
+                        <div class="cc-log__pager">
+                            <button
+                                type="button"
+                                aria-label="Página anterior"
                                 :disabled="ventas.meta.current_page <= 1"
                                 @click="aplicar({}, ventas.meta.current_page - 1)"
                             >
                                 <ChevronLeft :size="16" />
                             </button>
+                            <span>
+                                Página {{ ventas.meta.current_page }} de
+                                {{ ventas.meta.last_page }}
+                            </span>
                             <button
                                 type="button"
-                                class="cc-button cc-button--ghost"
+                                aria-label="Página siguiente"
                                 :disabled="ventas.meta.current_page >= ventas.meta.last_page"
                                 @click="aplicar({}, ventas.meta.current_page + 1)"
                             >
                                 <ChevronRight :size="16" />
                             </button>
                         </div>
-                    </div>
+                    </footer>
                 </motion.div>
-            </template>
         </section>
+
+        <Teleport v-if="enCliente && puedeCrear" to="#cc-portal">
+            <CcRadialFab
+                v-show="
+                    ancho <= 768 &&
+                    !ventaAbierta &&
+                    !anularAbierto &&
+                    !fichaAbierta &&
+                    !clienteNuevo
+                "
+                :acciones="fabAcciones"
+                @elegir="elegirFab"
+            />
+        </Teleport>
 
         <Dialog v-model:open="fichaAbierta">
             <DialogContent class="cc-theme cc-admin cc-log-dialog" style="max-width: 640px">
@@ -994,9 +1376,11 @@ const erroresVenta = computed(() => Object.values(formVenta.errors));
                     </DialogDescription>
                 </DialogHeader>
                 <form class="cc-modal-form" @submit.prevent="registrarCliente">
-                    <label class="cc-log__control">
-                        <span class="cc-log__label">Nombre</span>
-                        <input v-model="alta.nombre" required maxlength="200" />
+                    <label class="cc-modal-field">
+                        <span>Nombre</span>
+                        <span class="cc-log__control">
+                            <input v-model="alta.nombre" required maxlength="200" />
+                        </span>
                     </label>
                     <div class="cc-pos__campos">
                         <CcRevealSelect
@@ -1007,22 +1391,29 @@ const erroresVenta = computed(() => Object.values(formVenta.errors));
                                 { value: 'NIT', label: 'NIT' },
                             ]"
                         />
-                        <label class="cc-log__control">
+                        <label class="cc-modal-field">
+                            <span>Documento</span>
+                            <span class="cc-log__control">
                             <input
                                 v-model="alta.numero_documento"
                                 required
                                 maxlength="50"
-                                placeholder="Documento"
+                                placeholder="Número"
                             />
+                            </span>
                         </label>
                     </div>
-                    <label class="cc-log__control">
-                        <span class="cc-log__label">Email</span>
-                        <input v-model="alta.email" type="email" />
+                    <label class="cc-modal-field">
+                        <span>Email</span>
+                        <span class="cc-log__control">
+                            <input v-model="alta.email" type="email" />
+                        </span>
                     </label>
-                    <label class="cc-log__control">
-                        <span class="cc-log__label">Teléfono</span>
-                        <input v-model="alta.telefono" />
+                    <label class="cc-modal-field">
+                        <span>Teléfono</span>
+                        <span class="cc-log__control">
+                            <input v-model="alta.telefono" type="tel" />
+                        </span>
                     </label>
                     <p v-if="alta.errors.numero_documento" class="cc-modal-error">
                         {{ alta.errors.numero_documento }}
@@ -1045,9 +1436,11 @@ const erroresVenta = computed(() => Object.values(formVenta.errors));
                     </DialogDescription>
                 </DialogHeader>
                 <form class="cc-modal-form" @submit.prevent="confirmarAnular">
-                    <label class="cc-log__control cc-log__control--area">
-                        <span class="cc-log__label">Motivo</span>
-                        <textarea v-model="motivoAnular" rows="3" required minlength="5" />
+                    <label class="cc-modal-field">
+                        <span>Motivo</span>
+                        <span class="cc-log__control cc-log__control--area">
+                            <textarea v-model="motivoAnular" rows="3" required minlength="5" />
+                        </span>
                     </label>
                     <div class="cc-modal-actions">
                         <button type="submit" class="cc-button cc-button--danger">
@@ -1072,7 +1465,9 @@ const erroresVenta = computed(() => Object.values(formVenta.errors));
     gap: 8px;
     align-items: center;
     margin-bottom: -1px;
+    min-height: 44px;
     padding: 10px 14px;
+    white-space: nowrap;
     border: 0;
     border-bottom: 2px solid transparent;
     background: none;
@@ -1092,11 +1487,121 @@ const erroresVenta = computed(() => Object.values(formVenta.errors));
     border-bottom-color: var(--cc-accent);
     color: var(--cc-text);
 }
-.cc-pos__grid {
+.cc-pos__menu {
+    position: relative;
+}
+.cc-pos__menu-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    min-width: 220px;
+    border: 1px solid var(--cc-border);
+    border-radius: 8px;
+    background: var(--cc-card);
+    padding: 4px;
+    box-shadow: 0 12px 32px color-mix(in srgb, #000 28%, transparent);
+}
+.cc-pos__menu-panel button {
+    min-height: 40px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--cc-text);
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    padding: 0 12px;
+    cursor: pointer;
+}
+.cc-pos__menu-panel button:hover,
+.cc-pos__menu-panel button:focus-visible {
+    background: color-mix(in srgb, var(--cc-accent) 14%, transparent);
+}
+.cc-pos__pareja {
     display: grid;
-    grid-template-columns: 1.15fr 0.85fr;
-    gap: 16px;
-    align-items: start;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.cc-ventas-fechas {
+    flex: 0 1 440px;
+    max-width: 440px;
+}
+.cc-pos-sheet {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 0;
+}
+.cc-pos-sheet .cc-log__control,
+.cc-pos-sheet .cc-reveal__btn {
+    display: flex;
+    flex: none;
+    align-items: center;
+    box-sizing: border-box;
+    width: 100%;
+    height: 48px;
+    min-height: 48px;
+    padding: 0 12px;
+}
+.cc-pos-sheet .cc-log__control--area {
+    height: auto;
+    min-height: 88px;
+    align-items: flex-start;
+    padding: 10px 12px;
+}
+.cc-pos-sheet .cc-log__search {
+    flex: none;
+    width: 100%;
+}
+.cc-pos-sheet__cuerpo {
+    display: block;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: auto;
+    padding-right: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--cc-border) transparent;
+}
+.cc-pos-sheet__cuerpo::-webkit-scrollbar {
+    width: 6px;
+}
+.cc-pos-sheet__cuerpo::-webkit-scrollbar-thumb {
+    border-radius: 99px;
+    background: var(--cc-border);
+}
+.cc-pos__bloque {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    gap: 12px;
+}
+.cc-pos__bloque + .cc-pos__bloque {
+    padding-top: 12px;
+    border-top: 1px solid var(--cc-border);
+}
+.cc-pos__cuenta {
+    display: inline-grid;
+    min-width: 18px;
+    height: 18px;
+    place-items: center;
+    border-radius: 99px;
+    background: color-mix(in srgb, var(--cc-accent) 16%, transparent);
+    color: var(--cc-accent);
+    font-size: 11px;
+    font-weight: 600;
+}
+.cc-pos__pago .cc-reveal {
+    min-width: 0;
+}
+.cc-pos__extra {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: end;
 }
 .cc-pos__col {
     padding: 16px;
@@ -1107,19 +1612,25 @@ const erroresVenta = computed(() => Object.values(formVenta.errors));
 .cc-pos__lista {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    max-height: 520px;
+    gap: 8px;
+    max-height: 248px;
     overflow: auto;
+    padding-right: 4px;
 }
 .cc-pos__prod {
     display: flex;
+    flex: none;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 10px 12px;
+    min-height: 64px;
+    padding: 12px;
     border: 1px solid var(--cc-border);
     border-radius: 10px;
     background: var(--cc-surface);
     color: inherit;
+    font: inherit;
+    line-height: 1.35;
     text-align: left;
     cursor: pointer;
 }
@@ -1135,23 +1646,54 @@ const erroresVenta = computed(() => Object.values(formVenta.errors));
     color: var(--cc-muted);
     font-size: 12px;
 }
+.cc-pos__prod > div:first-child {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+}
 .cc-pos__prod b,
 .cc-pos__linea b,
 .cc-pos__elegido {
     display: block;
+    line-height: 18px;
+    overflow-wrap: anywhere;
+}
+.cc-pos__prod small {
+    display: block;
+    line-height: 16px;
+}
+.cc-pos__confirmar {
+    flex: none;
+}
+.cc-pos__cierre {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+    border-top: 1px solid var(--cc-border);
+    padding-top: 12px;
 }
 .cc-pos__prod-meta {
     display: flex;
+    flex: none;
     flex-direction: column;
     align-items: flex-end;
-    gap: 4px;
+    gap: 6px;
+}
+.cc-pos__prod-meta em {
+    white-space: nowrap;
 }
 .cc-pos__h {
     display: flex;
     gap: 8px;
     align-items: center;
-    margin: 8px 0 0;
-    font-size: 14px;
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
 }
 .cc-pos__linea {
     border: 1px solid var(--cc-border);
@@ -1168,7 +1710,7 @@ const erroresVenta = computed(() => Object.values(formVenta.errors));
 }
 .cc-pos__campos {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 72px 88px minmax(0, 1fr) 72px;
     gap: 8px;
 }
 .cc-pos__campos label,
@@ -1179,8 +1721,8 @@ const erroresVenta = computed(() => Object.values(formVenta.errors));
     font-size: 12px;
     color: var(--cc-muted);
 }
-.cc-pos__campos input,
-.cc-pos__pago input {
+.cc-pos__campos .cc-log__control,
+.cc-pos__pago .cc-log__control {
     width: 100%;
 }
 .cc-pos__cliente {
@@ -1190,17 +1732,19 @@ const erroresVenta = computed(() => Object.values(formVenta.errors));
 .cc-pos__chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
 }
 .cc-pos__chip {
     border: 1px solid var(--cc-border);
     background: transparent;
     border-radius: 999px;
-    padding: 4px 10px;
+    min-height: 36px;
+    padding: 8px 14px;
     color: inherit;
     cursor: pointer;
     font: inherit;
-    font-size: 12px;
+    font-size: 13px;
+    line-height: 18px;
 }
 .cc-pos__chip.is-on {
     border-color: var(--cc-accent);
@@ -1208,8 +1752,8 @@ const erroresVenta = computed(() => Object.values(formVenta.errors));
 }
 .cc-pos__pago {
     display: grid;
-    grid-template-columns: 1.2fr 0.8fr 1fr auto;
-    gap: 8px;
+    grid-template-columns: minmax(0, 1.15fr) minmax(96px, 0.8fr) minmax(0, 1fr) 36px;
+    gap: 10px;
     align-items: center;
 }
 .cc-pos__totales {
@@ -1253,20 +1797,40 @@ const erroresVenta = computed(() => Object.values(formVenta.errors));
     color: var(--cc-error);
     font-size: 12px;
 }
-.cc-log__label {
-    display: block;
-    margin-bottom: 4px;
-    color: var(--cc-muted);
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-}
-@media (max-width: 960px) {
-    .cc-pos__grid,
-    .cc-pos__pago,
-    .cc-pos__campos {
+@media (max-width: 768px) {
+    .cc-ventas-fechas {
+        flex-basis: 100%;
+        max-width: none;
+    }
+
+    .cc-pos__pareja {
         grid-template-columns: 1fr;
+    }
+
+    .cc-pos__campos,
+    .cc-pos__extra {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .cc-pos__pago {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .cc-pos__pago .cc-reveal,
+    .cc-pos__pago .cc-log__control,
+    .cc-pos__pago .cc-log__eye,
+    .cc-pos__campos .cc-modal-field:nth-child(3) {
+        grid-column: 1 / -1;
+    }
+
+    .cc-pos__pago .cc-log__eye {
+        justify-self: start;
+    }
+
+    .cc-pos__cierre {
+        align-items: stretch;
+        flex-direction: column;
     }
 }
 </style>

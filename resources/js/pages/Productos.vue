@@ -2,6 +2,7 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { AnimatePresence, motion } from 'motion-v';
 import { adminSpring } from '@/lib/adminMotion';
+import CcRadialFab from '@/components/admin/CcRadialFab.vue';
 import CcRevealSelect from '@/components/admin/CcRevealSelect.vue';
 import {
     Box,
@@ -243,15 +244,39 @@ const chips = computed(() => {
 const enCliente = ref(false);
 const ancho = ref(1024);
 
+function alRedimensionar(): void {
+    ancho.value = window.innerWidth;
+}
+
 onMounted(() => {
     enCliente.value = true;
-    ancho.value = window.innerWidth;
-    window.addEventListener('resize', () => { ancho.value = window.innerWidth; });
+    alRedimensionar();
+    window.addEventListener('resize', alRedimensionar);
 });
 
 onBeforeUnmount(() => {
-    window.removeEventListener('resize', () => {});
+    window.removeEventListener('resize', alRedimensionar);
 });
+
+const fabAcciones = computed(() => [
+    { id: 'producto', label: 'Nuevo producto', icon: Plus },
+    { id: 'categoria', label: 'Categoría', icon: Layers },
+    { id: 'marca', label: 'Marca', icon: Tag },
+]);
+
+function fabElegir(id: string): void {
+    if (id === 'producto') {
+        abrirCrear();
+        return;
+    }
+
+    if (id === 'categoria') {
+        formCategoriaAbierto.value = true;
+        return;
+    }
+
+    formMarcaAbierto.value = true;
+}
 
 // ── Modal Crear / Editar Producto ─────────────────────────────────────────
 
@@ -427,7 +452,7 @@ function badgeStock(stock: number): string {
     <div>
         <Head title="Productos" />
 
-        <section class="cc-admin cc-log">
+        <section class="cc-admin cc-log cc-admin--pins cc-admin--log">
             <!-- ── Cabecera ── -->
             <motion.div layout class="cc-log__head" :transition="adminSpring">
                 <motion.div layout :transition="adminSpring">
@@ -721,6 +746,77 @@ function badgeStock(stock: number): string {
                     </table>
                 </div>
 
+                <div class="cc-log-board">
+                    <p v-if="productos.data.length === 0" class="cc-log__empty">
+                        <strong>Sin productos</strong>
+                        No hay productos que coincidan con los filtros.
+                    </p>
+                    <article
+                        v-for="producto in productos.data"
+                        :key="`pin-${producto.id}`"
+                        class="cc-log-pin"
+                        :class="{ 'is-off': producto.estado === 'INACTIVO' }"
+                    >
+                        <button
+                            type="button"
+                            class="cc-log-pin__abrir"
+                            :aria-label="`Ver ficha de ${producto.nombre}`"
+                            @click="verDetalle(producto)"
+                        >
+                            <span class="cc-prod__thumb">
+                                <img
+                                    v-if="producto.imagen_url"
+                                    :src="producto.imagen_url"
+                                    :alt="producto.imagen_alt ?? producto.nombre"
+                                    loading="lazy"
+                                />
+                                <Box v-else :size="18" />
+                            </span>
+                            <span class="cc-log-pin__cuerpo">
+                                <strong>{{ producto.nombre }}</strong>
+                                <p>
+                                    {{ producto.categoria ?? 'Sin categoría' }}
+                                    · {{ producto.marca ?? 'Sin marca' }}
+                                </p>
+                                <small>
+                                    {{ producto.sku ?? 'Sin SKU' }}
+                                    ·
+                                    {{
+                                        producto.precio_venta !== null
+                                            ? moneda.format(producto.precio_venta)
+                                            : 'Sin precio'
+                                    }}
+                                    · {{ cantidad.format(producto.stock_total) }} uds.
+                                </small>
+                            </span>
+                        </button>
+                        <span class="cc-row-actions">
+                            <span
+                                class="cc-log__badge"
+                                :class="badgeEstado(producto.estado)"
+                            >
+                                {{ producto.estado === 'ACTIVO' ? 'Activo' : 'Baja' }}
+                            </span>
+                            <Link
+                                :href="`/productos/${producto.id}/variantes`"
+                                class="cc-log__eye"
+                                :aria-label="`Variantes de ${producto.nombre}`"
+                            >
+                                <Layers :size="15" />
+                            </Link>
+                            <button
+                                v-if="esAdmin"
+                                type="button"
+                                class="cc-log__eye"
+                                :aria-label="`Editar ${producto.nombre}`"
+                                @click="abrirEditar(producto)"
+                            >
+                                <Pencil :size="15" />
+                            </button>
+                        </span>
+                    </article>
+                </div>
+
                 <!-- Paginación -->
                 <footer class="cc-log__foot">
                     <p>{{ resumen }}</p>
@@ -750,6 +846,21 @@ function badgeStock(stock: number): string {
             </motion.div>
         </section>
 
+        <Teleport v-if="enCliente && esAdmin" to="#cc-portal">
+            <CcRadialFab
+                v-show="
+                    ancho <= 768 &&
+                    !formProductoAbierto &&
+                    !formCategoriaAbierto &&
+                    !formMarcaAbierto &&
+                    !objetivoEstado &&
+                    !viendoDetalle
+                "
+                :acciones="fabAcciones"
+                @elegir="fabElegir"
+            />
+        </Teleport>
+
         <!-- ════════════════════════════════════════════════════════════════ -->
         <!-- Modal: Crear / Editar Producto                                  -->
         <!-- ════════════════════════════════════════════════════════════════ -->
@@ -768,9 +879,9 @@ function badgeStock(stock: number): string {
 
                 <form class="cc-modal-form" @submit.prevent="guardarProducto">
                     <!-- Nombre -->
-                    <div class="cc-modal-field">
-                        <label class="cc-log__control">
-                            <span class="cc-log__label">Nombre <b class="cc-req">*</b></span>
+                    <label class="cc-modal-field">
+                        <span>Nombre <b class="cc-req">*</b></span>
+                        <span class="cc-log__control">
                             <input
                                 v-model="altaProducto.nombre"
                                 type="text"
@@ -778,31 +889,29 @@ function badgeStock(stock: number): string {
                                 placeholder="Ej. Mouse Logitech G203"
                                 required
                             />
-                        </label>
+                        </span>
                         <p v-if="altaProducto.errors.nombre" class="cc-modal-error">
                             {{ altaProducto.errors.nombre }}
                         </p>
-                    </div>
+                    </label>
 
-                    <!-- Slug -->
-                    <div class="cc-modal-field">
-                        <label class="cc-log__control">
-                            <span class="cc-log__label">Slug <small>(opcional — se genera automáticamente)</small></span>
+                    <label class="cc-modal-field">
+                        <span>Slug <small>(opcional — se genera automáticamente)</small></span>
+                        <span class="cc-log__control">
                             <input
                                 v-model="altaProducto.slug"
                                 type="text"
                                 maxlength="250"
                                 placeholder="mouse-logitech-g203"
                             />
-                        </label>
+                        </span>
                         <p v-if="altaProducto.errors.slug" class="cc-modal-error">
                             {{ altaProducto.errors.slug }}
                         </p>
-                    </div>
+                    </label>
 
-                    <!-- Categoría -->
                     <div class="cc-modal-field">
-                        <label class="cc-log__label">Categoría <b class="cc-req">*</b></label>
+                        <span>Categoría <b class="cc-req">*</b></span>
                         <CcRevealSelect
                             v-model="altaProducto.categoria_id"
                             etiqueta="Seleccioná una categoría"
@@ -816,9 +925,8 @@ function badgeStock(stock: number): string {
                         </p>
                     </div>
 
-                    <!-- Marca -->
                     <div class="cc-modal-field">
-                        <label class="cc-log__label">Marca</label>
+                        <span>Marca</span>
                         <CcRevealSelect
                             v-model="altaProducto.marca_id"
                             etiqueta="Sin marca"
@@ -832,22 +940,20 @@ function badgeStock(stock: number): string {
                         </p>
                     </div>
 
-                    <!-- Descripción -->
-                    <div class="cc-modal-field">
-                        <label class="cc-log__control cc-log__control--area">
-                            <span class="cc-log__label">Descripción</span>
+                    <label class="cc-modal-field">
+                        <span>Descripción</span>
+                        <span class="cc-log__control cc-log__control--area">
                             <textarea
                                 v-model="altaProducto.descripcion"
                                 rows="3"
                                 maxlength="2000"
                                 placeholder="Descripción breve del producto..."
                             />
-                        </label>
-                    </div>
+                        </span>
+                    </label>
 
-                    <!-- Estado -->
                     <div class="cc-modal-field">
-                        <label class="cc-log__label">Estado <b class="cc-req">*</b></label>
+                        <span>Estado <b class="cc-req">*</b></span>
                         <div class="cc-prod__estado-toggle">
                             <button
                                 type="button"
@@ -1074,9 +1180,9 @@ function badgeStock(stock: number): string {
                     </DialogDescription>
                 </DialogHeader>
                 <form class="cc-modal-form" @submit.prevent="guardarCategoria">
-                    <div class="cc-modal-field">
-                        <label class="cc-log__control">
-                            <span class="cc-log__label">Nombre <b class="cc-req">*</b></span>
+                    <label class="cc-modal-field">
+                        <span>Nombre <b class="cc-req">*</b></span>
+                        <span class="cc-log__control">
                             <input
                                 v-model="altaCategoria.nombre"
                                 type="text"
@@ -1084,17 +1190,17 @@ function badgeStock(stock: number): string {
                                 placeholder="Ej. Teclados"
                                 required
                             />
-                        </label>
+                        </span>
                         <p v-if="altaCategoria.errors.nombre" class="cc-modal-error">
                             {{ altaCategoria.errors.nombre }}
                         </p>
-                    </div>
-                    <div class="cc-modal-field">
-                        <label class="cc-log__control cc-log__control--area">
-                            <span class="cc-log__label">Descripción</span>
+                    </label>
+                    <label class="cc-modal-field">
+                        <span>Descripción</span>
+                        <span class="cc-log__control cc-log__control--area">
                             <textarea v-model="altaCategoria.descripcion" rows="2" />
-                        </label>
-                    </div>
+                        </span>
+                    </label>
                     <div class="cc-modal-actions">
                         <button type="button" class="cc-button cc-button--ghost" @click="formCategoriaAbierto = false">
                             Cancelar
@@ -1120,9 +1226,9 @@ function badgeStock(stock: number): string {
                     </DialogDescription>
                 </DialogHeader>
                 <form class="cc-modal-form" @submit.prevent="guardarMarca">
-                    <div class="cc-modal-field">
-                        <label class="cc-log__control">
-                            <span class="cc-log__label">Nombre <b class="cc-req">*</b></span>
+                    <label class="cc-modal-field">
+                        <span>Nombre <b class="cc-req">*</b></span>
+                        <span class="cc-log__control">
                             <input
                                 v-model="altaMarca.nombre"
                                 type="text"
@@ -1130,11 +1236,11 @@ function badgeStock(stock: number): string {
                                 placeholder="Ej. Logitech"
                                 required
                             />
-                        </label>
+                        </span>
                         <p v-if="altaMarca.errors.nombre" class="cc-modal-error">
                             {{ altaMarca.errors.nombre }}
                         </p>
-                    </div>
+                    </label>
                     <div class="cc-modal-actions">
                         <button type="button" class="cc-button cc-button--ghost" @click="formMarcaAbierto = false">
                             Cancelar
@@ -1192,12 +1298,14 @@ function badgeStock(stock: number): string {
 }
 
 .cc-prod__info strong {
+    display: -webkit-box;
+    overflow: hidden;
     font-size: 14px;
     font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 200px;
+    line-height: 18px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    max-width: 32ch;
 }
 
 .cc-prod__info small {
@@ -1326,16 +1434,6 @@ function badgeStock(stock: number): string {
     justify-content: flex-end;
     gap: 8px;
     padding-top: 8px;
-}
-
-.cc-log__label {
-    display: block;
-    margin-bottom: 4px;
-    color: var(--cc-muted);
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
 }
 
 .cc-req {

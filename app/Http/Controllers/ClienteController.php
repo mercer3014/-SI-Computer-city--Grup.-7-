@@ -126,7 +126,7 @@ class ClienteController extends Controller
             ]);
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Cliente registrado.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Cliente '.$cliente->nombre.' registrado correctamente.']);
 
         return back();
     }
