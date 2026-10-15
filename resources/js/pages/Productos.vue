@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { AnimatePresence, motion } from 'motion-v';
 import { adminSpring } from '@/lib/adminMotion';
 import CcRevealSelect from '@/components/admin/CcRevealSelect.vue';
@@ -668,6 +668,16 @@ function badgeStock(stock: number): string {
                                         >
                                             <Box :size="15" />
                                         </button>
+
+                                        <!-- Variantes y precios (todos; escritura solo admin) -->
+                                        <Link
+                                            :href="`/productos/${producto.id}/variantes`"
+                                            class="cc-log__eye"
+                                            title="Variantes y precios"
+                                            :aria-label="`Variantes y precios de ${producto.nombre}`"
+                                        >
+                                            <Layers :size="15" />
+                                        </Link>
 
                                         <!-- Editar (solo admin) -->
                                         <button

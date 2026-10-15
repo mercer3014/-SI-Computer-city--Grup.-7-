@@ -54,6 +54,10 @@ const ETIQUETAS: Record<string, string> = {
     modulo: 'Módulo',
     clave: 'Permiso',
     motivo: 'Motivo',
+    atributos: 'Atributos',
+    numero_venta: 'N° de venta',
+    cliente: 'Cliente',
+    total: 'Total',
 };
 
 const ENTIDADES: Record<string, string> = {
@@ -64,6 +68,8 @@ const ENTIDADES: Record<string, string> = {
     rol_permiso: 'permiso del rol',
     variante_producto: 'producto',
     producto: 'producto',
+    cliente: 'cliente',
+    venta: 'venta',
 };
 
 const TIPOS: Record<string, string> = {
@@ -74,6 +80,8 @@ const TIPOS: Record<string, string> = {
     rol_permiso: 'Permiso del rol',
     variante_producto: 'Producto',
     producto: 'Producto',
+    cliente: 'Cliente',
+    venta: 'Venta',
 };
 
 const ACCIONES: Record<string, string> = {
@@ -96,6 +104,15 @@ const ACCIONES: Record<string, string> = {
     ACTUALIZAR_ROL: 'Rol actualizado',
     ELIMINAR_ROL: 'Baja de rol',
     ACTUALIZAR_PRECIO: 'Cambio de precio',
+    CREAR_VARIANTE: 'Alta de variante',
+    AJUSTAR_STOCK: 'Ajuste de stock',
+    ACTUALIZAR_STOCK_MINIMO: 'Stock mínimo',
+    CREAR_CLIENTE: 'Alta de cliente',
+    ACTUALIZAR_CLIENTE: 'Cliente actualizado',
+    CAMBIAR_ESTADO_CLIENTE: 'Estado de cliente',
+    ELIMINAR_CLIENTE: 'Baja de cliente',
+    REGISTRAR_VENTA: 'Venta registrada',
+    ANULAR_VENTA: 'Venta anulada',
 };
 
 function esRecord(valor: unknown): valor is Record<string, unknown> {
@@ -118,9 +135,9 @@ export function valorLegible(valor: unknown): string {
     if (typeof valor === 'number') {
         return Number.isInteger(valor)
             ? String(valor)
-            : new Intl.NumberFormat('es-BO', { minimumFractionDigits: 2 }).format(
-                  valor,
-              );
+            : new Intl.NumberFormat('es-BO', {
+                  minimumFractionDigits: 2,
+              }).format(valor);
     }
 
     if (typeof valor === 'string') {
@@ -145,10 +162,7 @@ export function valorLegible(valor: unknown): string {
     return String(valor);
 }
 
-export function cambiosDe(
-    anterior: unknown,
-    nuevo: unknown,
-): CambioBitacora[] {
+export function cambiosDe(anterior: unknown, nuevo: unknown): CambioBitacora[] {
     const viejo = esRecord(anterior) ? anterior : null;
     const actual = esRecord(nuevo) ? nuevo : null;
 
@@ -191,7 +205,8 @@ export function cambiosDe(
                         ? valorLegible(antesCrudo)
                         : null,
                 ahora:
-                    actual && Object.prototype.hasOwnProperty.call(actual, clave)
+                    actual &&
+                    Object.prototype.hasOwnProperty.call(actual, clave)
                         ? valorLegible(ahoraCrudo)
                         : null,
             },
@@ -255,7 +270,8 @@ export function fraseEvento(evento: EventoBitacora): string {
 
     if (evento.accion === 'LOGIN_FALLIDO') {
         const correo =
-            esRecord(evento.valor_nuevo) && typeof evento.valor_nuevo.email === 'string'
+            esRecord(evento.valor_nuevo) &&
+            typeof evento.valor_nuevo.email === 'string'
                 ? evento.valor_nuevo.email
                 : null;
 
@@ -336,7 +352,11 @@ export function tonoAccion(accion: string): string {
         return 'alerta';
     }
 
-    if (accion.startsWith('CREAR') || accion.startsWith('APROB') || accion === 'LOGIN') {
+    if (
+        accion.startsWith('CREAR') ||
+        accion.startsWith('APROB') ||
+        accion === 'LOGIN'
+    ) {
         return 'crear';
     }
 
