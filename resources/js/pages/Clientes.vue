@@ -837,42 +837,6 @@ function eliminar(cliente: Cliente): void {
                     </DialogDescription>
                 </DialogHeader>
                 <form class="cc-modal-form" @submit.prevent="registrarCliente">
-                    <div class="cc-cli__pareja">
-                        <div class="cc-modal-field">
-                            <span>Tipo de documento <b class="cc-req">*</b></span>
-                            <CcRevealSelect
-                                v-model="alta.tipo_documento"
-                                etiqueta="CI o NIT"
-                                :opciones="opcionesTipo"
-                            />
-                        </div>
-                        <div class="cc-modal-field">
-                            <span>Número de documento <b class="cc-req">*</b></span>
-                            <span class="cc-log__control">
-                                <input
-                                    v-model="alta.numero_documento"
-                                    type="text"
-                                    maxlength="50"
-                                    required
-                                />
-                            </span>
-                            <p
-                                v-if="alta.errors.numero_documento"
-                                class="cc-modal-error"
-                            >
-                                {{ alta.errors.numero_documento }}
-                            </p>
-                            <button
-                                v-if="duplicadoId"
-                                type="button"
-                                class="cc-button cc-button--ghost"
-                                @click="abrirDuplicado"
-                            >
-                                Abrir ficha del cliente existente
-                            </button>
-                        </div>
-                    </div>
-
                     <label class="cc-modal-field">
                         <span>Nombre <b class="cc-req">*</b></span>
                         <span class="cc-log__control">
@@ -889,68 +853,67 @@ function eliminar(cliente: Cliente): void {
                     </label>
 
                     <label class="cc-modal-field">
-                        <span>Razón social</span>
+                        <span>Tipo de documento <b class="cc-req">*</b></span>
+                        <CcRevealSelect
+                            v-model="alta.tipo_documento"
+                            etiqueta="CI o NIT"
+                            :opciones="opcionesTipo"
+                        />
+                    </label>
+
+                    <label class="cc-modal-field">
+                        <span>Número de documento <b class="cc-req">*</b></span>
                         <span class="cc-log__control">
                             <input
-                                v-model="alta.razon_social"
+                                v-model="alta.numero_documento"
                                 type="text"
-                                maxlength="200"
+                                maxlength="50"
+                                required
                             />
                         </span>
+                        <p
+                            v-if="alta.errors.numero_documento"
+                            class="cc-modal-error"
+                        >
+                            {{ alta.errors.numero_documento }}
+                        </p>
+                        <button
+                            v-if="duplicadoId"
+                            type="button"
+                            class="cc-button cc-button--ghost"
+                            @click="abrirDuplicado"
+                        >
+                            Abrir ficha del cliente existente
+                        </button>
                     </label>
 
-                    <div class="cc-cli__pareja">
-                        <label class="cc-modal-field">
-                            <span>Teléfono</span>
-                            <span class="cc-log__control">
-                                <input
-                                    v-model="alta.telefono"
-                                    type="tel"
-                                    maxlength="15"
-                                    inputmode="tel"
-                                />
-                            </span>
-                            <p
-                                v-if="alta.errors.telefono"
-                                class="cc-modal-error"
-                            >
-                                {{ alta.errors.telefono }}
-                            </p>
-                        </label>
-                        <label class="cc-modal-field">
-                            <span>Email</span>
-                            <span class="cc-log__control">
-                                <input
-                                    v-model="alta.email"
-                                    type="email"
-                                    maxlength="150"
-                                />
-                            </span>
-                            <p v-if="alta.errors.email" class="cc-modal-error">
-                                {{ alta.errors.email }}
-                            </p>
-                        </label>
-                    </div>
+                    <label class="cc-modal-field">
+                        <span>Teléfono</span>
+                        <span class="cc-log__control">
+                            <input
+                                v-model="alta.telefono"
+                                type="tel"
+                                maxlength="15"
+                                inputmode="tel"
+                            />
+                        </span>
+                        <p v-if="alta.errors.telefono" class="cc-modal-error">
+                            {{ alta.errors.telefono }}
+                        </p>
+                    </label>
 
                     <label class="cc-modal-field">
-                        <span>Dirección</span>
-                        <span class="cc-log__control cc-log__control--area">
-                            <textarea
-                                v-model="alta.direccion"
-                                rows="2"
-                                maxlength="500"
+                        <span>Email</span>
+                        <span class="cc-log__control">
+                            <input
+                                v-model="alta.email"
+                                type="email"
+                                maxlength="150"
                             />
                         </span>
-                    </label>
-                    <label class="cc-modal-field">
-                        <span>Observación</span>
-                        <span class="cc-log__control cc-log__control--area">
-                            <textarea
-                                v-model="alta.observacion"
-                                rows="2"
-                                maxlength="1000"
-                            />
-                        </span>
+                        <p v-if="alta.errors.email" class="cc-modal-error">
+                            {{ alta.errors.email }}
+                        </p>
                     </label>
 
                     <div class="cc-modal-actions">
@@ -1184,12 +1147,6 @@ function eliminar(cliente: Cliente): void {
     font-size: 11px;
 }
 
-.cc-cli__pareja {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-}
-
 .cc-cli__subtitulo {
     margin: 12px 0 8px;
     font-size: 13px;
@@ -1224,11 +1181,5 @@ function eliminar(cliente: Cliente): void {
 
 .cc-req {
     color: var(--cc-error);
-}
-
-@media (max-width: 520px) {
-    .cc-cli__pareja {
-        grid-template-columns: 1fr;
-    }
 }
 </style>

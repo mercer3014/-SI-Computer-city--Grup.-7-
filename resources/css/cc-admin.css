@@ -457,17 +457,29 @@
 @media (max-width: 768px) {
     .cc-log-dialog[data-slot='dialog-content'] {
         top: auto !important;
+        right: 0 !important;
         bottom: 0 !important;
         left: 0 !important;
         width: 100% !important;
         max-width: 100% !important;
-        translate: 0 0 !important;
-        transform: none !important;
+        --tw-translate-x: 0px !important;
+        --tw-translate-y: 0px !important;
         border-bottom-right-radius: 0;
         border-bottom-left-radius: 0;
         border-top-left-radius: 16px;
         border-top-right-radius: 16px;
         max-height: min(92dvh, 920px);
+        display: block !important;
+        overflow: auto !important;
+        padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    .cc-log-dialog .cc-modal-grid,
+    .cc-log-dialog .cc-cli__pareja,
+    .cc-log-dialog .cc-pos__pareja,
+    .cc-log-dialog .cc-pos__campos,
+    .cc-log-dialog .cc-pos__extra {
+        grid-template-columns: 1fr !important;
     }
 
     .cc-log-dialog.cc-pos-form[data-slot='dialog-content'] {
