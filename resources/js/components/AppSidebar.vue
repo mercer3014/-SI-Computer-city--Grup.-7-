@@ -21,12 +21,14 @@ const modulos: Modulo[] = [
     },
     {
         titulo: 'Ventas',
+        href: '/ventas',
         permisos: ['ventas.crear', 'ventas.anular', 'garantias.gestionar'],
         icono: 'nav-sales.svg',
         grupo: 'MENU',
     },
     {
         titulo: 'Productos',
+        href: '/productos',
         permisos: [
             'inventario.ver',
             'inventario.ajustar',
@@ -36,7 +38,15 @@ const modulos: Modulo[] = [
         grupo: 'MENU',
     },
     {
+        titulo: 'Inventario',
+        href: '/inventario',
+        permisos: ['inventario.ver', 'inventario.ajustar'],
+        icono: 'nav-inventory.svg',
+        grupo: 'MENU',
+    },
+    {
         titulo: 'Clientes',
+        href: '/clientes',
         permisos: ['clientes.gestionar'],
         icono: 'nav-clients.svg',
         grupo: 'MENU',

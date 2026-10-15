@@ -4,8 +4,11 @@ namespace App\Providers;
 
 use App\Auth\CaseInsensitiveUserProvider;
 use App\Auth\OtpPasswordBrokerManager;
+use App\Models\DetalleVenta;
 use App\Models\User;
+use App\Models\Venta;
 use App\Services\BitacoraService;
+use App\Services\VentaKardexEmulador;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
@@ -16,11 +19,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
 use Symfony\Component\Mailer\Transport\Dsn;
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -57,6 +60,7 @@ class AppServiceProvider extends ServiceProvider
         $this->registerBrevoMailer();
         $this->configureDefaults();
         $this->configureBitacoraAuth();
+        $this->emularKardexDeVentas();
     }
 
     /**
@@ -132,5 +136,21 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
+    }
+
+    /**
+     * En PostgreSQL el stock y el Kardex los escriben triggers.
+     * En SQLite (tests) se replica el mismo efecto sin tocar el controlador.
+     */
+    private function emularKardexDeVentas(): void
+    {
+        if (! VentaKardexEmulador::activo()) {
+            return;
+        }
+
+        Venta::created(fn (Venta $venta) => VentaKardexEmulador::alCrearVenta($venta));
+        DetalleVenta::creating(fn (DetalleVenta $detalle) => VentaKardexEmulador::alCrearDetalle($detalle));
+        DetalleVenta::created(fn (DetalleVenta $detalle) => VentaKardexEmulador::despuesDeCrearDetalle($detalle));
+        Venta::updated(fn (Venta $venta) => VentaKardexEmulador::alAnular($venta));
     }
 }
