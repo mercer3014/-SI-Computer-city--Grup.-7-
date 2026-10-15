@@ -12,6 +12,7 @@ import {
     ScanLine,
     Search,
     SlidersHorizontal,
+    X,
 } from '@lucide/vue';
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import CcRevealSelect from '@/components/admin/CcRevealSelect.vue';
@@ -210,6 +211,26 @@ const opcionesAlerta = [
     { value: 'cero', label: 'Sin stock' },
 ];
 
+const chips = computed(() => {
+    const lista: { clave: 'q' | 'alerta'; texto: string }[] = [];
+
+    if (form.q) {
+        lista.push({ clave: 'q', texto: `Buscar: ${form.q}` });
+    }
+
+    if (form.alerta) {
+        const alerta = opcionesAlerta.find((opcion) => opcion.value === form.alerta);
+        lista.push({ clave: 'alerta', texto: alerta?.label ?? form.alerta });
+    }
+
+    return lista;
+});
+
+function quitarFiltro(clave: 'q' | 'alerta'): void {
+    form[clave] = '';
+    aplicar();
+}
+
 const opcionesKardex = computed(() => [
     { value: '', label: 'Elegí un SKU' },
     ...props.opciones.variantes.map((v) => ({
@@ -320,7 +341,7 @@ function abrirKardex(variante: Variante): void {
     <div>
         <Head title="Inventario" />
 
-        <section class="cc-admin cc-log">
+        <section class="cc-admin cc-log cc-admin--pins cc-admin--log">
             <motion.div layout class="cc-log__head" :transition="adminSpring">
                 <motion.div layout :transition="adminSpring">
                     <p class="cc-log__kicker">Kardex</p>
@@ -412,6 +433,15 @@ function abrirKardex(variante: Variante): void {
                                     maxlength="150"
                                     @input="buscarLuego"
                                 />
+                                <button
+                                    v-if="form.q"
+                                    type="button"
+                                    class="cc-log__clear"
+                                    aria-label="Limpiar búsqueda"
+                                    @click="quitarFiltro('q')"
+                                >
+                                    <X :size="14" />
+                                </button>
                             </label>
                             <CcRevealSelect
                                 v-model="form.alerta"
@@ -437,6 +467,19 @@ function abrirKardex(variante: Variante): void {
                                     Limpiar
                                 </button>
                             </div>
+                        </div>
+                        <div v-if="chips.length" class="cc-admin__chips">
+                            <button
+                                v-for="chip in chips"
+                                :key="chip.clave"
+                                type="button"
+                                class="cc-admin__chip"
+                                :aria-label="`Quitar filtro ${chip.texto}`"
+                                @click="quitarFiltro(chip.clave)"
+                            >
+                                {{ chip.texto }}
+                                <X :size="12" />
+                            </button>
                         </div>
                     </form>
                 </motion.div>
@@ -552,6 +595,57 @@ function abrirKardex(variante: Variante): void {
                             </tbody>
                         </table>
                     </div>
+                    <div class="cc-log-board">
+                        <p v-if="variantes.data.length === 0" class="cc-log__empty">
+                            <strong>Sin variantes</strong>
+                            No hay existencias que coincidan con la búsqueda.
+                        </p>
+                        <article
+                            v-for="variante in variantes.data"
+                            :key="`pin-${variante.id}`"
+                            class="cc-log-pin"
+                            :class="{ 'is-off': variante.stock_actual === 0 }"
+                        >
+                            <button
+                                type="button"
+                                class="cc-log-pin__abrir"
+                                @click="abrirKardex(variante)"
+                            >
+                                <span class="cc-log-pin__cuerpo">
+                                    <strong>{{ variante.producto ?? variante.sku }}</strong>
+                                    <p>
+                                        <code class="cc-inv__sku">{{ variante.sku }}</code>
+                                        · {{ variante.atributos }}
+                                    </p>
+                                    <small>
+                                        Mínimo
+                                        {{ cantidad.format(variante.stock_minimo) }}
+                                        ·
+                                        {{
+                                            variante.codigo_barras ?? 'Sin código'
+                                        }}
+                                    </small>
+                                </span>
+                            </button>
+                            <span class="cc-row-actions">
+                                <span
+                                    class="cc-log__badge"
+                                    :class="badgeStock(variante)"
+                                >
+                                    {{ cantidad.format(variante.stock_actual) }}
+                                </span>
+                                <button
+                                    v-if="esAdmin"
+                                    type="button"
+                                    class="cc-log__eye"
+                                    :aria-label="`Ajustar stock de ${variante.sku}`"
+                                    @click="ajustarStock(variante)"
+                                >
+                                    <SlidersHorizontal :size="15" />
+                                </button>
+                            </span>
+                        </article>
+                    </div>
                     <footer class="cc-log__foot">
                         <p>{{ resumen }}</p>
                         <div class="cc-log__pager">
@@ -654,6 +748,40 @@ function abrirKardex(variante: Variante): void {
                         </tbody>
                     </table>
                 </div>
+                <div class="cc-log-board">
+                    <p v-if="movimientos.length === 0" class="cc-log__empty">
+                        <strong>Sin movimientos</strong>
+                        Todavía no hay entradas, salidas ni ajustes.
+                    </p>
+                    <article
+                        v-for="mov in movimientos"
+                        :key="`mov-${mov.id}`"
+                        class="cc-log-pin"
+                    >
+                        <span class="cc-log-pin__cuerpo">
+                            <strong>
+                                {{ mov.sku }}
+                                ·
+                                {{
+                                    mov.direccion === 'SALIDA' ? '−' : '+'
+                                }}{{ cantidad.format(mov.cantidad) }}
+                            </strong>
+                            <p>
+                                {{
+                                    mov.tipo === 'AJUSTE'
+                                        ? `Ajuste ${mov.direccion}`
+                                        : mov.tipo
+                                }}
+                                · {{ mov.producto }}
+                            </p>
+                            <small>
+                                {{ mov.fecha }} {{ mov.hora }} ·
+                                {{ mov.usuario }}
+                                · {{ mov.referencia ?? mov.motivo }}
+                            </small>
+                        </span>
+                    </article>
+                </div>
             </motion.div>
 
             <!-- ── Kardex ── -->
@@ -673,14 +801,20 @@ function abrirKardex(variante: Variante): void {
                             etiqueta="Elegí un SKU"
                             :opciones="opcionesKardex"
                         />
-                        <label class="cc-log__control">
-                            <span class="cc-log__label">Desde</span>
-                            <input v-model="form.desde" type="date" />
-                        </label>
-                        <label class="cc-log__control">
-                            <span class="cc-log__label">Hasta</span>
-                            <input v-model="form.hasta" type="date" />
-                        </label>
+                        <div class="cc-log__dates-par">
+                            <label class="cc-modal-field">
+                                <span>Desde</span>
+                                <span class="cc-log__control">
+                                    <input v-model="form.desde" type="date" />
+                                </span>
+                            </label>
+                            <label class="cc-modal-field">
+                                <span>Hasta</span>
+                                <span class="cc-log__control">
+                                    <input v-model="form.hasta" type="date" />
+                                </span>
+                            </label>
+                        </div>
                         <div class="cc-log__row-actions">
                             <button type="submit" class="cc-button">
                                 Consultar
@@ -768,6 +902,48 @@ function abrirKardex(variante: Variante): void {
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="cc-log-board">
+                    <p v-if="!kardex.variante" class="cc-log__empty">
+                        <strong>Elegí un SKU</strong>
+                        Mostramos los movimientos en orden cronológico.
+                    </p>
+                    <p v-else-if="kardex.lineas.length === 0" class="cc-log__empty">
+                        <strong>Sin movimientos en el período</strong>
+                        No hay kardex para ese SKU y rango de fechas.
+                    </p>
+                    <article
+                        v-for="linea in kardex.lineas"
+                        :key="`kdx-${linea.id}`"
+                        class="cc-log-pin"
+                    >
+                        <span class="cc-log-pin__cuerpo">
+                            <strong>
+                                Saldo {{ cantidad.format(linea.saldo) }}
+                            </strong>
+                            <p>
+                                {{ linea.tipo }}
+                                ·
+                                entrada
+                                {{
+                                    linea.entrada !== null
+                                        ? cantidad.format(linea.entrada)
+                                        : '—'
+                                }}
+                                · salida
+                                {{
+                                    linea.salida !== null
+                                        ? cantidad.format(linea.salida)
+                                        : '—'
+                                }}
+                            </p>
+                            <small>
+                                {{ linea.fecha }} {{ linea.hora }} ·
+                                {{ linea.usuario }}
+                                · {{ linea.motivo ?? linea.referencia }}
+                            </small>
+                        </span>
+                    </article>
                 </div>
             </motion.div>
 
@@ -867,7 +1043,7 @@ function abrirKardex(variante: Variante): void {
                         @submit.prevent="confirmarAjuste"
                     >
                         <div class="cc-modal-field">
-                            <span class="cc-log__label"
+                            <span
                                 >Tipo de movimiento
                                 <b class="cc-req">*</b></span
                             >
@@ -899,11 +1075,9 @@ function abrirKardex(variante: Variante): void {
                             </div>
                         </div>
 
-                        <div class="cc-modal-field">
-                            <label class="cc-log__control">
-                                <span class="cc-log__label"
-                                    >Cantidad <b class="cc-req">*</b></span
-                                >
+                        <label class="cc-modal-field">
+                            <span>Cantidad <b class="cc-req">*</b></span>
+                            <span class="cc-log__control">
                                 <input
                                     v-model="formAjuste.cantidad"
                                     type="number"
@@ -911,7 +1085,7 @@ function abrirKardex(variante: Variante): void {
                                     step="1"
                                     required
                                 />
-                            </label>
+                            </span>
                             <p
                                 v-if="formAjuste.errors.cantidad"
                                 class="cc-modal-error"
@@ -933,15 +1107,11 @@ function abrirKardex(variante: Variante): void {
                                     {{ cantidad.format(stockResultante) }} uds.
                                 </b>
                             </p>
-                        </div>
+                        </label>
 
-                        <div class="cc-modal-field">
-                            <label
-                                class="cc-log__control cc-log__control--area"
-                            >
-                                <span class="cc-log__label"
-                                    >Motivo <b class="cc-req">*</b></span
-                                >
+                        <label class="cc-modal-field">
+                            <span>Motivo <b class="cc-req">*</b></span>
+                            <span class="cc-log__control cc-log__control--area">
                                 <textarea
                                     v-model="formAjuste.motivo"
                                     rows="3"
@@ -949,14 +1119,14 @@ function abrirKardex(variante: Variante): void {
                                     required
                                     placeholder="Ej. Conteo físico, merma, stock inicial"
                                 />
-                            </label>
+                            </span>
                             <p
                                 v-if="formAjuste.errors.motivo"
                                 class="cc-modal-error"
                             >
                                 {{ formAjuste.errors.motivo }}
                             </p>
-                        </div>
+                        </label>
 
                         <div class="cc-modal-actions">
                             <button
@@ -1002,12 +1172,9 @@ function abrirKardex(variante: Variante): void {
                         </DialogDescription>
                     </DialogHeader>
                     <form class="cc-modal-form" @submit.prevent="guardarMinimo">
-                        <div class="cc-modal-field">
-                            <label class="cc-log__control">
-                                <span class="cc-log__label"
-                                    >Unidades mínimas
-                                    <b class="cc-req">*</b></span
-                                >
+                        <label class="cc-modal-field">
+                            <span>Unidades mínimas <b class="cc-req">*</b></span>
+                            <span class="cc-log__control">
                                 <input
                                     v-model="formMinimo.stock_minimo"
                                     type="number"
@@ -1015,14 +1182,14 @@ function abrirKardex(variante: Variante): void {
                                     step="1"
                                     required
                                 />
-                            </label>
+                            </span>
                             <p
                                 v-if="formMinimo.errors.stock_minimo"
                                 class="cc-modal-error"
                             >
                                 {{ formMinimo.errors.stock_minimo }}
                             </p>
-                        </div>
+                        </label>
                         <div class="cc-modal-actions">
                             <button
                                 type="button"
@@ -1059,6 +1226,7 @@ function abrirKardex(variante: Variante): void {
     gap: 8px;
     align-items: center;
     margin-bottom: -1px;
+    min-height: 44px;
     padding: 10px 14px;
     border: 0;
     border-bottom: 2px solid transparent;
@@ -1151,16 +1319,6 @@ function abrirKardex(variante: Variante): void {
     justify-content: flex-end;
     gap: 8px;
     padding-top: 8px;
-}
-
-.cc-log__label {
-    display: block;
-    margin-bottom: 4px;
-    color: var(--cc-muted);
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
 }
 
 .cc-req {

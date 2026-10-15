@@ -49,7 +49,7 @@ class VentaController extends Controller
         $fichaId = $request->integer('ficha');
 
         if (! in_array($tab, ['nueva', 'consultar'], true)) {
-            $tab = 'nueva';
+            $tab = 'consultar';
         }
 
         if (! in_array($estado, ['COMPLETADA', 'ANULADA', ''], true)) {
@@ -126,6 +126,7 @@ class VentaController extends Controller
                 'creada' => $creadaId > 0 ? (string) $creadaId : '',
                 'ficha' => $fichaId > 0 ? (string) $fichaId : '',
             ],
+            'abrirAlta' => $request->boolean('alta'),
             'puedeCrear' => $request->user()?->tienePermiso('ventas.crear') ?? false,
             'puedeAnular' => $request->user()?->tienePermiso('ventas.anular') ?? false,
             'puedeClientes' => $request->user()?->tienePermiso('clientes.gestionar') ?? false,
@@ -141,13 +142,42 @@ class VentaController extends Controller
         $datos = $request->validated();
         $usuarioId = (int) $request->user()->id;
 
+        $nombreClienteNuevo = null;
+
         try {
-            $venta = DB::transaction(function () use ($datos, $usuarioId) {
+            $venta = DB::transaction(function () use ($datos, $usuarioId, &$nombreClienteNuevo) {
                 $variantes = $this->variantesBloqueadas($datos['items']);
                 $this->validarStock($datos['items'], $variantes);
 
+                $clienteId = $datos['cliente_id'] ?? null;
+
+                if (is_array($datos['cliente_nuevo'] ?? null)) {
+                    $nuevo = $datos['cliente_nuevo'];
+                    $cliente = Cliente::query()->create([
+                        'tipo_documento' => $nuevo['tipo_documento'],
+                        'numero_documento' => $nuevo['numero_documento'],
+                        'nombre' => $nuevo['nombre'],
+                        'telefono' => $nuevo['telefono'] ?? null,
+                        'email' => $nuevo['email'] ?? null,
+                        'estado' => 'ACTIVO',
+                    ]);
+
+                    BitacoraService::registrar(
+                        'Ventas',
+                        'CREAR_CLIENTE',
+                        'cliente',
+                        $cliente->id,
+                        null,
+                        ['nombre' => $cliente->nombre, 'numero_documento' => $cliente->numero_documento],
+                        "Alta de cliente {$cliente->nombre} desde el POS",
+                    );
+
+                    $nombreClienteNuevo = $cliente->nombre;
+                    $clienteId = $cliente->id;
+                }
+
                 $venta = Venta::query()->create([
-                    'cliente_id' => $datos['cliente_id'],
+                    'cliente_id' => $clienteId,
                     'usuario_id' => $usuarioId,
                     'numero_venta' => Venta::siguienteNumero(),
                     'fecha' => now(),
@@ -216,15 +246,25 @@ class VentaController extends Controller
             $emailError = $this->enviarNota($venta);
         }
 
-        Inertia::flash('toast', [
+        $avisos = [];
+
+        if (is_string($nombreClienteNuevo) && $nombreClienteNuevo !== '') {
+            $avisos[] = [
+                'type' => 'success',
+                'message' => 'Cliente '.$nombreClienteNuevo.' registrado correctamente.',
+            ];
+        }
+
+        $avisos[] = [
             'type' => $emailError === null ? 'success' : 'warning',
             'message' => $emailError === null
                 ? 'Venta '.$venta->numero_venta.' registrada.'
                 : 'Venta '.$venta->numero_venta.' registrada. No se pudo enviar el correo: '.$emailError,
-        ]);
+        ];
+
+        Inertia::flash('toast', $avisos);
 
         return redirect()->route('ventas.index', [
-            'tab' => 'nueva',
             'creada' => $venta->id,
         ]);
     }
@@ -254,10 +294,10 @@ class VentaController extends Controller
             "Alta de cliente {$cliente->nombre} desde el POS",
         );
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Cliente registrado.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Cliente '.$cliente->nombre.' registrado correctamente.']);
 
         return redirect()->route('ventas.index', [
-            'tab' => 'nueva',
+            'alta' => 1,
             'cliente' => $cliente->id,
         ]);
     }

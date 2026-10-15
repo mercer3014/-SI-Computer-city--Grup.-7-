@@ -908,7 +908,7 @@ function eliminarVariante(variante: Variante): void {
                 <form class="cc-modal-form" @submit.prevent="confirmar">
                     <!-- Atributos -->
                     <fieldset class="cc-modal-field cc-var__atributos">
-                        <legend class="cc-log__label">Atributos</legend>
+                        <legend>Atributos</legend>
                         <div
                             v-for="atributo in atributos"
                             :key="atributo.id"
@@ -949,9 +949,7 @@ function eliminarVariante(variante: Variante): void {
 
                     <!-- SKU -->
                     <div class="cc-modal-field">
-                        <span class="cc-log__label"
-                            >SKU <b class="cc-req">*</b></span
-                        >
+                        <span>SKU <b class="cc-req">*</b></span>
                         <div class="cc-var__sku-row">
                             <label class="cc-log__control">
                                 <input
@@ -986,35 +984,29 @@ function eliminarVariante(variante: Variante): void {
                     </div>
 
                     <!-- Código de barras -->
-                    <div class="cc-modal-field">
-                        <label class="cc-log__control">
-                            <span class="cc-log__label"
-                                >Código de barras
-                                <small>(opcional)</small></span
-                            >
+                    <label class="cc-modal-field">
+                        <span>Código de barras <small>(opcional)</small></span>
+                        <span class="cc-log__control">
                             <input
                                 v-model="altaVariante.codigo_barras"
                                 type="text"
                                 maxlength="100"
                                 inputmode="numeric"
                             />
-                        </label>
+                        </span>
                         <p
                             v-if="altaVariante.errors.codigo_barras"
                             class="cc-modal-error"
                         >
                             {{ altaVariante.errors.codigo_barras }}
                         </p>
-                    </div>
+                    </label>
 
                     <div class="cc-var__pareja">
                         <!-- Precio -->
-                        <div class="cc-modal-field">
-                            <label class="cc-log__control">
-                                <span class="cc-log__label"
-                                    >Precio de venta (Bs)
-                                    <b class="cc-req">*</b></span
-                                >
+                        <label class="cc-modal-field">
+                            <span>Precio de venta (Bs) <b class="cc-req">*</b></span>
+                            <span class="cc-log__control">
                                 <input
                                     v-model="altaVariante.precio_venta"
                                     type="number"
@@ -1024,21 +1016,19 @@ function eliminarVariante(variante: Variante): void {
                                     placeholder="0.00"
                                     required
                                 />
-                            </label>
+                            </span>
                             <p
                                 v-if="altaVariante.errors.precio_venta"
                                 class="cc-modal-error"
                             >
                                 {{ altaVariante.errors.precio_venta }}
                             </p>
-                        </div>
+                        </label>
 
                         <!-- Stock mínimo -->
-                        <div class="cc-modal-field">
-                            <label class="cc-log__control">
-                                <span class="cc-log__label"
-                                    >Stock mínimo <b class="cc-req">*</b></span
-                                >
+                        <label class="cc-modal-field">
+                            <span>Stock mínimo <b class="cc-req">*</b></span>
+                            <span class="cc-log__control">
                                 <input
                                     v-model="altaVariante.stock_minimo"
                                     type="number"
@@ -1046,14 +1036,14 @@ function eliminarVariante(variante: Variante): void {
                                     step="1"
                                     required
                                 />
-                            </label>
+                            </span>
                             <p
                                 v-if="altaVariante.errors.stock_minimo"
                                 class="cc-modal-error"
                             >
                                 {{ altaVariante.errors.stock_minimo }}
                             </p>
-                        </div>
+                        </label>
                     </div>
 
                     <div class="cc-modal-actions">
@@ -1133,12 +1123,9 @@ function eliminarVariante(variante: Variante): void {
                             </div>
                         </dl>
 
-                        <div class="cc-modal-field">
-                            <label class="cc-log__control">
-                                <span class="cc-log__label"
-                                    >Nuevo precio (Bs)
-                                    <b class="cc-req">*</b></span
-                                >
+                        <label class="cc-modal-field">
+                            <span>Nuevo precio (Bs) <b class="cc-req">*</b></span>
+                            <span class="cc-log__control">
                                 <input
                                     v-model="formPrecio.precio_venta"
                                     type="number"
@@ -1147,36 +1134,32 @@ function eliminarVariante(variante: Variante): void {
                                     inputmode="decimal"
                                     required
                                 />
-                            </label>
+                            </span>
                             <p
                                 v-if="formPrecio.errors.precio_venta"
                                 class="cc-modal-error"
                             >
                                 {{ formPrecio.errors.precio_venta }}
                             </p>
-                        </div>
+                        </label>
 
-                        <div class="cc-modal-field">
-                            <label
-                                class="cc-log__control cc-log__control--area"
-                            >
-                                <span class="cc-log__label"
-                                    >Motivo <small>(opcional)</small></span
-                                >
+                        <label class="cc-modal-field">
+                            <span>Motivo <small>(opcional)</small></span>
+                            <span class="cc-log__control cc-log__control--area">
                                 <textarea
                                     v-model="formPrecio.motivo"
                                     rows="2"
                                     maxlength="255"
                                     placeholder="Ej. Subió la cotización del dólar"
                                 />
-                            </label>
+                            </span>
                             <p
                                 v-if="formPrecio.errors.motivo"
                                 class="cc-modal-error"
                             >
                                 {{ formPrecio.errors.motivo }}
                             </p>
-                        </div>
+                        </label>
 
                         <div class="cc-modal-actions">
                             <button
@@ -1458,16 +1441,6 @@ function eliminarVariante(variante: Variante): void {
     padding-top: 8px;
 }
 
-.cc-log__label {
-    display: block;
-    margin-bottom: 4px;
-    color: var(--cc-muted);
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-}
-
 .cc-req {
     color: var(--cc-error);
 }
@@ -1478,6 +1451,13 @@ function eliminarVariante(variante: Variante): void {
     padding: 12px;
     border: 1px solid var(--cc-border);
     border-radius: 8px;
+}
+
+.cc-var__atributos > legend {
+    padding: 0 4px;
+    color: var(--cc-muted);
+    font-size: 12px;
+    font-weight: 400;
 }
 
 .cc-var__atributos .cc-var__nota {

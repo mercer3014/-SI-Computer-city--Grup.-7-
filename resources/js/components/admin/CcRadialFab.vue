@@ -13,23 +13,18 @@ const emit = defineEmits<{
 }>();
 
 const abierto = ref(false);
-const radio = 108;
+const alto = 44;
+const separacion = 12;
 
 const orbes = computed(() => {
     const total = props.acciones.length;
-    const inicio = Math.PI / 2;
-    const arco = Math.PI / 2;
+    const base = 48 + separacion;
 
-    return props.acciones.map((accion, i) => {
-        const t = total === 1 ? 0 : i / (total - 1);
-        const angulo = inicio + t * arco;
-
-        return {
-            ...accion,
-            x: Math.cos(angulo) * radio,
-            y: -Math.sin(angulo) * radio,
-        };
-    });
+    return props.acciones.map((accion, i) => ({
+        ...accion,
+        x: 0,
+        y: -(base + (total - 1 - i) * (alto + separacion)),
+    }));
 });
 
 function elegir(id: string): void {
@@ -93,13 +88,13 @@ function elegir(id: string): void {
 
 <style>
 .cc-fab {
-    position: fixed;
-    right: 16px;
-    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-    z-index: 10050;
+    position: absolute;
+    inset: auto 16px calc(20px + env(safe-area-inset-bottom, 0px)) auto;
+    z-index: 2;
     display: block;
     width: 48px;
     height: 48px;
+    margin: 0;
     pointer-events: none;
 }
 
@@ -130,7 +125,15 @@ function elegir(id: string): void {
     height: 48px;
     min-height: 48px;
     padding: 0;
+    border-color: var(--cc-accent);
     border-radius: 4px;
+    background: var(--cc-accent);
+    color: var(--cc-on-accent);
+    box-shadow: 0 10px 24px rgb(0 0 0 / 0.32);
+}
+
+.cc-fab .cc-fab__nudo::before {
+    content: none;
 }
 
 .cc-fab .cc-fab__orbe {
@@ -139,7 +142,7 @@ function elegir(id: string): void {
     bottom: 0;
     z-index: 10055;
     width: max-content;
-    min-height: 40px;
+    min-height: 44px;
     padding: 0 14px;
     border-radius: 4px;
     white-space: nowrap;
