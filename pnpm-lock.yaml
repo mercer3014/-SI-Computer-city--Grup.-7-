@@ -20,6 +20,9 @@ importers:
       '@lucide/vue':
         specifier: ^1.17.0
         version: 1.47.0(vue@3.5.43(typescript@5.9.3))
+      '@stripe/stripe-js':
+        specifier: ^10.2.0
+        version: 10.2.0
       '@vueuse/core':
         specifier: ^12.8.2
         version: 12.8.2(typescript@5.9.3)
@@ -634,6 +637,10 @@ packages:
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
+  '@stripe/stripe-js@10.2.0':
+    resolution: {integrity: sha512-C0F6LKxvsa9ONtxfJ4JG/vo8XjramVyy7tOZNZvoaZkw0M82OTm9LD3Ifcvw0QMDI7qPA14h+IP3qagkuC3b2Q==}
+    engines: {node: '>=12.16'}
 
   '@swc/helpers@0.5.23':
     resolution: {integrity: sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==}
@@ -2310,6 +2317,8 @@ snapshots:
   '@simplewebauthn/browser@13.3.0': {}
 
   '@standard-schema/spec@1.1.0': {}
+
+  '@stripe/stripe-js@10.2.0': {}
 
   '@swc/helpers@0.5.23':
     dependencies:

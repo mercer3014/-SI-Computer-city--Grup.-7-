@@ -26,6 +26,13 @@ return [
         'key' => env('BREVO_KEY'),
     ],
 
+    'stripe' => [
+        'public' => env('STRIPE_PUBLIC_KEY'),
+        'secret' => env('STRIPE_SECRET_KEY'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'currency' => env('STRIPE_CURRENCY', 'bob'),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
