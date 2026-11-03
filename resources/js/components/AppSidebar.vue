@@ -66,6 +66,7 @@ const modulos: Modulo[] = [
     },
     {
         titulo: 'Proveedores',
+        href: '/proveedores',
         permisos: ['proveedores.gestionar'],
         icono: 'nav-clients.svg',
         grupo: 'MENU',

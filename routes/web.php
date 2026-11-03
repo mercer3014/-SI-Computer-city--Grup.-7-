@@ -6,6 +6,7 @@ use App\Http\Controllers\FirstLoginController;
 use App\Http\Controllers\GarantiaController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\ProductoController;
+use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\VarianteController;
@@ -124,6 +125,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::middleware('permiso:ventas.anular')->group(function () {
             Route::patch('{venta}/anular', [VentaController::class, 'anular'])->whereNumber('venta')->name('anular');
         });
+    });
+
+    // ── CU13: Gestión de proveedores ────────────────────────────────────
+    Route::middleware('permiso:proveedores.gestionar')->prefix('proveedores')->name('proveedores.')->group(function () {
+        Route::get('/', [ProveedorController::class, 'index'])->name('index');
+        Route::post('/', [ProveedorController::class, 'store'])->name('store');
+        Route::put('{proveedor}', [ProveedorController::class, 'update'])->whereNumber('proveedor')->name('update');
+        Route::patch('{proveedor}/estado', [ProveedorController::class, 'estado'])->whereNumber('proveedor')->name('estado');
     });
 
     // ── CU12: Garantías y devoluciones ──────────────────────────────────
