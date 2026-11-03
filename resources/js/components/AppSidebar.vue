@@ -74,6 +74,7 @@ const modulos: Modulo[] = [
     },
     {
         titulo: 'Flujo de Caja',
+        href: '/caja',
         permisos: ['gastos.gestionar', 'reportes.ver'],
         icono: 'nav-cash.svg',
         grupo: 'FINANZAS',
