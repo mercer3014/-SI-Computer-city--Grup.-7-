@@ -22,7 +22,14 @@ const modulos: Modulo[] = [
     {
         titulo: 'Ventas',
         href: '/ventas',
-        permisos: ['ventas.crear', 'ventas.anular', 'garantias.gestionar'],
+        permisos: ['ventas.crear', 'ventas.anular'],
+        icono: 'nav-sales.svg',
+        grupo: 'MENU',
+    },
+    {
+        titulo: 'Garantías',
+        href: '/garantias',
+        permisos: ['garantias.gestionar'],
         icono: 'nav-sales.svg',
         grupo: 'MENU',
     },

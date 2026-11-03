@@ -3,6 +3,7 @@
 use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\FirstLoginController;
+use App\Http\Controllers\GarantiaController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\RolController;
@@ -123,6 +124,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::middleware('permiso:ventas.anular')->group(function () {
             Route::patch('{venta}/anular', [VentaController::class, 'anular'])->whereNumber('venta')->name('anular');
         });
+    });
+
+    // ── CU12: Garantías y devoluciones ──────────────────────────────────
+    Route::middleware('permiso:garantias.gestionar')->prefix('garantias')->name('garantias.')->group(function () {
+        Route::get('/', [GarantiaController::class, 'index'])->name('index');
+        Route::post('devolver', [GarantiaController::class, 'devolver'])->name('devolver');
     });
 });
 

@@ -38,7 +38,7 @@
 |---|---|---|---|
 | 1 | **Seguridad** | `usuarios.administrar`, `roles.administrar`, `bitacora.ver` | ✅ Implementado |
 | 2 | **Inventario y Productos** | `productos.gestionar`, `inventario.ver`, `inventario.ajustar` | ✅ CU07 + CU08 + CU09 |
-| 3 | **Ventas y Clientes** | `ventas.crear`, `ventas.anular`, `clientes.gestionar`, `garantias.gestionar` | ✅ CU10 + CU11 |
+| 3 | **Ventas y Clientes** | `ventas.crear`, `ventas.anular`, `clientes.gestionar`, `garantias.gestionar` | ✅ CU10 + CU11 + CU12 |
 | 4 | **Compras y Proveedores** | `compras.crear`, `proveedores.gestionar` | 🔲 Pendiente |
 | 5 | **Flujo de Caja y Reportes** | `gastos.gestionar`, `reportes.ver` | 🔲 Pendiente |
 | 6 | **Catálogo Web** | Público / sin permiso | 🔲 Pendiente |
@@ -155,6 +155,7 @@ texto_alternativo (varchar 255, nullable)
 | **CU09** | **Control de Inventario (Kardex)** | **`Inventario.vue`** | **`InventarioController`** |
 | **CU10** | **Gestión de Clientes** | **`Clientes.vue`** | **`ClienteController`** |
 | **CU11** | **Registro de Ventas (POS)** | **`Ventas.vue`** | **`VentaController`** |
+| **CU12** | **Garantías y devoluciones** | **`Garantias.vue`** | **`GarantiaController`** |
 
 ### CU08 — Variantes y Precios (integrado)
 
@@ -175,6 +176,10 @@ El módulo **Clientes** (`/clientes`, ítem del sidebar) registra particulares y
 El núcleo de ventas está en `/ventas` (ítem **Ventas** del sidebar). `Ventas.vue` es el POS: buscador de variantes con stock en vivo (EX-01), carrito con serie y meses de garantía (default 3), selector de cliente (alta inline CU10), pagos múltiples (efectivo + QR, etc.) que deben igualar el total (EX-02 / EX-03) y no se confirma sin productos ni cliente (EX-04).
 
 `VentaController::store()` corre dentro de `DB::transaction()`: genera el correlativo `V-AAAA-0001`, inserta **Venta → DetalleVenta → PagoVenta** (precio y costo tomados de la variante / última compra, no del cliente) y deja bitácora `REGISTRAR_VENTA`. **No actualiza `stock_actual` ni escribe el Kardex a mano.** En PostgreSQL lo hacen los triggers existentes (`trg_venta_generar_movimiento`, `trg_detalle_venta_validar_y_garantia`, `trg_detalle_venta_actualizar_stock`). En SQLite (tests) `VentaKardexEmulador` replica el mismo efecto. La nota de venta es un PDF generado al vuelo con `barryvdh/laravel-dompdf` (`NotaVentaPdf`); si falla el correo (EX-05) la venta queda grabada y se puede descargar o reenviar. Anular exige `ventas.anular` (Administrador) y un motivo (EX-07); `trg_venta_restaurar_stock_anulacion` reingresa stock, marca ítems `DEVUELTO` y deja un AJUSTE en el Kardex. Una venta ya anulada no se vuelve a anular (EX-06).
+
+### CU12 — Garantías y devoluciones (integrado)
+
+La pantalla `/garantias` muestra por defecto todas las garantías con número de serie y permite filtrar `VIGENTE`, `POR VENCER` (próximos 30 días), `VENCIDA` y `DEVUELTO`. La búsqueda puntual por serie consume `fn_validar_garantia()` y muestra venta, producto, fechas, cliente, vigencia y estado del ítem. Una devolución requiere `garantias.gestionar`, una garantía vigente, un ítem `VIGENTE` y un motivo de al menos cinco caracteres. `GarantiaController` llama a `sp_anular_venta()` dentro de una transacción; no modifica existencias ni Kardex en PHP: `trg_venta_restaurar_stock_anulacion` repone el stock y marca los detalles como `DEVUELTO`. La operación se registra en la bitácora como `PROCESAR_DEVOLUCION`.
 
 ---
 
