@@ -22,4 +22,10 @@ class Marca extends Model
         'slug',
         'estado',
     ];
+
+    /** @return HasMany<Producto, $this> */
+    public function productos(): HasMany
+    {
+        return $this->hasMany(Producto::class, 'marca_id');
+    }
 }

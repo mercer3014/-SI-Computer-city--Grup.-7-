@@ -8,6 +8,8 @@ use App\Models\DetalleVenta;
 use App\Models\User;
 use App\Models\Venta;
 use App\Services\BitacoraService;
+use App\Services\Pagos\PasarelaPagos;
+use App\Services\Pagos\StripePasarela;
 use App\Services\VentaKardexEmulador;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
@@ -39,6 +41,8 @@ class AppServiceProvider extends ServiceProvider
                 ? $manager
                 : new OtpPasswordBrokerManager($app);
         });
+
+        $this->app->singleton(PasarelaPagos::class, StripePasarela::class);
     }
 
     /**

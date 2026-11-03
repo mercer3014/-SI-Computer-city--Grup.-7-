@@ -69,6 +69,10 @@
     gap: 10px;
 }
 
+.cc-admin__kpis--five {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 .cc-admin__kpi {
     display: flex;
     flex-direction: column;
@@ -77,6 +81,28 @@
     border-radius: var(--cc-r);
     background: var(--cc-card);
     padding: 12px 14px;
+    cursor: pointer;
+    text-align: left;
+    transition:
+        border-color var(--cc-ease),
+        background-color var(--cc-ease),
+        transform var(--cc-ease);
+}
+
+.cc-admin__kpi:hover,
+.cc-admin__kpi:focus-visible,
+.cc-admin__kpi.is-active {
+    border-color: var(--cc-accent);
+    background: color-mix(in srgb, var(--cc-accent) 8%, var(--cc-card));
+}
+
+.cc-admin__kpi:focus-visible {
+    outline: 2px solid var(--cc-accent);
+    outline-offset: 2px;
+}
+
+.cc-admin__kpi:active {
+    transform: translateY(1px);
 }
 
 .cc-admin__kpi b {
@@ -92,6 +118,14 @@
     font-size: 11px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+}
+
+.cc-admin__kpi svg {
+    color: var(--cc-muted);
+}
+
+.cc-admin__kpi.is-active svg {
+    color: var(--cc-accent);
 }
 
 .cc-admin .cc-log__filters,
@@ -335,6 +369,11 @@
         background-color var(--cc-ease);
 }
 
+.cc-admin .cc-log__eye:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
 .cc-admin .cc-log__eye:focus-visible {
     outline: 2px solid var(--cc-accent);
     outline-offset: 2px;
@@ -400,6 +439,15 @@
     background: var(--cc-card);
     max-height: min(88vh, 720px);
     overflow: auto;
+}
+
+.cc-log-dialog.cc-compra-dialog[data-slot='dialog-content'] {
+    width: min(880px, calc(100vw - 2rem));
+    max-width: 880px;
+}
+
+.cc-log-dialog.cc-compra-dialog .cc-log__table {
+    min-width: 640px;
 }
 
 .cc-log-dialog.cc-pos-form[data-slot='dialog-content'] {
@@ -583,6 +631,10 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.cc-admin__kpis--five {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 @media (max-width: 768px) {
     .cc-admin .cc-log__head {
         flex-direction: row;
@@ -622,6 +674,10 @@
 
     .cc-admin__kpi {
         padding: 10px 8px;
+    }
+
+    .cc-admin__kpis--five {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .cc-admin__kpi b {

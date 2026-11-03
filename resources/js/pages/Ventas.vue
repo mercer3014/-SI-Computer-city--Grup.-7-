@@ -674,7 +674,7 @@ watch(erroresVenta, (errores) => {
 });
 </script>
 
-<template>
+<template>  
     <div>
         <Head title="Ventas" />
 

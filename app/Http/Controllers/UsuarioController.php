@@ -51,7 +51,11 @@ class UsuarioController extends Controller
             ],
             'filtros' => $filtros,
             'opciones' => [
-                'roles' => Rol::query()->where('estado', 'ACTIVO')->orderBy('nombre')->get(['id', 'nombre']),
+                'roles' => Rol::query()
+                    ->where('estado', 'ACTIVO')
+                    ->where('nombre', '<>', Rol::CLIENTE_WEB)
+                    ->orderBy('nombre')
+                    ->get(['id', 'nombre']),
                 'personal' => Personal::query()->orderBy('nombre_completo')->get(['id', 'nombre_completo']),
                 'personal_disponible' => Personal::query()
                     ->whereNotIn('id', User::query()->whereNotNull('personal_id')->select('personal_id'))

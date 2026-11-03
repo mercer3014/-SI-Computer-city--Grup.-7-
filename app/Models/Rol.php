@@ -23,6 +23,8 @@ class Rol extends Model
     /** @use HasFactory<RolFactory> */
     use HasFactory;
 
+    public const CLIENTE_WEB = 'Cliente Web';
+
     /**
      * @return array<string, string>
      */

@@ -22,7 +22,14 @@ const modulos: Modulo[] = [
     {
         titulo: 'Ventas',
         href: '/ventas',
-        permisos: ['ventas.crear', 'ventas.anular', 'garantias.gestionar'],
+        permisos: ['ventas.crear', 'ventas.anular'],
+        icono: 'nav-sales.svg',
+        grupo: 'MENU',
+    },
+    {
+        titulo: 'Garantías',
+        href: '/garantias',
+        permisos: ['garantias.gestionar'],
         icono: 'nav-sales.svg',
         grupo: 'MENU',
     },
@@ -53,18 +60,21 @@ const modulos: Modulo[] = [
     },
     {
         titulo: 'Compras',
+        href: '/compras',
         permisos: ['compras.crear'],
         icono: 'nav-new.svg',
         grupo: 'MENU',
     },
     {
         titulo: 'Proveedores',
+        href: '/proveedores',
         permisos: ['proveedores.gestionar'],
         icono: 'nav-clients.svg',
         grupo: 'MENU',
     },
     {
         titulo: 'Flujo de Caja',
+        href: '/caja',
         permisos: ['gastos.gestionar', 'reportes.ver'],
         icono: 'nav-cash.svg',
         grupo: 'FINANZAS',

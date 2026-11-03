@@ -112,6 +112,7 @@ class FortifyServiceProvider extends ServiceProvider
             'canUsePasskeys' => Features::canManagePasskeys(),
             'status' => $request->session()->get('status'),
             'throttleSeconds' => $request->session()->pull('throttleSeconds'),
+            'desdeTienda' => str_contains((string) $request->session()->get('url.intended', ''), '/tienda'),
         ]));
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/ResetPassword', [
