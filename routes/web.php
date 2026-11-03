@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BitacoraController;
+use App\Http\Controllers\CajaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\FirstLoginController;
@@ -9,21 +10,51 @@ use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\RolController;
+use App\Http\Controllers\Tienda\CarritoController;
+use App\Http\Controllers\Tienda\CatalogoController;
+use App\Http\Controllers\Tienda\CheckoutController;
+use App\Http\Controllers\Tienda\RegistroClienteController;
+use App\Http\Controllers\Tienda\StripeWebhookController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\VarianteController;
 use App\Http\Controllers\VentaController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    if (! auth()->check()) {
-        return redirect()->route('login');
+// ── CU18: la tienda pública es la portada; el personal sigue yendo al panel ──
+Route::get('/', function (Request $request) {
+    $user = $request->user();
+
+    if ($user !== null && ! $user->esClienteWeb()) {
+        return $user->primer_login
+            ? redirect()->route('password.first')
+            : redirect()->route('dashboard');
     }
 
-    return auth()->user()?->primer_login
-        ? redirect()->route('password.first')
-        : redirect()->route('dashboard');
+    return app(CatalogoController::class)->index($request);
 })->name('home');
+
+Route::prefix('tienda')->name('tienda.')->group(function () {
+    Route::get('/', [CatalogoController::class, 'index'])->name('index');
+    Route::get('producto/{slug}', [CatalogoController::class, 'show'])->name('producto');
+    Route::get('carrito', [CarritoController::class, 'show'])->name('carrito');
+    Route::get('carrito/variantes', [CarritoController::class, 'variantes'])->name('carrito.variantes');
+
+    // ── CU21: pasarela de pagos (requiere cuenta de cliente) ──
+    Route::middleware('auth')->group(function () {
+        Route::get('checkout', [CheckoutController::class, 'checkout'])->name('checkout');
+        Route::post('checkout', [CheckoutController::class, 'store'])->middleware('throttle:10,1')->name('checkout.store');
+        Route::get('pedidos', [CheckoutController::class, 'index'])->name('pedidos.index');
+        Route::get('pedidos/{numero}', [CheckoutController::class, 'show'])->name('pedidos.show');
+        Route::get('pedidos/{numero}/pago', [CheckoutController::class, 'pago'])->name('pedidos.pago');
+        Route::post('pedidos/{numero}/confirmar', [CheckoutController::class, 'confirmar'])->name('pedidos.confirmar');
+        Route::post('pedidos/{numero}/fallo', [CheckoutController::class, 'fallo'])->name('pedidos.fallo');
+        Route::get('pedidos/{numero}/comprobante', [CheckoutController::class, 'comprobante'])->name('pedidos.comprobante');
+    });
+});
+
+Route::post('stripe/webhook', StripeWebhookController::class)->name('stripe.webhook');
 
 Route::middleware('guest')->group(function () {
     Route::get('cuenta-recuperada', function () {
@@ -31,6 +62,9 @@ Route::middleware('guest')->group(function () {
             'recovered' => true,
         ]);
     })->name('password.complete');
+
+    Route::get('registro', [RegistroClienteController::class, 'create'])->name('registro');
+    Route::post('registro', [RegistroClienteController::class, 'store'])->middleware('throttle:6,1')->name('registro.store');
 });
 
 Route::middleware('auth')->group(function () {
@@ -39,7 +73,22 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::get('dashboard', function (Request $request) {
+        return $request->user()?->esClienteWeb()
+            ? redirect()->route('tienda.index')
+            : Inertia::render('Dashboard');
+    })->name('dashboard');
+
+    // ── CU15: Gastos y flujo de caja ────────────────────────────────────
+    Route::prefix('caja')->name('caja.')->group(function () {
+        Route::get('/', [CajaController::class, 'index'])->name('index');
+        Route::post('movimientos', [CajaController::class, 'store'])->name('store');
+        Route::post('categorias', [CajaController::class, 'storeCategoria'])->name('categorias.store');
+        Route::patch('{origen}/{id}/anular', [CajaController::class, 'anular'])
+            ->whereIn('origen', ['GASTO', 'MOVIMIENTO'])
+            ->whereNumber('id')
+            ->name('anular');
+    });
 
     Route::middleware('permiso:bitacora.ver')->group(function () {
         Route::get('bitacora', [BitacoraController::class, 'index'])->name('bitacora.index');
