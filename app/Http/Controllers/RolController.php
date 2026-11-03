@@ -23,6 +23,7 @@ class RolController extends Controller
     {
         $roles = Rol::query()
             ->with('permisos:id,clave')
+            ->where('nombre', '<>', Rol::CLIENTE_WEB)
             ->orderBy('id')
             ->get()
             ->map(fn (Rol $rol) => [

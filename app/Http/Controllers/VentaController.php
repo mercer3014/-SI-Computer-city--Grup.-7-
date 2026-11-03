@@ -107,7 +107,7 @@ class VentaController extends Controller
             'clientes' => $this->clientesPos(),
             'metodos' => MetodoPago::query()
                 ->where('estado', 'ACTIVO')
-                ->where('codigo', '<>', 'COMBINADO')
+                ->whereNotIn('codigo', ['COMBINADO', 'TARJETA'])
                 ->orderBy('nombre')
                 ->get(['id', 'codigo', 'nombre']),
             'ficha' => $this->ficha($fichaId > 0 ? $fichaId : $creadaId),

@@ -64,6 +64,7 @@ class HandleInertiaRequests extends Middleware
             'name' => $user->name,
             'email' => $user->email,
             'rol' => $user->rol?->nombre,
+            'es_cliente' => $user->esClienteWeb(),
             'permisos' => $user->rol?->estado === 'ACTIVO'
                 ? $user->rol->permisos->pluck('clave')->values()->all()
                 : [],

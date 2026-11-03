@@ -23,6 +23,7 @@ const props = defineProps<{
     canResetPassword: boolean;
     canUsePasskeys?: boolean;
     throttleSeconds?: number | null;
+    desdeTienda?: boolean;
 }>();
 
 const page = usePage();
@@ -117,6 +118,11 @@ onBeforeUnmount(() => {
         {{ status }}
     </div>
 
+    <div v-else-if="desdeTienda" class="cc-status cc-status--success" role="status">
+        Para pagar tu carrito, iniciá sesión o
+        <TextLink href="/registro">creá tu cuenta</TextLink>.
+    </div>
+
     <PasskeyVerify v-if="canUsePasskeys" />
 
     <Form
@@ -191,6 +197,8 @@ onBeforeUnmount(() => {
                 >
                     Recuperar cuenta
                 </TextLink>
+                <TextLink href="/registro" :tabindex="6">Crear cuenta de cliente</TextLink>
+                <TextLink href="/tienda" :tabindex="7">Ver tienda</TextLink>
             </div>
         </div>
     </Form>

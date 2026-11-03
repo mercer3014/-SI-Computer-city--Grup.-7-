@@ -120,6 +120,7 @@ class CompraController extends Controller
                 ->all(),
             'metodos' => MetodoPago::query()
                 ->where('estado', 'ACTIVO')
+                ->where('codigo', '<>', 'TARJETA')
                 ->orderBy('nombre')
                 ->get(['id', 'codigo', 'nombre'])
                 ->map(fn (MetodoPago $metodo): array => [

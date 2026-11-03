@@ -17,6 +17,11 @@ const defaultChrome: AuthChrome = {
 
 const chromeByPage: Record<string, AuthChrome> = {
     'auth/Login': defaultChrome,
+    'auth/Registro': {
+        brandSubtitle: 'Tienda en línea',
+        infoTitle: 'Comprá en Computer City',
+        infoText: 'Con tu cuenta pagás con tarjeta desde la tienda, retirás en el Comercial Chiriguano y tenés tus comprobantes y garantías a mano.',
+    },
     'auth/FirstLogin': {
         brandSubtitle: 'Primer ingreso',
         infoTitle: 'Clave de la tienda',

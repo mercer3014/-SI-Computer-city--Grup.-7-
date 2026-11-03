@@ -30,10 +30,16 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->redirectUsersTo(function (Request $request) {
-            return $request->user()?->primer_login
-                ? '/primer-ingreso'
-                : '/dashboard';
+            $user = $request->user();
+
+            return match (true) {
+                (bool) $user?->primer_login => '/primer-ingreso',
+                (bool) $user?->esClienteWeb() => '/tienda',
+                default => '/dashboard',
+            };
         });
+
+        $middleware->validateCsrfTokens(except: ['stripe/webhook']);
 
         $middleware->web(append: [
             HandleAppearance::class,

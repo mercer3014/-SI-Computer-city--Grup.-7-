@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Personal;
+use App\Models\Rol;
 use App\Models\User;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
@@ -47,7 +48,7 @@ class UsuarioRequest extends FormRequest
             'rol_id' => [
                 'required',
                 'integer',
-                Rule::exists('rol', 'id')->where('estado', 'ACTIVO'),
+                Rule::exists('rol', 'id')->where('estado', 'ACTIVO')->whereNot('nombre', Rol::CLIENTE_WEB),
             ],
         ];
 
