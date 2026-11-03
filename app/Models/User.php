@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int|null $personal_id
+ * @property int|null $cliente_id
  * @property int $rol_id
  * @property string $email
  * @property string $password_hash
@@ -33,6 +34,7 @@ use Illuminate\Support\Carbon;
 #[Table('usuario')]
 #[Fillable([
     'personal_id',
+    'cliente_id',
     'rol_id',
     'email',
     'password_hash',
@@ -99,6 +101,24 @@ class User extends Authenticatable
         return $this->belongsTo(Rol::class, 'rol_id');
     }
 
+    /**
+     * @return BelongsTo<Cliente, $this>
+     */
+    public function cliente(): BelongsTo
+    {
+        return $this->belongsTo(Cliente::class, 'cliente_id');
+    }
+
+    /**
+     * Cuenta creada desde la tienda en línea: compra, pero no entra al POS.
+     */
+    public function esClienteWeb(): bool
+    {
+        $this->loadMissing('rol');
+
+        return $this->rol?->nombre === Rol::CLIENTE_WEB;
+    }
+
     public function tienePermiso(string $clave): bool
     {
         $this->loadMissing('rol.permisos');
@@ -123,11 +143,21 @@ class User extends Authenticatable
     protected function name(): Attribute
     {
         return Attribute::get(function (): string {
-            if ($this->relationLoaded('personal')) {
-                return $this->personal?->nombre_completo ?? '';
+            $personal = $this->relationLoaded('personal')
+                ? $this->personal?->nombre_completo
+                : $this->personal()->value('nombre_completo');
+
+            if (is_string($personal) && $personal !== '') {
+                return $personal;
             }
 
-            return (string) ($this->personal()->value('nombre_completo') ?? '');
+            if ($this->cliente_id === null) {
+                return '';
+            }
+
+            return (string) ($this->relationLoaded('cliente')
+                ? $this->cliente?->nombre
+                : $this->cliente()->value('nombre'));
         });
     }
 }
