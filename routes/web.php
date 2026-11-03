@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\CompraController;
 use App\Http\Controllers\FirstLoginController;
 use App\Http\Controllers\GarantiaController;
 use App\Http\Controllers\InventarioController;
@@ -125,6 +126,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::middleware('permiso:ventas.anular')->group(function () {
             Route::patch('{venta}/anular', [VentaController::class, 'anular'])->whereNumber('venta')->name('anular');
         });
+    });
+
+    // ── CU14: Registro de compras ───────────────────────────────────────
+    Route::middleware('permiso:compras.crear')->prefix('compras')->name('compras.')->group(function () {
+        Route::get('/', [CompraController::class, 'index'])->name('index');
+        Route::post('/', [CompraController::class, 'store'])->name('store');
     });
 
     // ── CU13: Gestión de proveedores ────────────────────────────────────

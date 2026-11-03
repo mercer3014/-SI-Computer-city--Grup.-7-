@@ -441,6 +441,15 @@
     overflow: auto;
 }
 
+.cc-log-dialog.cc-compra-dialog[data-slot='dialog-content'] {
+    width: min(880px, calc(100vw - 2rem));
+    max-width: 880px;
+}
+
+.cc-log-dialog.cc-compra-dialog .cc-log__table {
+    min-width: 640px;
+}
+
 .cc-log-dialog.cc-pos-form[data-slot='dialog-content'] {
     display: flex;
     flex-direction: column;

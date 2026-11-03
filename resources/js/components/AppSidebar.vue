@@ -60,6 +60,7 @@ const modulos: Modulo[] = [
     },
     {
         titulo: 'Compras',
+        href: '/compras',
         permisos: ['compras.crear'],
         icono: 'nav-new.svg',
         grupo: 'MENU',
