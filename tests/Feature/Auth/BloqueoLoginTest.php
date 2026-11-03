@@ -55,7 +55,8 @@ class BloqueoLoginTest extends TestCase
         $this->from(route('login'))->post(route('login.store'), [
             'email' => $user->email,
             'password' => 'password',
-        ])->assertGuest();
+        ]);
+        $this->assertGuest();
 
         $this->assertSame(3, $user->fresh()->intentos_fallidos);
     }
@@ -115,7 +116,8 @@ class BloqueoLoginTest extends TestCase
         $this->from(route('login'))->post(route('login.store'), [
             'email' => $user->email,
             'password' => 'password',
-        ])->assertGuest()->assertSessionHasErrors('email');
+        ])->assertSessionHasErrors('email');
+        $this->assertGuest();
     }
 
     public function test_administrator_can_unlock_a_blocked_user(): void
