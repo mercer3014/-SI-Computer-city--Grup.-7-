@@ -130,7 +130,7 @@ function badge(estado: Estado): string {
         case 'CONVERTIDA':
             return 'cc-log__badge--crear';
         case 'ATENDIDA':
-            return 'cc-log__badge--editar';
+            return 'cc-log__badge--actualizar';
         case 'RECHAZADA':
             return 'cc-log__badge--error';
         case 'VENCIDA':
@@ -776,7 +776,7 @@ function ultimosDias(dias: number): void {
         <Dialog v-model:open="fichaAbierta">
             <DialogContent
                 class="cc-theme cc-admin cc-log-dialog"
-                style="max-width: 720px"
+                style="max-width: 900px; width: calc(100vw - 2rem)"
             >
                 <template v-if="ficha">
                     <DialogHeader>

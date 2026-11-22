@@ -653,6 +653,10 @@
     grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+.cc-admin__kpis--four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .cc-admin__kpis--six {
     grid-template-columns: repeat(6, minmax(0, 1fr));
 }
@@ -698,6 +702,7 @@
         padding: 10px 8px;
     }
 
+    .cc-admin__kpis--four,
     .cc-admin__kpis--five,
     .cc-admin__kpis--six {
         grid-template-columns: repeat(2, minmax(0, 1fr));
