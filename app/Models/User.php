@@ -133,6 +133,17 @@ class User extends Authenticatable
         return $this->rol->permisos->contains('clave', $clave);
     }
 
+    /**
+     * El asistente virtual (CU22) es solo del Administrador: además del permiso se exige el rol,
+     * por si alguien asigna `asistente.usar` a otro rol desde la pantalla de Roles.
+     */
+    public function puedeUsarAsistente(): bool
+    {
+        $this->loadMissing('rol');
+
+        return $this->rol?->nombre === 'Administrador' && $this->tienePermiso('asistente.usar');
+    }
+
     public function puedeIniciarSesion(): bool
     {
         $activo = $this->estado === null || $this->estado === 'ACTIVO';

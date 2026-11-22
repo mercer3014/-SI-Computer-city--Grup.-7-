@@ -10,6 +10,7 @@ use App\Http\Controllers\GarantiaController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProveedorController;
+use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\Tienda\CarritoController;
 use App\Http\Controllers\Tienda\CatalogoController;
@@ -196,6 +197,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('permiso:garantias.gestionar')->prefix('garantias')->name('garantias.')->group(function () {
         Route::get('/', [GarantiaController::class, 'index'])->name('index');
         Route::post('devolver', [GarantiaController::class, 'devolver'])->name('devolver');
+    });
+
+    // ── CU16: Reportes de gestión ───────────────────────────────────────
+    Route::middleware('permiso:reportes.ver')->prefix('reportes')->name('reportes.')->group(function () {
+        Route::get('/', [ReporteController::class, 'index'])->name('index');
+        Route::get('generar', [ReporteController::class, 'generar'])->name('generar');
+        Route::get('exportar', [ReporteController::class, 'exportar'])->middleware('throttle:30,1')->name('exportar');
+        Route::post('interpretar-voz', [ReporteController::class, 'interpretarVoz'])->middleware('throttle:60,1')->name('interpretar-voz');
     });
 
     // ── CU17: Configuración de la tienda ────────────────────────────────
