@@ -61,6 +61,13 @@ const modulos: Modulo[] = [
         grupo: 'MENU',
     },
     {
+        titulo: 'Calificaciones',
+        href: '/calificaciones',
+        permisos: ['calificaciones.gestionar'],
+        icono: 'nav-clients.svg',
+        grupo: 'MENU',
+    },
+    {
         titulo: 'Compras',
         href: '/compras',
         permisos: ['compras.crear'],

@@ -12,6 +12,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
+import Estrellas from '@/components/tienda/Estrellas.vue';
 import TarjetaProducto, {
     type ProductoTarjeta,
 } from '@/components/tienda/TarjetaProducto.vue';
@@ -44,7 +45,23 @@ const props = defineProps<{
         variantes: Variante[];
     };
     relacionados: ProductoTarjeta[];
+    calificaciones: {
+        promedio: number | null;
+        cantidad: number;
+        items: {
+            nombre: string;
+            puntuacion: number;
+            comentario: string | null;
+            fecha: string | null;
+        }[];
+    };
 }>();
+
+const promedio = (valor: number): string =>
+    valor.toLocaleString('es-BO', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+    });
 
 const { agregar } = useCarrito();
 
@@ -180,6 +197,24 @@ function añadir(irAlCarrito = false): void {
                 </p>
                 <h1>{{ producto.nombre }}</h1>
 
+                <a
+                    v-if="calificaciones.promedio !== null"
+                    href="#opiniones"
+                    class="cc-opiniones__resumen"
+                    data-test="resumen-opiniones"
+                >
+                    <Estrellas :valor="calificaciones.promedio" />
+                    <span class="cc-opiniones__cantidad">
+                        {{ promedio(calificaciones.promedio) }} ·
+                        {{ calificaciones.cantidad }}
+                        {{
+                            calificaciones.cantidad === 1
+                                ? 'opinión'
+                                : 'opiniones'
+                        }}
+                    </span>
+                </a>
+
                 <div class="cc-ficha__precio">
                     <strong>{{ bolivianos(variante?.precio ?? 0) }}</strong>
                     <s v-if="variante?.precio_anterior">{{
@@ -299,6 +334,50 @@ function añadir(irAlCarrito = false): void {
                 </dl>
             </div>
         </article>
+
+        <section id="opiniones" class="cc-opiniones" data-test="opiniones">
+            <h2>Opiniones</h2>
+            <template v-if="calificaciones.promedio !== null">
+                <div class="cc-opiniones__resumen">
+                    <span class="cc-opiniones__promedio">{{
+                        promedio(calificaciones.promedio)
+                    }}</span>
+                    <Estrellas :valor="calificaciones.promedio" :tamano="20" />
+                    <span class="cc-opiniones__cantidad">
+                        {{ calificaciones.cantidad }}
+                        {{
+                            calificaciones.cantidad === 1
+                                ? 'calificación'
+                                : 'calificaciones'
+                        }}
+                    </span>
+                </div>
+                <ul class="cc-opiniones__lista">
+                    <li
+                        v-for="(opinion, i) in calificaciones.items"
+                        :key="i"
+                        class="cc-opinion"
+                    >
+                        <header>
+                            <strong>{{ opinion.nombre }}</strong>
+                            <Estrellas
+                                :valor="opinion.puntuacion"
+                                :tamano="14"
+                            />
+                            <small v-if="opinion.fecha">{{
+                                opinion.fecha
+                            }}</small>
+                        </header>
+                        <p v-if="opinion.comentario">
+                            {{ opinion.comentario }}
+                        </p>
+                    </li>
+                </ul>
+            </template>
+            <p v-else class="cc-opiniones__vacio">
+                Este producto aún no tiene opiniones
+            </p>
+        </section>
 
         <section
             v-if="relacionados.length"

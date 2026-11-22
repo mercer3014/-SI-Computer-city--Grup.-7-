@@ -75,6 +75,9 @@ const ETIQUETAS: Record<string, string> = {
     tipo: 'Tipo',
     especificacion: 'Especificación aplicada',
     formato: 'Formato',
+    puntuacion: 'Puntuación',
+    comentario: 'Comentario',
+    pedido: 'Pedido',
 };
 
 const ENTIDADES: Record<string, string> = {
@@ -92,6 +95,7 @@ const ENTIDADES: Record<string, string> = {
     mensaje_asistente: 'consulta al asistente',
     conversacion_asistente: 'conversación del asistente',
     plantilla_reporte: 'plantilla de reporte',
+    calificacion: 'calificación',
 };
 
 const TIPOS: Record<string, string> = {
@@ -109,6 +113,7 @@ const TIPOS: Record<string, string> = {
     mensaje_asistente: 'Consulta al asistente',
     conversacion_asistente: 'Conversación del asistente',
     plantilla_reporte: 'Plantilla de reporte',
+    calificacion: 'Calificación',
 };
 
 const ACCIONES: Record<string, string> = {
@@ -148,6 +153,9 @@ const ACCIONES: Record<string, string> = {
     ESPECIFICACION_RECHAZADA: 'Consulta rechazada',
     EXPORTAR_REPORTE_DINAMICO: 'Reporte del asistente exportado',
     GUARDAR_PLANTILLA_REPORTE: 'Plantilla guardada',
+    CALIFICAR_PRODUCTO: 'Producto calificado',
+    PUBLICAR_CALIFICACION: 'Calificación publicada',
+    OCULTAR_CALIFICACION: 'Calificación oculta',
 };
 
 function esRecord(valor: unknown): valor is Record<string, unknown> {
