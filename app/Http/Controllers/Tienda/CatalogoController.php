@@ -9,6 +9,7 @@ use App\Models\ImagenProducto;
 use App\Models\Marca;
 use App\Models\Producto;
 use App\Models\VarianteProducto;
+use App\Services\Tienda\ConfiguracionTiendaService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,8 @@ use Throwable;
 class CatalogoController extends Controller
 {
     private const ORDENES = ['relevancia', 'precio_asc', 'precio_desc', 'populares', 'nombre'];
+
+    public function __construct(private ConfiguracionTiendaService $configuracion) {}
 
     public function index(Request $request): Response
     {
@@ -327,43 +330,6 @@ class CatalogoController extends Controller
      */
     private function tienda(): array
     {
-        try {
-            $config = DB::table('configuracion_tienda')->orderBy('id')->first();
-            $horarios = $config === null
-                ? collect()
-                : DB::table('horario_atencion')
-                    ->where('configuracion_tienda_id', $config->id)
-                    ->orderBy('dia_semana')
-                    ->get();
-        } catch (Throwable) {
-            $config = null;
-            $horarios = collect();
-        }
-
-        $dias = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'];
-
-        return [
-            'nombre' => $config->nombre_tienda ?? 'Computer City',
-            'centro_comercial' => $config->centro_comercial ?? null,
-            'direccion' => $config->direccion ?? null,
-            'telefono' => $config->telefono ?? null,
-            'whatsapp' => $config->whatsapp ?? null,
-            'email' => $config->email ?? null,
-            'maps' => $config->google_maps_url ?? null,
-            'anuncio' => $config->anuncio ?? null,
-            'moneda' => $config->moneda ?? 'BOB',
-            'horarios' => $horarios
-                ->map(function (object $h) use ($dias): array {
-                    /** @var object{dia_semana: int|string, cerrado: bool|int|string|null, hora_apertura: string|null, hora_cierre: string|null} $h */
-                    return [
-                        'dia' => $dias[(int) $h->dia_semana] ?? (string) $h->dia_semana,
-                        'cerrado' => (bool) $h->cerrado,
-                        'horario' => $h->cerrado || $h->hora_apertura === null
-                            ? null
-                            : substr((string) $h->hora_apertura, 0, 5).' – '.substr((string) $h->hora_cierre, 0, 5),
-                    ];
-                })
-                ->values(),
-        ];
+        return $this->configuracion->actual();
     }
 }

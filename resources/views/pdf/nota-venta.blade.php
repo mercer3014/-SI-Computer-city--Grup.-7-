@@ -18,7 +18,12 @@
     </style>
 </head>
 <body>
-    <div class="marca">Computer City — Comercial Chiriguano, Santa Cruz</div>
+    <div class="marca">
+        @if ($logo)
+            <img src="{{ $logo }}" alt="" style="height: 28px; vertical-align: middle; margin-right: 8px;">
+        @endif
+        {{ $tienda['nombre'] }}@if ($tienda['ubicacion']) — {{ $tienda['ubicacion'] }}@endif
+    </div>
     <h1>Nota de venta {{ $venta->numero_venta }}</h1>
     <p class="muted">
         {{ $venta->fecha?->timezone($zona)->format('d/m/Y H:i') }}

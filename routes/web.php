@@ -4,6 +4,7 @@ use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\CajaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CompraController;
+use App\Http\Controllers\ConfiguracionTiendaController;
 use App\Http\Controllers\FirstLoginController;
 use App\Http\Controllers\GarantiaController;
 use App\Http\Controllers\InventarioController;
@@ -195,6 +196,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('permiso:garantias.gestionar')->prefix('garantias')->name('garantias.')->group(function () {
         Route::get('/', [GarantiaController::class, 'index'])->name('index');
         Route::post('devolver', [GarantiaController::class, 'devolver'])->name('devolver');
+    });
+
+    // ── CU17: Configuración de la tienda ────────────────────────────────
+    Route::middleware('permiso:configuracion.gestionar')->prefix('configuracion/tienda')->name('configuracion.tienda.')->group(function () {
+        Route::get('/', [ConfiguracionTiendaController::class, 'edit'])->name('edit');
+        Route::put('/', [ConfiguracionTiendaController::class, 'update'])->name('update');
+        Route::put('horarios', [ConfiguracionTiendaController::class, 'horarios'])->name('horarios');
+        Route::post('logo', [ConfiguracionTiendaController::class, 'logo'])->name('logo');
     });
 });
 

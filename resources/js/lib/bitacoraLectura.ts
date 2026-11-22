@@ -58,6 +58,18 @@ const ETIQUETAS: Record<string, string> = {
     numero_venta: 'N° de venta',
     cliente: 'Cliente',
     total: 'Total',
+    nombre_tienda: 'Nombre de la tienda',
+    centro_comercial: 'Centro comercial',
+    direccion: 'Dirección',
+    numero_pasillo: 'Pasillo',
+    numero_local: 'Local',
+    whatsapp: 'WhatsApp',
+    latitud: 'Latitud',
+    longitud: 'Longitud',
+    google_maps_url: 'Enlace de Google Maps',
+    logo_url: 'Logo',
+    moneda: 'Moneda',
+    anuncio: 'Anuncio',
 };
 
 const ENTIDADES: Record<string, string> = {
@@ -70,6 +82,7 @@ const ENTIDADES: Record<string, string> = {
     producto: 'producto',
     cliente: 'cliente',
     venta: 'venta',
+    configuracion_tienda: 'configuración de la tienda',
 };
 
 const TIPOS: Record<string, string> = {
@@ -82,6 +95,7 @@ const TIPOS: Record<string, string> = {
     producto: 'Producto',
     cliente: 'Cliente',
     venta: 'Venta',
+    configuracion_tienda: 'Configuración de la tienda',
 };
 
 const ACCIONES: Record<string, string> = {
@@ -113,6 +127,8 @@ const ACCIONES: Record<string, string> = {
     ELIMINAR_CLIENTE: 'Baja de cliente',
     REGISTRAR_VENTA: 'Venta registrada',
     ANULAR_VENTA: 'Venta anulada',
+    ACTUALIZAR_CONFIGURACION_TIENDA: 'Configuración de la tienda',
+    ACTUALIZAR_HORARIOS: 'Horarios de atención',
 };
 
 function esRecord(valor: unknown): valor is Record<string, unknown> {

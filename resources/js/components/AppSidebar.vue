@@ -100,6 +100,13 @@ const modulos: Modulo[] = [
         grupo: 'SISTEMA',
     },
     {
+        titulo: 'Configuración',
+        href: '/configuracion/tienda',
+        permisos: ['configuracion.gestionar'],
+        icono: 'nav-settings.svg',
+        grupo: 'SISTEMA',
+    },
+    {
         titulo: 'Bitácora',
         href: '/bitacora',
         permisos: ['bitacora.ver'],
