@@ -238,8 +238,10 @@ class ConfiguracionTiendaTest extends TestCase
         $evento = DB::table('bitacora_auditoria')->where('accion', 'ACTUALIZAR_HORARIOS')->first();
         $this->assertNotNull($evento);
         $this->assertSame('Configuración', $evento->modulo);
-        $this->assertStringContainsString('"Lunes":"09:00 – 19:00"', (string) $evento->valor_anterior);
-        $this->assertStringContainsString('"Lunes":"08:00 – 20:00"', (string) $evento->valor_nuevo);
+        $this->assertSame('09:00 – 19:00', json_decode((string) $evento->valor_anterior, true)['Lunes']);
+        $this->assertSame('08:00 – 20:00', json_decode((string) $evento->valor_nuevo, true)['Lunes']);
+        $this->assertSame('Cerrado', json_decode((string) $evento->valor_anterior, true)['Domingo']);
+        $this->assertSame('10:00 – 14:00', json_decode((string) $evento->valor_nuevo, true)['Domingo']);
     }
 
     public function test_schedule_needs_the_seven_days(): void
