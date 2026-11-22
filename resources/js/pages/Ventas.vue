@@ -129,6 +129,32 @@ type LineaCarrito = {
     descuento: number;
     numero_serie: string;
     meses_garantia: number;
+    /** Solo al convertir una cotización (CU20): precio cotizado y actual, y cuál se usa. */
+    precio_cotizado?: number;
+    precio_actual?: number;
+    usar_cotizado?: boolean;
+};
+
+type CotizacionPos = {
+    id: number;
+    codigo: string;
+    estado: string;
+    vence: string | null;
+    vigente: boolean;
+    puede_convertir: boolean;
+    motivo: string | null;
+    cliente: { id: number; nombre: string };
+    items: {
+        variante_id: number;
+        sku: string;
+        producto: string;
+        atributos: string;
+        cantidad: number;
+        precio_cotizado: number;
+        precio_actual: number;
+        stock: number;
+        activa: boolean;
+    }[];
 };
 
 type PagoFila = {
@@ -147,6 +173,7 @@ type Filtros = {
     cliente: string;
     creada: string;
     ficha: string;
+    cotizacion: string;
 };
 
 const props = defineProps<{
@@ -164,6 +191,7 @@ const props = defineProps<{
     clientes: ClientePos[];
     metodos: Metodo[];
     ficha: Ficha | null;
+    cotizacion: CotizacionPos | null;
     kpis: { hoy: number; completadas: number; anuladas: number };
     filtros: Filtros;
     abrirAlta: boolean;
@@ -467,6 +495,7 @@ const opcionesMetodo = computed(() =>
 type ItemVenta = {
     variante_id: number;
     cantidad: number;
+    precio_unitario?: number;
     descuento: number;
     numero_serie: string;
     meses_garantia: number;
@@ -479,6 +508,7 @@ type PagoVentaForm = {
 };
 
 const formVenta = useForm({
+    cotizacion_id: null as number | null,
     cliente_id: null as number | null,
     cliente_nuevo: null as null | {
         tipo_documento: string;
@@ -507,6 +537,7 @@ function clienteEstaListo(): boolean {
 
 const puedeConfirmar = computed(() => {
     if (!props.puedeCrear) return false;
+    if (props.cotizacion && !props.cotizacion.puede_convertir) return false;
     if (carrito.value.length === 0) return false;
     if (!clienteEstaListo()) return false;
     if (!pagosOk.value) return false;
@@ -546,9 +577,15 @@ function confirmarVenta(): void {
     formVenta.descuento_global = Number(descuentoGlobal.value || 0);
     formVenta.observacion = observacion.value;
     formVenta.enviar_email = enviarEmail.value;
+    formVenta.cotizacion_id = props.cotizacion?.id ?? null;
     formVenta.items = carrito.value.map((linea) => ({
         variante_id: linea.variante_id,
         cantidad: linea.cantidad,
+        ...(props.cotizacion &&
+        linea.usar_cotizado &&
+        linea.precio_cotizado !== undefined
+            ? { precio_unitario: linea.precio_cotizado }
+            : {}),
         descuento: Number(linea.descuento || 0),
         numero_serie: linea.numero_serie,
         meses_garantia: linea.meses_garantia,
@@ -712,6 +749,84 @@ function limpiarConsulta(): void {
     aplicar({ q: '', estado: '', desde: '', hasta: '' });
 }
 
+/* ── CU20: venta desde una cotización ── */
+
+function elegirPrecio(linea: LineaCarrito, usarCotizado: boolean): void {
+    linea.usar_cotizado = usarCotizado;
+    linea.precio =
+        (usarCotizado ? linea.precio_cotizado : linea.precio_actual) ??
+        linea.precio;
+}
+
+function cargarCotizacion(cotizacion: CotizacionPos): void {
+    limpiarVenta();
+    modoCliente.value = 'frecuente';
+    clienteId.value = cotizacion.cliente.id;
+    observacion.value = `Venta desde la cotización ${cotizacion.codigo}`;
+
+    carrito.value = cotizacion.items
+        .filter((item) => item.activa)
+        .map((item) => {
+            const mantener =
+                cotizacion.vigente &&
+                item.precio_cotizado !== item.precio_actual;
+
+            return {
+                clave: uid(),
+                variante_id: item.variante_id,
+                sku: item.sku,
+                producto: item.producto,
+                atributos: item.atributos,
+                precio: mantener ? item.precio_cotizado : item.precio_actual,
+                stock: item.stock,
+                cantidad: item.cantidad,
+                descuento: 0,
+                numero_serie: '',
+                meses_garantia: 3,
+                precio_cotizado: item.precio_cotizado,
+                precio_actual: item.precio_actual,
+                usar_cotizado: mantener,
+            };
+        });
+
+    const primero = pagos.value[0];
+
+    if (primero) {
+        primero.monto = String(total.value);
+    }
+
+    ventaAbierta.value = true;
+}
+
+watch(
+    () => props.cotizacion,
+    (cotizacion) => {
+        if (cotizacion && props.puedeCrear) {
+            cargarCotizacion(cotizacion);
+        }
+    },
+    { immediate: true },
+);
+
+/** Con un solo pago, el monto sigue al total mientras se elige qué precio usar. */
+watch(total, (nuevo) => {
+    const unico = pagos.value[0];
+
+    if (props.cotizacion && pagos.value.length === 1 && unico) {
+        unico.monto = String(nuevo);
+    }
+});
+
+watch(ventaAbierta, (abierta) => {
+    if (!abierta && props.cotizacion) {
+        aplicar({ cotizacion: '' });
+    }
+});
+
+const lineasSinStock = computed(() =>
+    carrito.value.filter((linea) => linea.cantidad > linea.stock),
+);
+
 const erroresVenta = computed(() => Object.values(formVenta.errors));
 
 watch(erroresVenta, (errores) => {
@@ -812,6 +927,40 @@ watch(erroresVenta, (errores) => {
                     </DialogHeader>
                     <form class="cc-pos-sheet" @submit.prevent="confirmarVenta">
                         <div class="cc-pos-sheet__cuerpo">
+                            <div
+                                v-if="cotizacion"
+                                class="cc-pos__cotizacion"
+                                data-test="banner-cotizacion"
+                            >
+                                <strong
+                                    >Venta desde la cotización
+                                    {{ cotizacion.codigo }}</strong
+                                >
+                                <span>
+                                    Cliente {{ cotizacion.cliente.nombre }} ·
+                                    vigente hasta {{ cotizacion.vence }}
+                                </span>
+                                <p
+                                    v-if="!cotizacion.puede_convertir"
+                                    class="cc-modal-error"
+                                    role="alert"
+                                >
+                                    {{ cotizacion.motivo }}
+                                </p>
+                                <p
+                                    v-else-if="lineasSinStock.length"
+                                    class="cc-modal-error"
+                                    role="alert"
+                                    data-test="aviso-stock"
+                                >
+                                    Sin stock suficiente en
+                                    {{
+                                        lineasSinStock
+                                            .map((l) => l.sku)
+                                            .join(', ')
+                                    }}. Ajusta las cantidades para continuar.
+                                </p>
+                            </div>
                             <div
                                 v-if="erroresVenta.length"
                                 class="cc-pos__alertas"
@@ -973,6 +1122,75 @@ watch(erroresVenta, (errores) => {
                                                 </span>
                                             </label>
                                         </div>
+                                        <div
+                                            v-if="
+                                                cotizacion &&
+                                                linea.precio_cotizado !==
+                                                    linea.precio_actual
+                                            "
+                                            class="cc-pos__precios"
+                                            data-test="diferencia-precios"
+                                        >
+                                            <span>
+                                                Cotizado
+                                                {{
+                                                    moneda.format(
+                                                        linea.precio_cotizado ??
+                                                            0,
+                                                    )
+                                                }}
+                                                / Actual
+                                                {{
+                                                    moneda.format(
+                                                        linea.precio_actual ??
+                                                            0,
+                                                    )
+                                                }}
+                                            </span>
+                                            <label>
+                                                <input
+                                                    type="radio"
+                                                    :name="`precio-${linea.clave}`"
+                                                    :checked="
+                                                        linea.usar_cotizado
+                                                    "
+                                                    :disabled="
+                                                        !cotizacion.vigente
+                                                    "
+                                                    @change="
+                                                        elegirPrecio(
+                                                            linea,
+                                                            true,
+                                                        )
+                                                    "
+                                                />
+                                                Mantener cotizado
+                                            </label>
+                                            <label>
+                                                <input
+                                                    type="radio"
+                                                    :name="`precio-${linea.clave}`"
+                                                    :checked="
+                                                        !linea.usar_cotizado
+                                                    "
+                                                    @change="
+                                                        elegirPrecio(
+                                                            linea,
+                                                            false,
+                                                        )
+                                                    "
+                                                />
+                                                Actualizar
+                                            </label>
+                                        </div>
+                                        <p
+                                            v-if="linea.cantidad > linea.stock"
+                                            class="cc-modal-error"
+                                            data-test="sin-stock"
+                                        >
+                                            Sin stock suficiente: disponible
+                                            {{ linea.stock }}.
+                                        </p>
                                         <p class="cc-pos__sub">
                                             {{
                                                 moneda.format(

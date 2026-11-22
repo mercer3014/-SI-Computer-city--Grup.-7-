@@ -29,6 +29,13 @@ const modulos: Modulo[] = [
         grupo: 'MENU',
     },
     {
+        titulo: 'Cotizaciones',
+        href: '/cotizaciones',
+        permisos: ['cotizaciones.gestionar'],
+        icono: 'nav-new.svg',
+        grupo: 'MENU',
+    },
+    {
         titulo: 'Garantías',
         href: '/garantias',
         permisos: ['garantias.gestionar'],
