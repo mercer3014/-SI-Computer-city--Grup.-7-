@@ -3,6 +3,7 @@
 use App\Http\Controllers\AsistenteController;
 use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\CajaController;
+use App\Http\Controllers\CalificacionController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\ConfiguracionTiendaController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\RolController;
+use App\Http\Controllers\Tienda\CalificacionController as CalificacionTiendaController;
 use App\Http\Controllers\Tienda\CarritoController;
 use App\Http\Controllers\Tienda\CatalogoController;
 use App\Http\Controllers\Tienda\CheckoutController;
@@ -55,6 +57,9 @@ Route::prefix('tienda')->name('tienda.')->group(function () {
         Route::post('pedidos/{numero}/confirmar', [CheckoutController::class, 'confirmar'])->name('pedidos.confirmar');
         Route::post('pedidos/{numero}/fallo', [CheckoutController::class, 'fallo'])->name('pedidos.fallo');
         Route::get('pedidos/{numero}/comprobante', [CheckoutController::class, 'comprobante'])->name('pedidos.comprobante');
+
+        // ── CU24: calificar los productos de un pedido pagado ──
+        Route::post('pedidos/{numero}/calificaciones', [CalificacionTiendaController::class, 'store'])->middleware('throttle:20,1')->name('pedidos.calificaciones.store');
     });
 });
 
@@ -216,6 +221,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('plantillas', [AsistenteController::class, 'guardarPlantilla'])->name('plantillas.guardar');
         Route::post('plantillas/{plantilla}/ejecutar', [AsistenteController::class, 'ejecutarPlantilla'])->middleware('throttle:asistente')->whereNumber('plantilla')->name('plantillas.ejecutar');
         Route::delete('plantillas/{plantilla}', [AsistenteController::class, 'eliminarPlantilla'])->whereNumber('plantilla')->name('plantillas.eliminar');
+    });
+
+    // ── CU24: Moderación de calificaciones ──────────────────────────────
+    Route::middleware('permiso:calificaciones.gestionar')->prefix('calificaciones')->name('calificaciones.')->group(function () {
+        Route::get('/', [CalificacionController::class, 'index'])->name('index');
+        Route::patch('{calificacion}/publicar', [CalificacionController::class, 'publicar'])->whereNumber('calificacion')->name('publicar');
+        Route::patch('{calificacion}/ocultar', [CalificacionController::class, 'ocultar'])->whereNumber('calificacion')->name('ocultar');
     });
 
     // ── CU17: Configuración de la tienda ────────────────────────────────

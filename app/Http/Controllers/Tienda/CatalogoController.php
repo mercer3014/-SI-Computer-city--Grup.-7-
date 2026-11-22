@@ -9,6 +9,7 @@ use App\Models\ImagenProducto;
 use App\Models\Marca;
 use App\Models\Producto;
 use App\Models\VarianteProducto;
+use App\Services\Calificaciones\CalificacionService;
 use App\Services\Tienda\ConfiguracionTiendaService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -24,7 +25,10 @@ class CatalogoController extends Controller
 {
     private const ORDENES = ['relevancia', 'precio_asc', 'precio_desc', 'populares', 'nombre'];
 
-    public function __construct(private ConfiguracionTiendaService $configuracion) {}
+    public function __construct(
+        private ConfiguracionTiendaService $configuracion,
+        private CalificacionService $calificaciones,
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -128,6 +132,10 @@ class CatalogoController extends Controller
                     ->values(),
             ],
             'relacionados' => $relacionados,
+            'calificaciones' => [
+                ...$this->calificaciones->resumen($producto->id),
+                'items' => $this->calificaciones->publicadas($producto->id),
+            ],
             'tienda' => $this->tienda(),
         ]);
     }

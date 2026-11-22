@@ -4,6 +4,7 @@ namespace App\Services\Dashboard;
 
 use App\Models\User;
 use App\Services\Caja\FlujoCajaService;
+use App\Services\Calificaciones\CalificacionService;
 use App\Services\Reportes\AgrupadorFecha;
 use App\Services\Reportes\Fechas;
 use App\Services\Reportes\Generadores\GeneradorBase;
@@ -14,7 +15,6 @@ use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 /**
@@ -32,7 +32,10 @@ class DashboardService
 
     public const ELEMENTOS_POR_ALERTA = 5;
 
-    public function __construct(private FlujoCajaService $flujo) {}
+    public function __construct(
+        private FlujoCajaService $flujo,
+        private CalificacionService $calificaciones,
+    ) {}
 
     /**
      * @return array{operativos: array<string, mixed>, financieros?: array<string, mixed>}
@@ -318,10 +321,6 @@ class DashboardService
      */
     public function cotizacionesPendientes(): array
     {
-        if (! Schema::hasTable('cotizacion')) {
-            return ['total' => 0, 'porVencer' => 0, 'items' => []];
-        }
-
         $limite = PeriodoReporte::hoy()->addDays(self::DIAS_COTIZACION)->toDateString();
 
         $consulta = DB::table('cotizacion as ct')
@@ -356,21 +355,7 @@ class DashboardService
      */
     public function calificacionPromedio(): array
     {
-        if (! Schema::hasTable('calificacion')) {
-            return ['promedio' => null, 'total' => 0];
-        }
-
-        $fila = DB::table('calificacion')
-            ->where('estado', 'PUBLICADA')
-            ->selectRaw('count(*) as total, avg(puntuacion) as promedio')
-            ->first();
-
-        $total = (int) ($fila->total ?? 0);
-
-        return [
-            'promedio' => $total > 0 ? round((float) $fila->promedio, 2) : null,
-            'total' => $total,
-        ];
+        return $this->calificaciones->promedioGeneral();
     }
 
     /**

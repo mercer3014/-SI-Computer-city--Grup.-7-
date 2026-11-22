@@ -9,7 +9,6 @@ use App\Services\Reportes\Generadores\GeneradorBase;
 use App\Services\Reportes\PeriodoReporte;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use LogicException;
 
 /**
@@ -265,10 +264,6 @@ class ConsultasPermitidas
      */
     private function deCalificaciones(array $espec, array $ids, PeriodoReporte $periodo): array
     {
-        if (! Schema::hasTable('calificacion')) {
-            return [];
-        }
-
         $consulta = DB::table('calificacion as cal')
             ->join('producto as p', 'p.id', '=', 'cal.producto_id')
             ->where('cal.estado', 'PUBLICADA')
