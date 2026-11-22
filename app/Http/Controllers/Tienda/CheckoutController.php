@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Tienda;
 use App\Http\Controllers\Controller;
 use App\Models\Cliente;
 use App\Models\Pedido;
-use App\Models\User;
 use App\Models\Venta;
 use App\Services\NotaVentaPdf;
 use App\Services\Pagos\PasarelaPagos;
@@ -23,6 +22,8 @@ use Throwable;
  */
 class CheckoutController extends Controller
 {
+    use ExigeClienteWeb;
+
     public function __construct(
         private PedidoEnLineaService $pedidos,
         private PasarelaPagos $pasarela,
@@ -180,22 +181,6 @@ class CheckoutController extends Controller
         abort_unless($venta instanceof Venta, 404, 'El pedido todavía no tiene comprobante.');
 
         return $pdf->descargar($venta);
-    }
-
-    private function cliente(Request $request): User|RedirectResponse
-    {
-        $user = $request->user();
-
-        if ($user instanceof User && $user->cliente_id !== null) {
-            return $user;
-        }
-
-        Inertia::flash('toast', [
-            'type' => 'warning',
-            'message' => 'Para comprar en línea necesitás una cuenta de cliente. Las cuentas del personal usan el POS.',
-        ]);
-
-        return redirect()->route('tienda.carrito');
     }
 
     private function pedidoPropio(Request $request, string $numero): Pedido

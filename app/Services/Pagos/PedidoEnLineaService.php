@@ -8,11 +8,10 @@ use App\Models\MetodoPago;
 use App\Models\PagoVenta;
 use App\Models\Pedido;
 use App\Models\User;
-use App\Models\VarianteProducto;
 use App\Models\Venta;
 use App\Services\BitacoraService;
+use App\Services\Tienda\ValidadorCarrito;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -28,7 +27,10 @@ class PedidoEnLineaService
 {
     public const MESES_GARANTIA = 3;
 
-    public function __construct(private PasarelaPagos $pasarela) {}
+    public function __construct(
+        private PasarelaPagos $pasarela,
+        private ValidadorCarrito $validador,
+    ) {}
 
     /**
      * @param  list<array{variante_id: int, cantidad: int}>  $items
@@ -36,11 +38,11 @@ class PedidoEnLineaService
      */
     public function crearPedido(User $user, array $items, array $contacto): Pedido
     {
-        $items = $this->agrupar($items);
+        $items = $this->validador->agrupar($items);
 
         $pedido = DB::transaction(function () use ($user, $items, $contacto): Pedido {
-            $variantes = $this->variantes(array_keys($items));
-            $this->validarDisponibilidad($items, $variantes);
+            $variantes = $this->validador->variantes(array_keys($items), bloquear: true);
+            $this->validador->exigir($items, $variantes);
 
             $this->cancelarPendientes($user);
 
@@ -152,8 +154,8 @@ class PedidoEnLineaService
                 $items = $bloqueado->detalles
                     ->mapWithKeys(fn (DetallePedido $d) => [(int) $d->variante_id => (int) $d->cantidad])
                     ->all();
-                $variantes = $this->variantes(array_keys($items));
-                $this->validarDisponibilidad($items, $variantes, conPrecio: false);
+                $variantes = $this->validador->variantes(array_keys($items), bloquear: true);
+                $this->validador->exigir($items, $variantes, conPrecio: false);
 
                 $venta = Venta::query()->create([
                     'cliente_id' => $bloqueado->cliente_id,
@@ -230,66 +232,6 @@ class PedidoEnLineaService
         }
 
         $pedido->forceFill(['error_pago' => $mensaje ?? 'La tarjeta fue rechazada.'])->save();
-    }
-
-    /**
-     * @param  list<array{variante_id: int, cantidad: int}>  $items
-     * @return array<int, int>
-     */
-    private function agrupar(array $items): array
-    {
-        $agrupados = [];
-
-        foreach ($items as $item) {
-            $id = (int) $item['variante_id'];
-            $agrupados[$id] = ($agrupados[$id] ?? 0) + (int) $item['cantidad'];
-        }
-
-        return $agrupados;
-    }
-
-    /**
-     * @param  list<int>  $ids
-     * @return Collection<int, VarianteProducto>
-     */
-    private function variantes(array $ids): Collection
-    {
-        return VarianteProducto::query()
-            ->with(['producto:id,nombre,estado', 'valores.atributo'])
-            ->whereIn('id', $ids)
-            ->lockForUpdate()
-            ->get()
-            ->keyBy('id');
-    }
-
-    /**
-     * @param  array<int, int>  $items
-     * @param  Collection<int, VarianteProducto>  $variantes
-     */
-    private function validarDisponibilidad(array $items, Collection $variantes, bool $conPrecio = true): void
-    {
-        foreach ($items as $id => $cantidad) {
-            $variante = $variantes->get($id);
-
-            if ($variante === null
-                || $variante->estado !== 'ACTIVO'
-                || $variante->producto?->estado !== 'ACTIVO'
-                || ($conPrecio && (float) $variante->precio_venta <= 0)) {
-                throw ValidationException::withMessages([
-                    'items' => 'Uno de los productos del carrito ya no está disponible. Quitalo para continuar.',
-                ]);
-            }
-
-            if ($cantidad > $variante->stock_actual) {
-                $nombre = $variante->producto->nombre;
-
-                throw ValidationException::withMessages([
-                    'items' => $variante->stock_actual > 0
-                        ? "Solo quedan {$variante->stock_actual} unidades de {$nombre}."
-                        : "{$nombre} se agotó.",
-                ]);
-            }
-        }
     }
 
     private function cancelarPendientes(User $user): void

@@ -19,6 +19,7 @@ use App\Http\Controllers\Tienda\CalificacionController as CalificacionTiendaCont
 use App\Http\Controllers\Tienda\CarritoController;
 use App\Http\Controllers\Tienda\CatalogoController;
 use App\Http\Controllers\Tienda\CheckoutController;
+use App\Http\Controllers\Tienda\CotizacionController as CotizacionTiendaController;
 use App\Http\Controllers\Tienda\RegistroClienteController;
 use App\Http\Controllers\Tienda\StripeWebhookController;
 use App\Http\Controllers\UsuarioController;
@@ -57,6 +58,13 @@ Route::prefix('tienda')->name('tienda.')->group(function () {
         Route::post('pedidos/{numero}/confirmar', [CheckoutController::class, 'confirmar'])->name('pedidos.confirmar');
         Route::post('pedidos/{numero}/fallo', [CheckoutController::class, 'fallo'])->name('pedidos.fallo');
         Route::get('pedidos/{numero}/comprobante', [CheckoutController::class, 'comprobante'])->name('pedidos.comprobante');
+
+        // ── CU19: cotización web (requiere cuenta de cliente) ──
+        Route::get('cotizar', [CotizacionTiendaController::class, 'cotizar'])->name('cotizar');
+        Route::post('cotizaciones', [CotizacionTiendaController::class, 'store'])->middleware('throttle:10,1')->name('cotizaciones.store');
+        Route::get('cotizaciones', [CotizacionTiendaController::class, 'index'])->name('cotizaciones.index');
+        Route::get('cotizaciones/{codigo}', [CotizacionTiendaController::class, 'show'])->name('cotizaciones.show');
+        Route::get('cotizaciones/{codigo}/pdf', [CotizacionTiendaController::class, 'pdf'])->name('cotizaciones.pdf');
 
         // ── CU24: calificar los productos de un pedido pagado ──
         Route::post('pedidos/{numero}/calificaciones', [CalificacionTiendaController::class, 'store'])->middleware('throttle:20,1')->name('pedidos.calificaciones.store');
