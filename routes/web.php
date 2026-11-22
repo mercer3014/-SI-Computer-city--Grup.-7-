@@ -5,6 +5,7 @@ use App\Http\Controllers\CajaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\ConfiguracionTiendaController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FirstLoginController;
 use App\Http\Controllers\GarantiaController;
 use App\Http\Controllers\InventarioController;
@@ -75,11 +76,8 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function (Request $request) {
-        return $request->user()?->esClienteWeb()
-            ? redirect()->route('tienda.index')
-            : Inertia::render('Dashboard');
-    })->name('dashboard');
+    // ── CU23: Dashboard ─────────────────────────────────────────────────
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // ── CU15: Gastos y flujo de caja ────────────────────────────────────
     Route::prefix('caja')->name('caja.')->group(function () {

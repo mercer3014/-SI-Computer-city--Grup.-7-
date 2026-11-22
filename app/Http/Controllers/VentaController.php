@@ -44,6 +44,7 @@ class VentaController extends Controller
         $tab = $request->string('tab')->value();
         $desde = $request->string('desde')->value();
         $hasta = $request->string('hasta')->value();
+        $soloWeb = $request->string('origen')->value() === 'web';
         $clienteId = $request->integer('cliente');
         $creadaId = $request->integer('creada');
         $fichaId = $request->integer('ficha');
@@ -72,6 +73,10 @@ class VentaController extends Controller
 
         if ($estado !== '') {
             $query->where('estado', $estado);
+        }
+
+        if ($soloWeb) {
+            $query->whereNotNull('pedido_id');
         }
 
         if ($desde !== '') {

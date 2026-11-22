@@ -20,13 +20,13 @@ use Illuminate\Support\Facades\DB;
  */
 abstract class GeneradorBase implements GeneradorReporte
 {
-    protected const SUMA_INGRESO = 'sum(dv.cantidad * dv.precio_unitario - coalesce(dv.descuento, 0))';
+    public const SUMA_INGRESO = 'sum(dv.cantidad * dv.precio_unitario - coalesce(dv.descuento, 0))';
 
-    protected const SUMA_COSTO = 'sum(case when dv.costo_unitario_snapshot is null then 0 else dv.cantidad * dv.costo_unitario_snapshot end)';
+    public const SUMA_COSTO = 'sum(case when dv.costo_unitario_snapshot is null then 0 else dv.cantidad * dv.costo_unitario_snapshot end)';
 
-    protected const SUMA_UTILIDAD = 'sum(case when dv.costo_unitario_snapshot is null then 0 else dv.cantidad * dv.precio_unitario - coalesce(dv.descuento, 0) - dv.cantidad * dv.costo_unitario_snapshot end)';
+    public const SUMA_UTILIDAD = 'sum(case when dv.costo_unitario_snapshot is null then 0 else dv.cantidad * dv.precio_unitario - coalesce(dv.descuento, 0) - dv.cantidad * dv.costo_unitario_snapshot end)';
 
-    protected const SUMA_INGRESO_CON_COSTO = 'sum(case when dv.costo_unitario_snapshot is null then 0 else dv.cantidad * dv.precio_unitario - coalesce(dv.descuento, 0) end)';
+    public const SUMA_INGRESO_CON_COSTO = 'sum(case when dv.costo_unitario_snapshot is null then 0 else dv.cantidad * dv.precio_unitario - coalesce(dv.descuento, 0) end)';
 
     private bool $usarFunciones = true;
 
