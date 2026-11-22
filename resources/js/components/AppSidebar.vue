@@ -8,6 +8,8 @@ type Modulo = {
     titulo: string;
     href?: string;
     permisos?: string[];
+    /** Además del permiso, exige ser Administrador (el asistente es solo para ese rol). */
+    soloAsistente?: boolean;
     icono: string;
     grupo: 'MENU' | 'FINANZAS' | 'SISTEMA';
 };
@@ -87,6 +89,14 @@ const modulos: Modulo[] = [
         grupo: 'FINANZAS',
     },
     {
+        titulo: 'Asistente virtual',
+        href: '/asistente',
+        permisos: ['asistente.usar'],
+        soloAsistente: true,
+        icono: 'nav-new.svg',
+        grupo: 'FINANZAS',
+    },
+    {
         titulo: 'Usuarios',
         href: '/usuarios',
         permisos: ['usuarios.administrar'],
@@ -130,11 +140,13 @@ watch(
 
 const visibles = computed(() => {
     const claves = new Set(page.props.auth.user?.permisos ?? []);
+    const puedeAsistente = page.props.auth.user?.puede_asistente === true;
 
     return modulos.filter(
         (modulo) =>
-            !modulo.permisos ||
-            modulo.permisos.some((clave) => claves.has(clave)),
+            (!modulo.permisos ||
+                modulo.permisos.some((clave) => claves.has(clave))) &&
+            (!modulo.soloAsistente || puedeAsistente),
     );
 });
 

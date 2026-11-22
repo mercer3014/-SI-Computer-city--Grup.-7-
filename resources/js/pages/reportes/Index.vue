@@ -17,12 +17,13 @@ import { motion } from 'motion-v';
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import CcRevealSelect from '@/components/admin/CcRevealSelect.vue';
 import GraficoReporte from '@/components/reportes/GraficoReporte.vue';
+import TablaReporte from '@/components/reportes/TablaReporte.vue';
 import BotonMicrofono from '@/components/voz/BotonMicrofono.vue';
 import TranscripcionEnVivo from '@/components/voz/TranscripcionEnVivo.vue';
 import { MENSAJES_DICTADO, useDictado } from '@/composables/useDictado';
 import { adminSpring } from '@/lib/adminMotion';
-import { esNumerica, formatearValor } from '@/lib/formatoReporte';
-import type { DatosGrafico, TipoColumna } from '@/lib/formatoReporte';
+import { enviarJson } from '@/lib/http';
+import type { ParametrosReporte, ResultadoReporte } from '@/types/reportes';
 
 type Opcion = { id: number; nombre: string };
 
@@ -31,35 +32,6 @@ type Reporte = {
     titulo: string;
     descripcion: string;
     filtros: string[];
-};
-
-type Celda = string | number | null;
-
-type Resultado = {
-    clave: string;
-    titulo: string;
-    encabezado: {
-        tienda: string;
-        ubicacion: string;
-        periodo: string;
-        usuario: string;
-        generado: string;
-    };
-    columnas: { clave: string; etiqueta: string; tipo: TipoColumna }[];
-    filas: Record<string, Celda>[];
-    totales: Record<string, Celda>;
-    advertencias: string[];
-    grafico: DatosGrafico;
-    parametros: Parametros;
-    vacio: boolean;
-};
-
-type Parametros = {
-    tipo: string;
-    periodo: string;
-    desde: string;
-    hasta: string;
-    filtros: Record<string, number | string>;
 };
 
 type Interpretacion = {
@@ -83,8 +55,8 @@ const props = defineProps<{
         categorias_gasto: Opcion[];
         metodos_pago: Opcion[];
     };
-    parametros: Parametros | null;
-    resultado: Resultado | null;
+    parametros: ParametrosReporte | null;
+    resultado: ResultadoReporte | null;
     hoy: string;
     puedeAsistente: boolean;
 }>();
@@ -311,12 +283,6 @@ function alternarDictado(): void {
     dictado.iniciar();
 }
 
-function tokenXsrf(): string {
-    const coincidencia = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
-
-    return coincidencia?.[1] ? decodeURIComponent(coincidencia[1]) : '';
-}
-
 async function interpretar(): Promise<void> {
     const texto = textoVoz.value.trim();
 
@@ -328,16 +294,8 @@ async function interpretar(): Promise<void> {
     errorVoz.value = null;
 
     try {
-        const respuesta = await fetch('/reportes/interpretar-voz', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-XSRF-TOKEN': tokenXsrf(),
-            },
-            body: JSON.stringify({ texto }),
+        const respuesta = await enviarJson('/reportes/interpretar-voz', {
+            texto,
         });
 
         if (!respuesta.ok) {
@@ -415,11 +373,6 @@ onBeforeUnmount(() => {
 });
 
 const resaltado = (clave: string): boolean => resaltados.value.includes(clave);
-
-const celda = (
-    fila: Record<string, Celda>,
-    columna: { clave: string; tipo: TipoColumna },
-): string => formatearValor(fila[columna.clave], columna.tipo);
 
 const monedaGrafico = computed(
     () => props.resultado?.clave !== 'productos_mas_vendidos',
@@ -802,60 +755,7 @@ const monedaGrafico = computed(
                         :moneda="monedaGrafico"
                     />
 
-                    <div class="cc-log__table-wrap">
-                        <table class="cc-log__table" data-test="tabla-reporte">
-                            <thead>
-                                <tr>
-                                    <th
-                                        v-for="columna in resultado.columnas"
-                                        :key="columna.clave"
-                                        :class="{
-                                            'cc-rep__num': esNumerica(
-                                                columna.tipo,
-                                            ),
-                                        }"
-                                    >
-                                        {{ columna.etiqueta }}
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr
-                                    v-for="(fila, indice) in resultado.filas"
-                                    :key="indice"
-                                >
-                                    <td
-                                        v-for="columna in resultado.columnas"
-                                        :key="columna.clave"
-                                        :class="{
-                                            'cc-rep__num': esNumerica(
-                                                columna.tipo,
-                                            ),
-                                        }"
-                                    >
-                                        {{ celda(fila, columna) }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                            <tfoot
-                                v-if="Object.keys(resultado.totales).length > 0"
-                            >
-                                <tr class="cc-rep__total">
-                                    <td
-                                        v-for="columna in resultado.columnas"
-                                        :key="columna.clave"
-                                        :class="{
-                                            'cc-rep__num': esNumerica(
-                                                columna.tipo,
-                                            ),
-                                        }"
-                                    >
-                                        {{ celda(resultado.totales, columna) }}
-                                    </td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
+                    <TablaReporte :resultado="resultado" />
                 </template>
             </motion.div>
         </section>
@@ -1124,16 +1024,6 @@ const monedaGrafico = computed(
 .cc-rep__vacio strong {
     color: var(--cc-text);
     font-size: 16px;
-}
-
-.cc-rep__num {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-}
-
-.cc-rep__total td {
-    border-top: 2px solid var(--cc-accent);
-    font-weight: 700;
 }
 
 .cc-modal-error {

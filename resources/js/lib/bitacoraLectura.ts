@@ -70,6 +70,11 @@ const ETIQUETAS: Record<string, string> = {
     logo_url: 'Logo',
     moneda: 'Moneda',
     anuncio: 'Anuncio',
+    consulta: 'Consulta',
+    origen: 'Origen',
+    tipo: 'Tipo',
+    especificacion: 'Especificación aplicada',
+    formato: 'Formato',
 };
 
 const ENTIDADES: Record<string, string> = {
@@ -84,6 +89,9 @@ const ENTIDADES: Record<string, string> = {
     venta: 'venta',
     configuracion_tienda: 'configuración de la tienda',
     reporte: 'reporte',
+    mensaje_asistente: 'consulta al asistente',
+    conversacion_asistente: 'conversación del asistente',
+    plantilla_reporte: 'plantilla de reporte',
 };
 
 const TIPOS: Record<string, string> = {
@@ -98,6 +106,9 @@ const TIPOS: Record<string, string> = {
     venta: 'Venta',
     configuracion_tienda: 'Configuración de la tienda',
     reporte: 'Reporte',
+    mensaje_asistente: 'Consulta al asistente',
+    conversacion_asistente: 'Conversación del asistente',
+    plantilla_reporte: 'Plantilla de reporte',
 };
 
 const ACCIONES: Record<string, string> = {
@@ -133,6 +144,10 @@ const ACCIONES: Record<string, string> = {
     ACTUALIZAR_HORARIOS: 'Horarios de atención',
     GENERAR_REPORTE: 'Reporte generado',
     EXPORTAR_REPORTE: 'Reporte exportado',
+    CONSULTA_ASISTENTE: 'Consulta al asistente',
+    ESPECIFICACION_RECHAZADA: 'Consulta rechazada',
+    EXPORTAR_REPORTE_DINAMICO: 'Reporte del asistente exportado',
+    GUARDAR_PLANTILLA_REPORTE: 'Plantilla guardada',
 };
 
 function esRecord(valor: unknown): valor is Record<string, unknown> {

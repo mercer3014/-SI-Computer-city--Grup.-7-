@@ -1,6 +1,7 @@
 export type TipoColumna =
     | 'texto'
     | 'entero'
+    | 'decimal'
     | 'moneda'
     | 'porcentaje'
     | 'fecha';
@@ -36,7 +37,12 @@ export const PALETA = [
 ];
 
 export function esNumerica(tipo: TipoColumna): boolean {
-    return tipo === 'entero' || tipo === 'moneda' || tipo === 'porcentaje';
+    return (
+        tipo === 'entero' ||
+        tipo === 'decimal' ||
+        tipo === 'moneda' ||
+        tipo === 'porcentaje'
+    );
 }
 
 /** Mismo formato que el PDF y el Word: "Bs 1.234,50", "1.234", "40,00 %". */
@@ -57,6 +63,8 @@ export function formatearValor(
             return `Bs ${decimales.format(valor)}`;
         case 'entero':
             return enteros.format(valor);
+        case 'decimal':
+            return decimales.format(valor);
         case 'porcentaje':
             return `${decimales.format(valor)} %`;
         default:
