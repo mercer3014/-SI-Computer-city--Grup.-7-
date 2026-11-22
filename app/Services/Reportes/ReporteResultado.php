@@ -7,7 +7,7 @@ namespace App\Services\Reportes;
  * La pantalla, el PDF, el Excel y el Word leen exactamente esta misma estructura,
  * así que las cifras y los totales siempre coinciden.
  *
- * @phpstan-type Columna array{clave: string, etiqueta: string, tipo: 'texto'|'entero'|'moneda'|'porcentaje'|'fecha'}
+ * @phpstan-type Columna array{clave: string, etiqueta: string, tipo: 'texto'|'entero'|'decimal'|'moneda'|'porcentaje'|'fecha'}
  * @phpstan-type Fila array<string, string|int|float|null>
  * @phpstan-type Grafico array{tipo: 'barra'|'linea'|'torta'|'ninguno', etiquetas: list<string>, series: list<array{nombre: string, valores: list<float>}>}
  * @phpstan-type Encabezado array{tienda: string, ubicacion: string, desde: string, hasta: string, periodo: string, usuario: string, generado: string}

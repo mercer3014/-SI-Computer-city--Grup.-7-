@@ -172,7 +172,7 @@ class DashboardService
         $etiquetas = [];
         $valores = [];
 
-        foreach ($this->claves($periodo, $nivel) as $clave) {
+        foreach (AgrupadorFecha::claves($periodo, $nivel) as $clave) {
             $etiquetas[] = $nivel === AgrupadorFecha::DIA
                 ? Fechas::corta(CarbonImmutable::parse($clave))
                 : Fechas::etiquetaGrupo($clave, $nivel);
@@ -362,7 +362,7 @@ class DashboardService
 
         $fila = DB::table('calificacion')
             ->where('estado', 'PUBLICADA')
-            ->selectRaw('count(*) as total, avg(estrellas) as promedio')
+            ->selectRaw('count(*) as total, avg(puntuacion) as promedio')
             ->first();
 
         $total = (int) ($fila->total ?? 0);
@@ -371,32 +371,6 @@ class DashboardService
             'promedio' => $total > 0 ? round((float) $fila->promedio, 2) : null,
             'total' => $total,
         ];
-    }
-
-    /**
-     * Claves ordenadas de cada grupo del período, para rellenar con ceros los que no tuvieron ventas.
-     *
-     * @return list<string>
-     */
-    private function claves(PeriodoReporte $periodo, string $nivel): array
-    {
-        $claves = [];
-        $cursor = match ($nivel) {
-            AgrupadorFecha::MES => $periodo->desde->startOfMonth(),
-            AgrupadorFecha::SEMANA => $periodo->desde->startOfWeek(),
-            default => $periodo->desde,
-        };
-
-        while ($cursor->lessThanOrEqualTo($periodo->hasta)) {
-            $claves[] = $nivel === AgrupadorFecha::MES ? $cursor->format('Y-m') : $cursor->toDateString();
-            $cursor = match ($nivel) {
-                AgrupadorFecha::MES => $cursor->addMonth(),
-                AgrupadorFecha::SEMANA => $cursor->addWeek(),
-                default => $cursor->addDay(),
-            };
-        }
-
-        return $claves;
     }
 
     /**

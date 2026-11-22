@@ -80,6 +80,30 @@ class InterpreteComandoVoz
         ];
     }
 
+    /**
+     * El período que menciona un texto ("esta semana", "octubre", "del 1 al 15 de octubre"), o null.
+     * Lo usa también el asistente virtual simulado.
+     */
+    public function periodoDe(string $texto, ?CarbonImmutable $hoy = null): ?PeriodoReporte
+    {
+        return $this->detectarPeriodo($this->normalizar($texto), $hoy ?? PeriodoReporte::hoy());
+    }
+
+    /**
+     * Categoría y marca que menciona un texto, con el nombre tal como está en la base de datos.
+     *
+     * @return array{categoria: string|null, marca: string|null}
+     */
+    public function nombresMencionados(string $texto): array
+    {
+        $palabras = $this->singulares(explode(' ', $this->normalizar($texto)));
+
+        return [
+            'categoria' => $this->buscarFila('categoria', $palabras)?->nombre,
+            'marca' => $this->buscarFila('marca', $palabras)?->nombre,
+        ];
+    }
+
     private function normalizar(string $texto): string
     {
         $texto = Str::ascii(mb_strtolower($texto));
@@ -218,6 +242,16 @@ class InterpreteComandoVoz
      */
     private function buscarPorNombre(string $tabla, array $palabras): ?int
     {
+        $fila = $this->buscarFila($tabla, $palabras);
+
+        return $fila !== null ? (int) $fila->id : null;
+    }
+
+    /**
+     * @param  list<string>  $palabras
+     */
+    private function buscarFila(string $tabla, array $palabras): ?\stdClass
+    {
         $candidatos = DB::table($tabla)->orderBy('id')->get(['id', 'nombre']);
 
         foreach ($candidatos as $fila) {
@@ -234,7 +268,7 @@ class InterpreteComandoVoz
             $primera = count($tokens) > 1 && mb_strlen($tokens[0]) >= 6 && in_array($tokens[0], $palabras, true);
 
             if ($todas || $primera) {
-                return (int) $fila->id;
+                return $fila;
             }
         }
 

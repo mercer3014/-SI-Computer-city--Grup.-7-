@@ -118,7 +118,7 @@ abstract class GeneradorBase implements GeneradorReporte
     /**
      * Resultado de un período sin operaciones: sin filas ni totales (EX-01).
      *
-     * @param  list<array{clave: string, etiqueta: string, tipo: 'texto'|'entero'|'moneda'|'porcentaje'|'fecha'}>  $columnas
+     * @param  list<array{clave: string, etiqueta: string, tipo: 'texto'|'entero'|'decimal'|'moneda'|'porcentaje'|'fecha'}>  $columnas
      * @return Datos
      */
     protected function vacio(array $columnas): array

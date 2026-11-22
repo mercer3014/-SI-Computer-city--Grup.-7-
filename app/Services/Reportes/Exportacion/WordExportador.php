@@ -117,6 +117,6 @@ class WordExportador implements ExportadorReporte
 
     private function alineacion(string $tipo): string
     {
-        return in_array($tipo, ['entero', 'moneda', 'porcentaje'], true) ? 'right' : 'left';
+        return in_array($tipo, ['entero', 'decimal', 'moneda', 'porcentaje'], true) ? 'right' : 'left';
     }
 }

@@ -38,7 +38,7 @@
         <thead>
             <tr>
                 @foreach ($r->columnas as $columna)
-                    <th class="{{ in_array($columna['tipo'], ['entero', 'moneda', 'porcentaje'], true) ? 'num' : '' }}">{{ $columna['etiqueta'] }}</th>
+                    <th class="{{ in_array($columna['tipo'], ['entero', 'decimal', 'moneda', 'porcentaje'], true) ? 'num' : '' }}">{{ $columna['etiqueta'] }}</th>
                 @endforeach
             </tr>
         </thead>
@@ -46,14 +46,14 @@
             @foreach ($r->filas as $fila)
                 <tr>
                     @foreach ($r->columnas as $columna)
-                        <td class="{{ in_array($columna['tipo'], ['entero', 'moneda', 'porcentaje'], true) ? 'num' : '' }}">{{ \App\Services\Reportes\Formato::valor($fila[$columna['clave']] ?? null, $columna['tipo']) }}</td>
+                        <td class="{{ in_array($columna['tipo'], ['entero', 'decimal', 'moneda', 'porcentaje'], true) ? 'num' : '' }}">{{ \App\Services\Reportes\Formato::valor($fila[$columna['clave']] ?? null, $columna['tipo']) }}</td>
                     @endforeach
                 </tr>
             @endforeach
             @if ($r->totales !== [])
                 <tr class="total">
                     @foreach ($r->columnas as $columna)
-                        <td class="{{ in_array($columna['tipo'], ['entero', 'moneda', 'porcentaje'], true) ? 'num' : '' }}">{{ \App\Services\Reportes\Formato::valor($r->totales[$columna['clave']] ?? null, $columna['tipo']) }}</td>
+                        <td class="{{ in_array($columna['tipo'], ['entero', 'decimal', 'moneda', 'porcentaje'], true) ? 'num' : '' }}">{{ \App\Services\Reportes\Formato::valor($r->totales[$columna['clave']] ?? null, $columna['tipo']) }}</td>
                     @endforeach
                 </tr>
             @endif

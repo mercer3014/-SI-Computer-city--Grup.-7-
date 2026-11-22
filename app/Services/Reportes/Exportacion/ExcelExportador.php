@@ -127,6 +127,7 @@ class ExcelExportador implements ExportadorReporte
         return match ($tipo) {
             'moneda' => '"Bs" #,##0.00',
             'entero' => '#,##0',
+            'decimal' => '#,##0.00',
             'porcentaje' => '0.00"%"',
             default => 'General',
         };

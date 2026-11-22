@@ -44,6 +44,33 @@ final class AgrupadorFecha
         };
     }
 
+    /**
+     * Claves ordenadas de todos los grupos del período, para rellenar con ceros los que no tuvieron datos.
+     * Tienen el mismo formato que devuelve `expresion()`.
+     *
+     * @return list<string>
+     */
+    public static function claves(PeriodoReporte $periodo, string $nivel): array
+    {
+        $claves = [];
+        $cursor = match ($nivel) {
+            self::MES => $periodo->desde->startOfMonth(),
+            self::SEMANA => $periodo->desde->startOfWeek(),
+            default => $periodo->desde,
+        };
+
+        while ($cursor->lessThanOrEqualTo($periodo->hasta)) {
+            $claves[] = $nivel === self::MES ? $cursor->format('Y-m') : $cursor->toDateString();
+            $cursor = match ($nivel) {
+                self::MES => $cursor->addMonth(),
+                self::SEMANA => $cursor->addWeek(),
+                default => $cursor->addDay(),
+            };
+        }
+
+        return $claves;
+    }
+
     /** Día para rangos cortos, semana para rangos medianos y mes para rangos largos. */
     public static function sugerido(int $dias): string
     {

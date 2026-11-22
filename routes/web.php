@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AsistenteController;
 use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\CajaController;
 use App\Http\Controllers\ClienteController;
@@ -203,6 +204,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('generar', [ReporteController::class, 'generar'])->name('generar');
         Route::get('exportar', [ReporteController::class, 'exportar'])->middleware('throttle:30,1')->name('exportar');
         Route::post('interpretar-voz', [ReporteController::class, 'interpretarVoz'])->middleware('throttle:60,1')->name('interpretar-voz');
+    });
+
+    // ── CU22: Asistente virtual (solo Administrador) ─────────────────────
+    Route::middleware(['permiso:asistente.usar', 'puede.asistente'])->prefix('asistente')->name('asistente.')->group(function () {
+        Route::get('/', [AsistenteController::class, 'index'])->name('index');
+        Route::post('mensajes', [AsistenteController::class, 'enviar'])->middleware('throttle:asistente')->name('enviar');
+        Route::get('mensajes/{mensaje}/exportar', [AsistenteController::class, 'exportar'])->whereNumber('mensaje')->name('exportar');
+        Route::post('conversaciones', [AsistenteController::class, 'nueva'])->name('conversaciones.nueva');
+        Route::get('conversaciones/{conversacion}', [AsistenteController::class, 'mostrar'])->whereNumber('conversacion')->name('conversaciones.mostrar');
+        Route::post('plantillas', [AsistenteController::class, 'guardarPlantilla'])->name('plantillas.guardar');
+        Route::post('plantillas/{plantilla}/ejecutar', [AsistenteController::class, 'ejecutarPlantilla'])->middleware('throttle:asistente')->whereNumber('plantilla')->name('plantillas.ejecutar');
+        Route::delete('plantillas/{plantilla}', [AsistenteController::class, 'eliminarPlantilla'])->whereNumber('plantilla')->name('plantillas.eliminar');
     });
 
     // ── CU17: Configuración de la tienda ────────────────────────────────

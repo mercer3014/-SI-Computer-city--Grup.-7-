@@ -56,3 +56,7 @@ services:
             sync: false
           - key: BREVO_KEY
             sync: false
+          - key: XAI_API_KEY
+            sync: false
+          - key: XAI_MODEL
+            sync: false

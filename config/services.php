@@ -33,6 +33,16 @@ return [
         'currency' => env('STRIPE_CURRENCY', 'bob'),
     ],
 
+    // CU22: asistente virtual con la API de Grok (xAI). La clave solo se lee de XAI_API_KEY.
+    'xai' => [
+        'key' => env('XAI_API_KEY'),
+        'base_url' => env('XAI_BASE_URL', 'https://api.x.ai/v1'),
+        'model' => env('XAI_MODEL') ?: 'grok-4',
+        'timeout' => (int) env('XAI_TIMEOUT', 20),
+        'simulado' => (bool) env('ASISTENTE_SIMULADO', false),
+        'limite_por_minuto' => (int) env('ASISTENTE_LIMITE_POR_MINUTO', 10),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

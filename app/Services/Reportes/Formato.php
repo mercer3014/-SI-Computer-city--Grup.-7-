@@ -18,13 +18,18 @@ final class Formato
         return number_format($valor, 0, ',', '.');
     }
 
+    public static function decimal(float $valor): string
+    {
+        return number_format($valor, 2, ',', '.');
+    }
+
     public static function porcentaje(float $valor): string
     {
         return number_format($valor, 2, ',', '.').' %';
     }
 
     /**
-     * @param  'texto'|'entero'|'moneda'|'porcentaje'|'fecha'  $tipo
+     * @param  'texto'|'entero'|'decimal'|'moneda'|'porcentaje'|'fecha'  $tipo
      */
     public static function valor(string|int|float|null $valor, string $tipo): string
     {
@@ -39,6 +44,7 @@ final class Formato
         return match ($tipo) {
             'moneda' => self::moneda((float) $valor),
             'entero' => self::entero((float) $valor),
+            'decimal' => self::decimal((float) $valor),
             'porcentaje' => self::porcentaje((float) $valor),
             default => (string) $valor,
         };
