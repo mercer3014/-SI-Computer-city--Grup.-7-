@@ -1284,6 +1284,7 @@
 .cc-comprobante__tabla td:not(:first-child) {
     text-align: right;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .cc-comprobante__tabla tfoot td {
@@ -1827,4 +1828,16 @@
 .cc-pedido__estado[data-estado='VENCIDA'] {
     background: color-mix(in srgb, var(--cc-muted) 18%, transparent);
     color: var(--cc-muted);
+}
+
+/* ── CU17: anuncio de la tienda ───────────────────────────────────── */
+
+.cc-shop__anuncio {
+    margin: 0;
+    padding: 8px 24px;
+    background: var(--cc-accent);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
 }

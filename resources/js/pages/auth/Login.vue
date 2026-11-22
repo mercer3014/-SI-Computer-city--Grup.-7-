@@ -123,7 +123,7 @@ onBeforeUnmount(() => {
         class="cc-status cc-status--success"
         role="status"
     >
-        Para pagar tu carrito, iniciá sesión o
+        Para pagar o cotizar tu carrito, iniciá sesión o
         <TextLink href="/registro">creá tu cuenta</TextLink>.
     </div>
 

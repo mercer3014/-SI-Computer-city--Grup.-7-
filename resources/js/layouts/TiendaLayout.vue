@@ -22,6 +22,7 @@ type Tienda = {
     telefono: string | null;
     whatsapp: string | null;
     email: string | null;
+    anuncio: string | null;
     horarios: Horario[];
 };
 
@@ -143,6 +144,15 @@ function whatsapp(numero: string): string {
                 </nav>
             </div>
         </header>
+
+        <p
+            v-if="tienda?.anuncio"
+            class="cc-shop__anuncio"
+            role="status"
+            data-test="anuncio"
+        >
+            {{ tienda.anuncio }}
+        </p>
 
         <main class="cc-shop__main">
             <slot />

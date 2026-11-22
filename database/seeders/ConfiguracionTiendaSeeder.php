@@ -19,7 +19,7 @@ class ConfiguracionTiendaSeeder extends Seeder
             $configuracionId = DB::table('configuracion_tienda')->insertGetId([
                 'nombre_tienda' => 'Computer City',
                 'centro_comercial' => 'Comercial Chiriguano',
-                'direccion' => 'Comercial Chiriguano, Santa Cruz de la Sierra',
+                'direccion' => 'Santa Cruz de la Sierra, Bolivia',
                 'telefono' => '77712345',
                 'whatsapp' => '77712345',
                 'email' => 'contacto@computercity.com',

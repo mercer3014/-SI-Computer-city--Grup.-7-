@@ -159,7 +159,7 @@ export function useCarrito() {
 
             if (actual.precio !== item.precio) {
                 avisos.push(
-                    `El precio de ${item.producto} cambió a Bs ${actual.precio.toFixed(2)}.`,
+                    `El precio de ${item.producto} cambió a ${bolivianos(actual.precio)}.`,
                 );
             }
 
