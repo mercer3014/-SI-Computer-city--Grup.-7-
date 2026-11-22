@@ -112,11 +112,37 @@ class SeedersTest extends TestCase
         $this->assertSame(4, DB::table('venta')->whereNotNull('pedido_id')->count());
     }
 
+    public function test_deja_cotizaciones_y_calificaciones_en_todos_los_estados(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $estados = DB::table('cotizacion')->orderBy('estado')->pluck('estado')->all();
+
+        $this->assertSame(['ATENDIDA', 'CONVERTIDA', 'PENDIENTE', 'RECHAZADA', 'VENCIDA'], $estados);
+        $this->assertSame(0, DB::table('cotizacion')->where('estado', 'PENDIENTE')->whereDate('fecha_vencimiento', '<', now()->toDateString())->count());
+        $this->assertSame(
+            DB::table('cotizacion')->where('estado', 'CONVERTIDA')->value('id'),
+            DB::table('venta')->whereNotNull('cotizacion_id')->value('cotizacion_id'),
+        );
+        $this->assertSame(0, DB::table('detalle_cotizacion as d')->join('cotizacion as c', 'c.id', '=', 'd.cotizacion_id')->where('c.estado', 'PENDIENTE')->where('d.cantidad', '<=', 0)->count());
+
+        $calificaciones = DB::table('calificacion')->pluck('estado')->countBy()->all();
+
+        $this->assertGreaterThan(0, $calificaciones['PUBLICADA'] ?? 0);
+        $this->assertGreaterThan(0, $calificaciones['PENDIENTE'] ?? 0);
+        $this->assertSame(1, $calificaciones['OCULTA'] ?? 0);
+        $this->assertNotNull(DB::table('calificacion')->where('estado', 'OCULTA')->value('motivo_ocultamiento'));
+
+        $ultimoPedido = (int) DB::table('pedido')->where('estado', 'PAGADO')->orderByDesc('fecha')->value('id');
+
+        $this->assertSame(0, DB::table('calificacion')->where('pedido_id', $ultimoPedido)->count(), 'El pedido más reciente queda sin calificar.');
+    }
+
     public function test_correrlo_dos_veces_no_duplica_nada(): void
     {
         $this->seed(DatabaseSeeder::class);
 
-        $contar = fn (): array => collect(['permiso', 'rol', 'usuario', 'cliente', 'producto', 'variante_producto', 'venta', 'compra', 'gasto', 'evento_producto', 'horario_atencion'])
+        $contar = fn (): array => collect(['permiso', 'rol', 'usuario', 'cliente', 'producto', 'variante_producto', 'venta', 'compra', 'gasto', 'evento_producto', 'horario_atencion', 'cotizacion', 'detalle_cotizacion', 'calificacion'])
             ->mapWithKeys(fn (string $tabla): array => [$tabla => DB::table($tabla)->count()])
             ->all();
 

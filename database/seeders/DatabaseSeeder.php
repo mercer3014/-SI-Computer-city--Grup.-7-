@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             CatalogoDemoSeeder::class,
             CatalogoImagenesSeeder::class,
             OperacionesDemoSeeder::class,
+            CotizacionesYCalificacionesDemoSeeder::class,
         ]);
     }
 }
