@@ -81,7 +81,8 @@ const modulos: Modulo[] = [
     },
     {
         titulo: 'Reportes',
-        permisos: ['reportes.ver', 'gastos.gestionar'],
+        href: '/reportes',
+        permisos: ['reportes.ver'],
         icono: 'nav-log.svg',
         grupo: 'FINANZAS',
     },

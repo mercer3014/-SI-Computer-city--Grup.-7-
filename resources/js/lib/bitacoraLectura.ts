@@ -83,6 +83,7 @@ const ENTIDADES: Record<string, string> = {
     cliente: 'cliente',
     venta: 'venta',
     configuracion_tienda: 'configuración de la tienda',
+    reporte: 'reporte',
 };
 
 const TIPOS: Record<string, string> = {
@@ -96,6 +97,7 @@ const TIPOS: Record<string, string> = {
     cliente: 'Cliente',
     venta: 'Venta',
     configuracion_tienda: 'Configuración de la tienda',
+    reporte: 'Reporte',
 };
 
 const ACCIONES: Record<string, string> = {
@@ -129,6 +131,8 @@ const ACCIONES: Record<string, string> = {
     ANULAR_VENTA: 'Venta anulada',
     ACTUALIZAR_CONFIGURACION_TIENDA: 'Configuración de la tienda',
     ACTUALIZAR_HORARIOS: 'Horarios de atención',
+    GENERAR_REPORTE: 'Reporte generado',
+    EXPORTAR_REPORTE: 'Reporte exportado',
 };
 
 function esRecord(valor: unknown): valor is Record<string, unknown> {
