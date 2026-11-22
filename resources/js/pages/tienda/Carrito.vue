@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ImageOff, Lock, Minus, Plus, ShoppingCart, Trash2 } from '@lucide/vue';
+import {
+    FileText,
+    ImageOff,
+    Lock,
+    Minus,
+    Plus,
+    ShoppingCart,
+    Trash2,
+} from '@lucide/vue';
 import { computed, onMounted, ref } from 'vue';
 import {
     bolivianos,
@@ -48,6 +56,14 @@ onMounted(async () => {
 function irAPagar(): void {
     router.visit('/tienda/checkout');
 }
+
+function generarCotizacion(): void {
+    if (items.value.length === 0) {
+        return;
+    }
+
+    router.visit('/tienda/cotizar');
+}
 </script>
 
 <template>
@@ -74,9 +90,21 @@ function irAPagar(): void {
             <ShoppingCart :size="32" aria-hidden="true" />
             <strong>Tu carrito está vacío</strong>
             <p>Explorá el catálogo y agregá lo que necesites.</p>
-            <Link href="/tienda" class="cc-button cc-button--solid"
-                >Ir al catálogo</Link
-            >
+            <div class="cc-vacio__acciones">
+                <Link href="/tienda" class="cc-button cc-button--solid"
+                    >Ir al catálogo</Link
+                >
+                <button
+                    type="button"
+                    class="cc-button"
+                    disabled
+                    title="Agrega productos para generar una cotización"
+                    data-test="generar-cotizacion"
+                >
+                    <FileText :size="16" />
+                    Generar cotización
+                </button>
+            </div>
         </div>
 
         <div v-else class="cc-checkout">
@@ -185,9 +213,22 @@ function irAPagar(): void {
                     <Lock :size="16" />
                     Ir a pagar
                 </button>
+                <button
+                    type="button"
+                    class="cc-button cc-button--block"
+                    :disabled="sincronizando || items.length === 0"
+                    data-test="generar-cotizacion"
+                    @click="generarCotizacion"
+                >
+                    <FileText :size="16" />
+                    Generar cotización
+                </button>
+                <p class="cc-resumen__nota">
+                    La cotización es gratis, vale unos días y no reserva stock.
+                </p>
                 <p v-if="invitado" class="cc-resumen__nota">
-                    Para pagar te pediremos iniciar sesión o crear tu cuenta. Tu
-                    carrito se mantiene.
+                    Para pagar o cotizar te pediremos iniciar sesión o crear tu
+                    cuenta. Tu carrito se mantiene.
                 </p>
                 <Link href="/tienda" class="cc-resumen__seguir"
                     >Seguir comprando</Link

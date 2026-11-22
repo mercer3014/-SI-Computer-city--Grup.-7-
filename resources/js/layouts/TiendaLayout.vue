@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
 import {
+    FileText,
     LayoutDashboard,
     LogOut,
     Package,
@@ -106,6 +107,10 @@ function whatsapp(numero: string): string {
                         <Link href="/tienda/pedidos" class="cc-shop__link">
                             <Package :size="16" />
                             <span>Mis pedidos</span>
+                        </Link>
+                        <Link href="/tienda/cotizaciones" class="cc-shop__link">
+                            <FileText :size="16" />
+                            <span>Mis cotizaciones</span>
                         </Link>
                         <Link
                             href="/logout"

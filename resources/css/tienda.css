@@ -1798,3 +1798,33 @@
     margin: 0;
     overflow-wrap: anywhere;
 }
+
+/* ── CU19: cotización web ─────────────────────────────────────────── */
+
+.cc-vacio__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+.cc-pedido__estado[data-estado='ATENDIDA'],
+.cc-pedido__estado[data-estado='CONVERTIDA'] {
+    background: color-mix(in srgb, var(--cc-success) 15%, transparent);
+    color: var(--cc-success);
+}
+
+.cc-pedido__estado[data-estado='PENDIENTE'] {
+    background: color-mix(in srgb, #f59e0b 15%, transparent);
+    color: #d97706;
+}
+
+.cc-pedido__estado[data-estado='RECHAZADA'] {
+    background: color-mix(in srgb, var(--cc-error) 15%, transparent);
+    color: var(--cc-error);
+}
+
+.cc-pedido__estado[data-estado='VENCIDA'] {
+    background: color-mix(in srgb, var(--cc-muted) 18%, transparent);
+    color: var(--cc-muted);
+}
