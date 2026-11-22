@@ -157,7 +157,9 @@ onBeforeUnmount(() => {
                 >
                     <Spinner v-if="processing" />
                     <AuthActionIcon v-else />
-                    <span>{{ throttled ? `Esperá ${remaining}s` : 'Recuperar' }}</span>
+                    <span>{{
+                        throttled ? `Esperá ${remaining}s` : 'Recuperar'
+                    }}</span>
                 </button>
 
                 <TextLink :href="login()">Iniciar sesión</TextLink>
@@ -238,7 +240,11 @@ onBeforeUnmount(() => {
                 >
                     <Spinner v-if="processing" />
                     <AuthActionIcon v-else />
-                    <span>{{ throttled ? `Esperá ${remaining}s` : 'Guardar nueva clave' }}</span>
+                    <span>{{
+                        throttled
+                            ? `Esperá ${remaining}s`
+                            : 'Guardar nueva clave'
+                    }}</span>
                 </button>
 
                 <div class="cc-auth-links">

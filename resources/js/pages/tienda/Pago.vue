@@ -13,7 +13,12 @@ type Pedido = {
     telefono: string | null;
     entrega: string;
     error_pago: string | null;
-    items: { producto: string | null; variante: string | null; cantidad: number; subtotal: number }[];
+    items: {
+        producto: string | null;
+        variante: string | null;
+        cantidad: number;
+        subtotal: number;
+    }[];
 };
 
 const props = defineProps<{
@@ -94,7 +99,8 @@ onMounted(async () => {
         payment.mount(contenedor.value);
     } catch {
         cargando.value = false;
-        error.value = 'No pudimos cargar el formulario de pago. Revisá tu conexión y recargá la página.';
+        error.value =
+            'No pudimos cargar el formulario de pago. Revisá tu conexión y recargá la página.';
     }
 });
 
@@ -120,7 +126,8 @@ async function pagar(): Promise<void> {
 
     if (rechazo) {
         error.value =
-            rechazo.message ?? 'La tarjeta fue rechazada. Probá con otra tarjeta.';
+            rechazo.message ??
+            'La tarjeta fue rechazada. Probá con otra tarjeta.';
         procesando.value = false;
         router.post(
             `/tienda/pedidos/${props.pedido.numero}/fallo`,
@@ -131,7 +138,10 @@ async function pagar(): Promise<void> {
         return;
     }
 
-    if (paymentIntent?.status !== 'succeeded' && paymentIntent?.status !== 'processing') {
+    if (
+        paymentIntent?.status !== 'succeeded' &&
+        paymentIntent?.status !== 'processing'
+    ) {
         error.value = 'El pago no se completó. Intentá de nuevo.';
         procesando.value = false;
 
@@ -144,7 +154,9 @@ async function pagar(): Promise<void> {
         {
             onSuccess: () => vaciar(),
             onError: (errores) => {
-                error.value = errores.pago ?? 'No pudimos confirmar el pago. Escribinos y lo revisamos.';
+                error.value =
+                    errores.pago ??
+                    'No pudimos confirmar el pago. Escribinos y lo revisamos.';
                 procesando.value = false;
             },
         },
@@ -157,7 +169,9 @@ async function pagar(): Promise<void> {
         <Head :title="`Pagar pedido ${pedido.numero}`" />
 
         <nav class="cc-migas" aria-label="Ruta">
-            <Link href="/tienda/checkout"><ChevronLeft :size="14" /> Cambiar datos de retiro</Link>
+            <Link href="/tienda/checkout"
+                ><ChevronLeft :size="14" /> Cambiar datos de retiro</Link
+            >
         </nav>
 
         <ol class="cc-etapas" aria-label="Etapas de la compra">
@@ -170,19 +184,32 @@ async function pagar(): Promise<void> {
             <section class="cc-panel">
                 <h1>Pago con tarjeta</h1>
                 <p class="cc-panel__nota">
-                    Pedido <b>{{ pedido.numero }}</b>. Ingresá los datos de tu tarjeta de crédito o débito.
+                    Pedido <b>{{ pedido.numero }}</b
+                    >. Ingresá los datos de tu tarjeta de crédito o débito.
                 </p>
 
-                <p v-if="pedido.error_pago && !error" class="cc-error cc-error--bloque" role="status">
+                <p
+                    v-if="pedido.error_pago && !error"
+                    class="cc-error cc-error--bloque"
+                    role="status"
+                >
                     Intento anterior rechazado: {{ pedido.error_pago }}
                 </p>
 
                 <div class="cc-pago">
-                    <div v-if="cargando" class="cc-pago__cargando">Cargando formulario seguro…</div>
-                    <div ref="contenedor" class="cc-pago__elemento" :class="{ 'is-hidden': cargando }" />
+                    <div v-if="cargando" class="cc-pago__cargando">
+                        Cargando formulario seguro…
+                    </div>
+                    <div
+                        ref="contenedor"
+                        class="cc-pago__elemento"
+                        :class="{ 'is-hidden': cargando }"
+                    />
                 </div>
 
-                <p v-if="error" class="cc-error cc-error--bloque" role="alert">{{ error }}</p>
+                <p v-if="error" class="cc-error cc-error--bloque" role="alert">
+                    {{ error }}
+                </p>
 
                 <button
                     type="button"
@@ -191,12 +218,17 @@ async function pagar(): Promise<void> {
                     @click="pagar"
                 >
                     <Lock :size="16" />
-                    {{ procesando ? 'Procesando pago…' : `Pagar ${bolivianos(pedido.total)}` }}
+                    {{
+                        procesando
+                            ? 'Procesando pago…'
+                            : `Pagar ${bolivianos(pedido.total)}`
+                    }}
                 </button>
 
                 <p class="cc-pago__seguro">
                     <ShieldCheck :size="16" />
-                    El cobro lo procesa Stripe. Computer City no guarda los datos de tu tarjeta.
+                    El cobro lo procesa Stripe. Computer City no guarda los
+                    datos de tu tarjeta.
                 </p>
             </section>
 
@@ -209,9 +241,18 @@ async function pagar(): Promise<void> {
                     </li>
                 </ul>
                 <dl>
-                    <div><dt>Retira</dt><dd>{{ pedido.contacto }}</dd></div>
-                    <div><dt>Entrega</dt><dd>{{ pedido.entrega }}</dd></div>
-                    <div class="cc-resumen__total"><dt>Total</dt><dd>{{ bolivianos(pedido.total) }}</dd></div>
+                    <div>
+                        <dt>Retira</dt>
+                        <dd>{{ pedido.contacto }}</dd>
+                    </div>
+                    <div>
+                        <dt>Entrega</dt>
+                        <dd>{{ pedido.entrega }}</dd>
+                    </div>
+                    <div class="cc-resumen__total">
+                        <dt>Total</dt>
+                        <dd>{{ bolivianos(pedido.total) }}</dd>
+                    </div>
                 </dl>
             </aside>
         </div>

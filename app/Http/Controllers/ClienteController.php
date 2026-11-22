@@ -364,23 +364,34 @@ class ClienteController extends Controller
             ->get(['id', 'nombre', 'razon_social', 'numero_documento', 'telefono'])
             ->keyBy('id');
 
-        return collect($porCliente)
+        return array_values(collect($porCliente)
             ->map(function (array $stats, int $id) use ($clientes): array {
                 $c = $clientes->get($id);
 
+                if (! $c instanceof Cliente) {
+                    return [
+                        'id' => $id,
+                        'nombre' => 'Cliente',
+                        'razon_social' => null,
+                        'numero_documento' => null,
+                        'telefono' => null,
+                        'compras' => $stats['compras'],
+                        'monto' => round($stats['monto'], 2),
+                    ];
+                }
+
                 return [
                     'id' => $id,
-                    'nombre' => $c?->nombre ?? 'Cliente',
-                    'razon_social' => $c?->razon_social,
-                    'numero_documento' => $c?->numero_documento,
-                    'telefono' => $c?->telefono,
+                    'nombre' => $c->nombre,
+                    'razon_social' => $c->razon_social,
+                    'numero_documento' => $c->numero_documento,
+                    'telefono' => $c->telefono,
                     'compras' => $stats['compras'],
                     'monto' => round($stats['monto'], 2),
                 ];
             })
             ->sortByDesc('compras')
-            ->values()
             ->take(20)
-            ->all();
+            ->all());
     }
 }

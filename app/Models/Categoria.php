@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -16,11 +17,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $orden_visualizacion
  * @property bool $activo
  * @property string|null $icono
- * @property \Illuminate\Support\Carbon|null $fecha_creacion
+ * @property Carbon|null $fecha_creacion
  */
 class Categoria extends Model
 {
     public const CREATED_AT = 'fecha_creacion';
+
     public const UPDATED_AT = null;
 
     protected $table = 'categoria';
@@ -40,10 +42,10 @@ class Categoria extends Model
     protected function casts(): array
     {
         return [
-            'es_promocion'        => 'boolean',
-            'activo'              => 'boolean',
+            'es_promocion' => 'boolean',
+            'activo' => 'boolean',
             'orden_visualizacion' => 'integer',
-            'fecha_creacion'      => 'datetime',
+            'fecha_creacion' => 'datetime',
         ];
     }
 

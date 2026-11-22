@@ -54,12 +54,15 @@ class BitacoraService
         ?array $anterior = null,
         ?array $nuevo = null,
         ?string $motivo = null,
-        ?int $usuarioId = null,
+        int|string|null $usuarioId = null,
     ): void {
-        self::bindContext($usuarioId);
+        $actor = $usuarioId ?? Auth::id();
+        $actorId = is_numeric($actor) ? (int) $actor : null;
+
+        self::bindContext($actorId);
 
         DB::table('bitacora_auditoria')->insert([
-            'usuario_id' => $usuarioId ?? Auth::id(),
+            'usuario_id' => $actorId,
             'modulo' => $modulo,
             'accion' => $accion,
             'tipo_entidad' => $tipoEntidad,

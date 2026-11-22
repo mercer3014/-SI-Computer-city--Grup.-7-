@@ -349,7 +349,7 @@ class VarianteController extends Controller
     private function textoAtributos(iterable $valores): string
     {
         $partes = collect($valores)
-            ->map(fn (ValorAtributo $v) => ($v->atributo?->nombre ?? 'Atributo').': '.$v->valor)
+            ->map(fn (ValorAtributo $v) => ($v->atributo->nombre ?? 'Atributo').': '.$v->valor)
             ->sort()
             ->values()
             ->all();
@@ -375,7 +375,7 @@ class VarianteController extends Controller
             'tiene_movimientos' => in_array($v->id, $conMovimientos, true),
             'atributos' => $v->valores
                 ->map(fn (ValorAtributo $valor) => [
-                    'atributo' => $valor->atributo?->nombre ?? 'Atributo',
+                    'atributo' => $valor->atributo->nombre ?? 'Atributo',
                     'valor' => $valor->valor,
                 ])
                 ->sortBy('atributo')
@@ -388,7 +388,7 @@ class VarianteController extends Controller
     /**
      * Últimos cambios de precio registrados en bitacora_auditoria para las variantes dadas.
      *
-     * @param  list<int>  $varianteIds
+     * @param  array<array-key, mixed>  $varianteIds
      * @return list<array<string, mixed>>
      */
     private function historialPrecios(array $varianteIds): array
@@ -397,7 +397,7 @@ class VarianteController extends Controller
             return [];
         }
 
-        return DB::table('bitacora_auditoria as b')
+        return array_values(DB::table('bitacora_auditoria as b')
             ->leftJoin('usuario as u', 'u.id', '=', 'b.usuario_id')
             ->leftJoin('personal as p', 'p.id', '=', 'u.personal_id')
             ->leftJoin('variante_producto as vp', 'vp.id', '=', 'b.entidad_id')
@@ -420,6 +420,7 @@ class VarianteController extends Controller
                 'u.email',
             ])
             ->map(function (object $fila): array {
+                /** @var object{id: int|string, entidad_id: int|string, valor_anterior: string|null, valor_nuevo: string|null, fecha_hora: mixed, sku: string|null, nombre_completo?: string|null, email?: string|null, motivo: string|null, direccion_ip: string|null} $fila */
                 $antes = json_decode((string) $fila->valor_anterior, true);
                 $ahora = json_decode((string) $fila->valor_nuevo, true);
                 $momento = $fila->fecha_hora
@@ -439,7 +440,7 @@ class VarianteController extends Controller
                     'direccion_ip' => $fila->direccion_ip,
                 ];
             })
-            ->all();
+            ->all());
     }
 
     private function fecha(mixed $valor): ?string

@@ -35,7 +35,7 @@ class VentaRequest extends FormRequest
                         return;
                     }
 
-                    $cliente = Cliente::query()->find($valor);
+                    $cliente = is_numeric($valor) ? Cliente::query()->find((int) $valor) : null;
 
                     if ($cliente === null) {
                         $fail('El cliente indicado no existe.');
@@ -154,7 +154,10 @@ class VentaRequest extends FormRequest
                     $validator->errors()->add('descuento_global', 'El descuento global no puede superar el total de la venta.');
                 }
 
-                $pagado = round(collect($this->input('pagos', []))->sum(fn ($pago) => (float) ($pago['monto'] ?? 0)), 2);
+                $pagos = $this->input('pagos', []);
+                $pagado = round(collect(is_array($pagos) ? $pagos : [])->sum(
+                    fn (mixed $pago): float => is_array($pago) ? (float) ($pago['monto'] ?? 0) : 0.0,
+                ), 2);
 
                 if (abs($pagado - $total) > 0.009) {
                     $validator->errors()->add(

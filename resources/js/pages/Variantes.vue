@@ -1005,7 +1005,10 @@ function eliminarVariante(variante: Variante): void {
                     <div class="cc-var__pareja">
                         <!-- Precio -->
                         <label class="cc-modal-field">
-                            <span>Precio de venta (Bs) <b class="cc-req">*</b></span>
+                            <span
+                                >Precio de venta (Bs)
+                                <b class="cc-req">*</b></span
+                            >
                             <span class="cc-log__control">
                                 <input
                                     v-model="altaVariante.precio_venta"
@@ -1124,7 +1127,9 @@ function eliminarVariante(variante: Variante): void {
                         </dl>
 
                         <label class="cc-modal-field">
-                            <span>Nuevo precio (Bs) <b class="cc-req">*</b></span>
+                            <span
+                                >Nuevo precio (Bs) <b class="cc-req">*</b></span
+                            >
                             <span class="cc-log__control">
                                 <input
                                     v-model="formPrecio.precio_venta"

@@ -32,7 +32,9 @@ const estados: Record<string, string> = {
         <div v-if="pedidos.length === 0" class="cc-vacio">
             <Package :size="32" aria-hidden="true" />
             <strong>Todavía no hiciste pedidos</strong>
-            <Link href="/tienda" class="cc-button cc-button--solid">Ir al catálogo</Link>
+            <Link href="/tienda" class="cc-button cc-button--solid"
+                >Ir al catálogo</Link
+            >
         </div>
 
         <ul v-else class="cc-pedidos">
@@ -40,9 +42,15 @@ const estados: Record<string, string> = {
                 <Link :href="`/tienda/pedidos/${p.numero}`" class="cc-pedido">
                     <span>
                         <strong>{{ p.numero }}</strong>
-                        <small>{{ p.fecha }} · {{ p.items.reduce((s, i) => s + i.cantidad, 0) }} artículos</small>
+                        <small
+                            >{{ p.fecha }} ·
+                            {{ p.items.reduce((s, i) => s + i.cantidad, 0) }}
+                            artículos</small
+                        >
                     </span>
-                    <span class="cc-pedido__estado" :data-estado="p.estado">{{ estados[p.estado] ?? p.estado }}</span>
+                    <span class="cc-pedido__estado" :data-estado="p.estado">{{
+                        estados[p.estado] ?? p.estado
+                    }}</span>
                     <strong>{{ bolivianos(p.total) }}</strong>
                 </Link>
             </li>

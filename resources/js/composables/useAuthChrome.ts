@@ -9,10 +9,17 @@ export type AuthChrome = {
 
 export type AuthMode = 'login' | 'register' | 'recover';
 
+export type AuthChromeState = AuthChrome & {
+    mode: AuthMode;
+    brandSide: 'left' | 'right';
+    registerStep: number;
+};
+
 const defaultChrome: AuthChrome = {
     brandSubtitle: 'POS · periféricos',
     infoTitle: 'Computer City',
-    infoText: 'POS de periféricos en Av. Chiriguano. Inventario, ventas, garantías y caja para el equipo de la tienda.',
+    infoText:
+        'POS de periféricos en Av. Chiriguano. Inventario, ventas, garantías y caja para el equipo de la tienda.',
 };
 
 const chromeByPage: Record<string, AuthChrome> = {
@@ -20,22 +27,26 @@ const chromeByPage: Record<string, AuthChrome> = {
     'auth/Registro': {
         brandSubtitle: 'Tienda en línea',
         infoTitle: 'Comprá en Computer City',
-        infoText: 'Con tu cuenta pagás con tarjeta desde la tienda, retirás en el Comercial Chiriguano y tenés tus comprobantes y garantías a mano.',
+        infoText:
+            'Con tu cuenta pagás con tarjeta desde la tienda, retirás en el Comercial Chiriguano y tenés tus comprobantes y garantías a mano.',
     },
     'auth/FirstLogin': {
         brandSubtitle: 'Primer ingreso',
         infoTitle: 'Clave de la tienda',
-        infoText: 'La clave temporal del correo es de un solo uso. Definí la tuya y recién ahí entras al POS.',
+        infoText:
+            'La clave temporal del correo es de un solo uso. Definí la tuya y recién ahí entras al POS.',
     },
     'auth/ForgotPassword': {
         brandSubtitle: 'Recuperar acceso',
         infoTitle: 'Computer City',
-        infoText: 'Si olvidaste la clave, la recuperás con el correo de la tienda. Un admin también puede resetearte desde Usuarios.',
+        infoText:
+            'Si olvidaste la clave, la recuperás con el correo de la tienda. Un admin también puede resetearte desde Usuarios.',
     },
     'auth/ResetPassword': {
         brandSubtitle: 'Recuperar acceso',
         infoTitle: 'Cambio de clave',
-        infoText: 'Usá el código que recibiste por correo. El código vence después de 10 minutos.',
+        infoText:
+            'Usá el código que recibiste por correo. El código vence después de 10 minutos.',
     },
 };
 
@@ -49,7 +60,8 @@ const forgotOtpChrome: AuthChrome = {
 const recoverDoneChrome: AuthChrome = {
     brandSubtitle: 'Recuperar acceso',
     infoTitle: 'Clave actualizada',
-    infoText: 'Tu nueva clave ya está lista. Entrá al POS con el correo de la tienda.',
+    infoText:
+        'Tu nueva clave ya está lista. Entrá al POS con el correo de la tienda.',
 };
 
 const registerStep = ref(1);
@@ -68,7 +80,7 @@ export function authModeFor(component: string): AuthMode {
 export function useAuthChrome() {
     const page = usePage();
 
-    return computed(() => {
+    return computed((): AuthChromeState => {
         const component = page.component;
         const mode = authModeFor(component);
         const recovered = Boolean(page.props.recovered);

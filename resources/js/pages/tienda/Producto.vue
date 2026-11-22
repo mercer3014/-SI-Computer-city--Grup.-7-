@@ -15,7 +15,11 @@ import { toast } from 'vue-sonner';
 import TarjetaProducto, {
     type ProductoTarjeta,
 } from '@/components/tienda/TarjetaProducto.vue';
-import { bolivianos, MAXIMO_POR_PRODUCTO, useCarrito } from '@/composables/useCarrito';
+import {
+    bolivianos,
+    MAXIMO_POR_PRODUCTO,
+    useCarrito,
+} from '@/composables/useCarrito';
 
 type Variante = {
     id: number;
@@ -53,9 +57,12 @@ const varianteId = ref(
 const cantidad = ref(1);
 
 const variante = computed(
-    () => props.producto.variantes.find((v) => v.id === varianteId.value) ?? null,
+    () =>
+        props.producto.variantes.find((v) => v.id === varianteId.value) ?? null,
 );
-const maximo = computed(() => Math.min(variante.value?.stock ?? 0, MAXIMO_POR_PRODUCTO));
+const maximo = computed(() =>
+    Math.min(variante.value?.stock ?? 0, MAXIMO_POR_PRODUCTO),
+);
 const agotado = computed(() => (variante.value?.stock ?? 0) <= 0);
 
 const textoStock = computed(() => {
@@ -73,7 +80,10 @@ function elegirVariante(id: number): void {
 }
 
 function cambiar(delta: number): void {
-    cantidad.value = Math.max(1, Math.min(cantidad.value + delta, maximo.value || 1));
+    cantidad.value = Math.max(
+        1,
+        Math.min(cantidad.value + delta, maximo.value || 1),
+    );
 }
 
 function añadir(irAlCarrito = false): void {
@@ -104,7 +114,10 @@ function añadir(irAlCarrito = false): void {
     }
 
     toast.success(`${props.producto.nombre} en tu carrito (${enCarrito}).`, {
-        action: { label: 'Ver carrito', onClick: () => router.visit('/tienda/carrito') },
+        action: {
+            label: 'Ver carrito',
+            onClick: () => router.visit('/tienda/carrito'),
+        },
     });
 }
 </script>
@@ -135,7 +148,10 @@ function añadir(irAlCarrito = false): void {
                     />
                     <ImageOff v-else :size="48" aria-hidden="true" />
                 </div>
-                <div v-if="producto.imagenes.length > 1" class="cc-ficha__miniaturas">
+                <div
+                    v-if="producto.imagenes.length > 1"
+                    class="cc-ficha__miniaturas"
+                >
                     <button
                         v-for="(img, i) in producto.imagenes"
                         :key="img.url"
@@ -144,27 +160,44 @@ function añadir(irAlCarrito = false): void {
                         :aria-label="`Ver imagen ${i + 1}`"
                         @click="imagenActiva = i"
                     >
-                        <img :src="img.url" :alt="img.alt" width="72" height="72" />
+                        <img
+                            :src="img.url"
+                            :alt="img.alt"
+                            width="72"
+                            height="72"
+                        />
                     </button>
                 </div>
             </div>
 
             <div class="cc-ficha__info">
                 <p class="cc-kicker">
-                    {{ [producto.marca?.nombre, producto.categoria?.nombre].filter(Boolean).join(' · ') }}
+                    {{
+                        [producto.marca?.nombre, producto.categoria?.nombre]
+                            .filter(Boolean)
+                            .join(' · ')
+                    }}
                 </p>
                 <h1>{{ producto.nombre }}</h1>
 
                 <div class="cc-ficha__precio">
                     <strong>{{ bolivianos(variante?.precio ?? 0) }}</strong>
-                    <s v-if="variante?.precio_anterior">{{ bolivianos(variante.precio_anterior) }}</s>
+                    <s v-if="variante?.precio_anterior">{{
+                        bolivianos(variante.precio_anterior)
+                    }}</s>
                 </div>
 
-                <p class="cc-ficha__stock" :data-estado="variante?.disponibilidad ?? 'AGOTADO'">
+                <p
+                    class="cc-ficha__stock"
+                    :data-estado="variante?.disponibilidad ?? 'AGOTADO'"
+                >
                     {{ textoStock }}
                 </p>
 
-                <div v-if="producto.variantes.length > 1" class="cc-ficha__variantes">
+                <div
+                    v-if="producto.variantes.length > 1"
+                    class="cc-ficha__variantes"
+                >
                     <span>Variante</span>
                     <div>
                         <button
@@ -172,7 +205,10 @@ function añadir(irAlCarrito = false): void {
                             :key="v.id"
                             type="button"
                             class="cc-chip"
-                            :class="{ 'is-active': v.id === varianteId, 'is-off': v.stock <= 0 }"
+                            :class="{
+                                'is-active': v.id === varianteId,
+                                'is-off': v.stock <= 0,
+                            }"
                             :aria-pressed="v.id === varianteId"
                             @click="elegirVariante(v.id)"
                         >
@@ -183,49 +219,100 @@ function añadir(irAlCarrito = false): void {
 
                 <div class="cc-ficha__compra">
                     <div class="cc-stepper" aria-label="Cantidad">
-                        <button type="button" aria-label="Quitar una" :disabled="cantidad <= 1 || agotado" @click="cambiar(-1)">
+                        <button
+                            type="button"
+                            aria-label="Quitar una"
+                            :disabled="cantidad <= 1 || agotado"
+                            @click="cambiar(-1)"
+                        >
                             <Minus :size="14" />
                         </button>
                         <output aria-live="polite">{{ cantidad }}</output>
-                        <button type="button" aria-label="Agregar una" :disabled="cantidad >= maximo || agotado" @click="cambiar(1)">
+                        <button
+                            type="button"
+                            aria-label="Agregar una"
+                            :disabled="cantidad >= maximo || agotado"
+                            @click="cambiar(1)"
+                        >
                             <Plus :size="14" />
                         </button>
                     </div>
-                    <button type="button" class="cc-button cc-button--solid" :disabled="agotado" @click="añadir()">
+                    <button
+                        type="button"
+                        class="cc-button cc-button--solid"
+                        :disabled="agotado"
+                        @click="añadir()"
+                    >
                         <ShoppingCart :size="16" />
                         Agregar al carrito
                     </button>
-                    <button type="button" class="cc-button" :disabled="agotado" @click="añadir(true)">
+                    <button
+                        type="button"
+                        class="cc-button"
+                        :disabled="agotado"
+                        @click="añadir(true)"
+                    >
                         Comprar ahora
                     </button>
                 </div>
 
                 <ul class="cc-ficha__beneficios">
-                    <li><ShieldCheck :size="16" /> 3 meses de garantía de la tienda</li>
-                    <li><Store :size="16" /> Retiro en tienda, Comercial Chiriguano</li>
-                    <li><Eye :size="16" /> {{ producto.visitas }} {{ producto.visitas === 1 ? 'visita' : 'visitas' }}</li>
+                    <li>
+                        <ShieldCheck :size="16" /> 3 meses de garantía de la
+                        tienda
+                    </li>
+                    <li>
+                        <Store :size="16" /> Retiro en tienda, Comercial
+                        Chiriguano
+                    </li>
+                    <li>
+                        <Eye :size="16" /> {{ producto.visitas }}
+                        {{ producto.visitas === 1 ? 'visita' : 'visitas' }}
+                    </li>
                 </ul>
 
-                <section v-if="producto.descripcion" class="cc-ficha__descripcion">
+                <section
+                    v-if="producto.descripcion"
+                    class="cc-ficha__descripcion"
+                >
                     <h2>Descripción</h2>
                     <p>{{ producto.descripcion }}</p>
                 </section>
 
                 <dl class="cc-ficha__datos">
-                    <div v-if="producto.marca"><dt>Marca</dt><dd>{{ producto.marca.nombre }}</dd></div>
-                    <div v-if="producto.categoria"><dt>Categoría</dt><dd>{{ producto.categoria.nombre }}</dd></div>
-                    <div v-if="variante"><dt>Código</dt><dd>{{ variante.sku }}</dd></div>
-                    <div v-if="variante && producto.variantes.length > 1"><dt>Variante</dt><dd>{{ variante.etiqueta }}</dd></div>
+                    <div v-if="producto.marca">
+                        <dt>Marca</dt>
+                        <dd>{{ producto.marca.nombre }}</dd>
+                    </div>
+                    <div v-if="producto.categoria">
+                        <dt>Categoría</dt>
+                        <dd>{{ producto.categoria.nombre }}</dd>
+                    </div>
+                    <div v-if="variante">
+                        <dt>Código</dt>
+                        <dd>{{ variante.sku }}</dd>
+                    </div>
+                    <div v-if="variante && producto.variantes.length > 1">
+                        <dt>Variante</dt>
+                        <dd>{{ variante.etiqueta }}</dd>
+                    </div>
                 </dl>
             </div>
         </article>
 
-        <section v-if="relacionados.length" class="cc-shop__section cc-shop__section--flush">
+        <section
+            v-if="relacionados.length"
+            class="cc-shop__section cc-shop__section--flush"
+        >
             <header class="cc-shop__section-head">
                 <h2>También te puede interesar</h2>
             </header>
             <div class="cc-grid cc-grid--destacados">
-                <TarjetaProducto v-for="p in relacionados" :key="p.id" :producto="p" />
+                <TarjetaProducto
+                    v-for="p in relacionados"
+                    :key="p.id"
+                    :producto="p"
+                />
             </div>
         </section>
     </div>

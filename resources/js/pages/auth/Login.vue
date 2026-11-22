@@ -118,7 +118,11 @@ onBeforeUnmount(() => {
         {{ status }}
     </div>
 
-    <div v-else-if="desdeTienda" class="cc-status cc-status--success" role="status">
+    <div
+        v-else-if="desdeTienda"
+        class="cc-status cc-status--success"
+        role="status"
+    >
         Para pagar tu carrito, iniciá sesión o
         <TextLink href="/registro">creá tu cuenta</TextLink>.
     </div>
@@ -197,7 +201,9 @@ onBeforeUnmount(() => {
                 >
                     Recuperar cuenta
                 </TextLink>
-                <TextLink href="/registro" :tabindex="6">Crear cuenta de cliente</TextLink>
+                <TextLink href="/registro" :tabindex="6"
+                    >Crear cuenta de cliente</TextLink
+                >
                 <TextLink href="/tienda" :tabindex="7">Ver tienda</TextLink>
             </div>
         </div>

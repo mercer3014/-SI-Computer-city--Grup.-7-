@@ -519,7 +519,9 @@
         max-height: min(92dvh, 920px);
         display: block !important;
         overflow: auto !important;
-        padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)) !important;
+        padding-bottom: calc(
+            28px + env(safe-area-inset-bottom, 0px)
+        ) !important;
     }
 
     .cc-log-dialog .cc-modal-grid,
@@ -572,14 +574,30 @@
     animation: cc-admin-row 280ms ease both;
 }
 
-.cc-admin tbody tr:nth-child(1) { animation-delay: 0ms; }
-.cc-admin tbody tr:nth-child(2) { animation-delay: 30ms; }
-.cc-admin tbody tr:nth-child(3) { animation-delay: 60ms; }
-.cc-admin tbody tr:nth-child(4) { animation-delay: 90ms; }
-.cc-admin tbody tr:nth-child(5) { animation-delay: 120ms; }
-.cc-admin tbody tr:nth-child(6) { animation-delay: 150ms; }
-.cc-admin tbody tr:nth-child(7) { animation-delay: 180ms; }
-.cc-admin tbody tr:nth-child(8) { animation-delay: 210ms; }
+.cc-admin tbody tr:nth-child(1) {
+    animation-delay: 0ms;
+}
+.cc-admin tbody tr:nth-child(2) {
+    animation-delay: 30ms;
+}
+.cc-admin tbody tr:nth-child(3) {
+    animation-delay: 60ms;
+}
+.cc-admin tbody tr:nth-child(4) {
+    animation-delay: 90ms;
+}
+.cc-admin tbody tr:nth-child(5) {
+    animation-delay: 120ms;
+}
+.cc-admin tbody tr:nth-child(6) {
+    animation-delay: 150ms;
+}
+.cc-admin tbody tr:nth-child(7) {
+    animation-delay: 180ms;
+}
+.cc-admin tbody tr:nth-child(8) {
+    animation-delay: 210ms;
+}
 
 @keyframes cc-admin-row {
     from {
@@ -1355,7 +1373,9 @@
     height: 18px;
     border-radius: 99px;
     background: var(--cc-text);
-    transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), background 180ms ease;
+    transition:
+        transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
+        background 180ms ease;
 }
 
 .cc-sw.is-on .cc-sw__pista {

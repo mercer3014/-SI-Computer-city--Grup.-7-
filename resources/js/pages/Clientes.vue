@@ -12,7 +12,14 @@ import {
     UserRound,
     X,
 } from '@lucide/vue';
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import {
+    computed,
+    onBeforeUnmount,
+    onMounted,
+    reactive,
+    ref,
+    watch,
+} from 'vue';
 import CcRadialFab from '@/components/admin/CcRadialFab.vue';
 import CcRevealSelect from '@/components/admin/CcRevealSelect.vue';
 import {
@@ -594,7 +601,10 @@ function eliminar(cliente: Cliente): void {
                         </table>
                     </div>
                     <div class="cc-log-board">
-                        <p v-if="clientes.data.length === 0" class="cc-log__empty">
+                        <p
+                            v-if="clientes.data.length === 0"
+                            class="cc-log__empty"
+                        >
                             <strong>Sin clientes</strong>
                             No hay registros que coincidan con la búsqueda.
                         </p>
@@ -615,8 +625,14 @@ function eliminar(cliente: Cliente): void {
                                 <span class="cc-log-pin__cuerpo">
                                     <strong>{{ cliente.nombre }}</strong>
                                     <p>
-                                        {{ cliente.tipo_documento ?? 'Documento' }}
-                                        {{ cliente.numero_documento ?? 'sin número' }}
+                                        {{
+                                            cliente.tipo_documento ??
+                                            'Documento'
+                                        }}
+                                        {{
+                                            cliente.numero_documento ??
+                                            'sin número'
+                                        }}
                                     </p>
                                     <small>
                                         {{ cliente.telefono ?? 'Sin teléfono' }}
@@ -793,11 +809,14 @@ function eliminar(cliente: Cliente): void {
                             class="cc-log-pin__abrir"
                             @click="aplicar({ ficha: String(item.id) })"
                         >
-                            <span class="cc-user-initials">{{ indice + 1 }}</span>
+                            <span class="cc-user-initials">{{
+                                indice + 1
+                            }}</span>
                             <span class="cc-log-pin__cuerpo">
                                 <strong>{{ item.nombre }}</strong>
                                 <p>
-                                    {{ cantidad.format(item.compras) }} compras ·
+                                    {{ cantidad.format(item.compras) }} compras
+                                    ·
                                     {{ moneda.format(item.monto) }}
                                 </p>
                                 <small>
@@ -1177,7 +1196,6 @@ function eliminar(cliente: Cliente): void {
     gap: 8px;
     padding-top: 8px;
 }
-
 
 .cc-req {
     color: var(--cc-error);

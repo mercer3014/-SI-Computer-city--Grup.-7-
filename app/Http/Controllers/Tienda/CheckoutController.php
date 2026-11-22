@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Tienda;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cliente;
 use App\Models\DetallePedido;
 use App\Models\Pedido;
 use App\Models\User;
@@ -41,7 +42,9 @@ class CheckoutController extends Controller
         return Inertia::render('tienda/Checkout', [
             'cliente' => [
                 'nombre' => $cliente?->nombre,
-                'documento' => trim(($cliente?->tipo_documento ?? '').' '.($cliente?->numero_documento ?? '')),
+                'documento' => $cliente instanceof Cliente
+                    ? trim(($cliente->tipo_documento ?? '').' '.($cliente->numero_documento ?? ''))
+                    : '',
                 'telefono' => $cliente?->telefono,
                 'email' => $user->email,
             ],

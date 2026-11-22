@@ -90,7 +90,7 @@ class VarianteProducto extends Model
         $this->loadMissing('valores.atributo');
 
         return $this->valores
-            ->map(fn ($valor) => trim(($valor->atributo?->nombre ?? '').': '.$valor->valor, ': '))
+            ->map(fn ($valor) => trim(($valor->atributo->nombre ?? '').': '.$valor->valor, ': '))
             ->filter()
             ->sort()
             ->values()
@@ -132,7 +132,7 @@ class VarianteProducto extends Model
     }
 
     /**
-     * @param  list<int>  $ids
+     * @param  array<array-key, mixed>  $ids
      * @return list<int>
      */
     public static function idsConMovimientos(array $ids): array
@@ -179,7 +179,7 @@ class VarianteProducto extends Model
     /**
      * ¿Otra variante del producto ya usa exactamente esta combinación de valores?
      *
-     * @param  list<int>  $valorIds
+     * @param  array<array-key, mixed>  $valorIds
      */
     public static function combinacionExiste(int $productoId, array $valorIds, ?int $exceptoId = null): bool
     {

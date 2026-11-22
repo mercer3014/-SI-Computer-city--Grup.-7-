@@ -19,21 +19,17 @@ const spring = {
 
 <template>
     <div class="cc-auth-stack">
-        <section class="cc-auth-panel" :data-mode="mode" :data-brand="brandSide">
-            <motion.div
-                layout
-                class="cc-auth-brand"
-                :transition="spring"
-            >
+        <section
+            class="cc-auth-panel"
+            :data-mode="mode"
+            :data-brand="brandSide"
+        >
+            <motion.div layout class="cc-auth-brand" :transition="spring">
                 <strong>Computer City</strong>
                 <span>{{ brandSubtitle }}</span>
             </motion.div>
 
-            <motion.div
-                layout
-                class="cc-auth-form"
-                :transition="spring"
-            >
+            <motion.div layout class="cc-auth-form" :transition="spring">
                 <div class="cc-auth-form-track">
                     <div class="cc-auth-form-body" :data-step="step">
                         <slot />

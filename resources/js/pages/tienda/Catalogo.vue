@@ -94,7 +94,9 @@ function aplicar(pagina?: number): void {
             panelAbierto.value = false;
 
             if (pagina !== undefined) {
-                document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
+                document
+                    .getElementById('catalogo')
+                    ?.scrollIntoView({ behavior: 'smooth' });
             }
         },
     });
@@ -120,15 +122,26 @@ function limpiar(): void {
 
 const chips = computed(() => {
     const lista: { clave: keyof Filtros; texto: string }[] = [];
-    const categoria = props.opciones.categorias.find((c) => c.slug === form.categoria);
+    const categoria = props.opciones.categorias.find(
+        (c) => c.slug === form.categoria,
+    );
     const marca = props.opciones.marcas.find((m) => m.slug === form.marca);
 
     if (form.q) lista.push({ clave: 'q', texto: `“${form.q}”` });
     if (categoria) lista.push({ clave: 'categoria', texto: categoria.nombre });
     if (marca) lista.push({ clave: 'marca', texto: marca.nombre });
-    if (form.precio_min !== '') lista.push({ clave: 'precio_min', texto: `Desde Bs ${form.precio_min}` });
-    if (form.precio_max !== '') lista.push({ clave: 'precio_max', texto: `Hasta Bs ${form.precio_max}` });
-    if (form.disponibles) lista.push({ clave: 'disponibles', texto: 'Con stock' });
+    if (form.precio_min !== '')
+        lista.push({
+            clave: 'precio_min',
+            texto: `Desde Bs ${form.precio_min}`,
+        });
+    if (form.precio_max !== '')
+        lista.push({
+            clave: 'precio_max',
+            texto: `Hasta Bs ${form.precio_max}`,
+        });
+    if (form.disponibles)
+        lista.push({ clave: 'disponibles', texto: 'Con stock' });
 
     return lista;
 });
@@ -161,14 +174,21 @@ function irAlCatalogo(): void {
                 <p class="cc-kicker">Comercial Chiriguano · Santa Cruz</p>
                 <h1>Periféricos para jugar, trabajar y crear.</h1>
                 <p>
-                    Mouse, teclados, audífonos, cámaras y más, con garantía de la
-                    tienda. Elegí en línea, pagá con tarjeta y retirá en el local.
+                    Mouse, teclados, audífonos, cámaras y más, con garantía de
+                    la tienda. Elegí en línea, pagá con tarjeta y retirá en el
+                    local.
                 </p>
                 <div class="cc-hero__acciones">
-                    <button type="button" class="cc-button cc-button--solid" @click="irAlCatalogo">
+                    <button
+                        type="button"
+                        class="cc-button cc-button--solid"
+                        @click="irAlCatalogo"
+                    >
                         Ver catálogo
                     </button>
-                    <a href="#tienda" class="cc-button cc-button--ghost">Dónde estamos</a>
+                    <a href="#tienda" class="cc-button cc-button--ghost"
+                        >Dónde estamos</a
+                    >
                 </div>
             </div>
             <ol class="cc-pasos" aria-label="Cómo comprar">
@@ -196,24 +216,38 @@ function irAlCatalogo(): void {
                 <h2>Los más vistos</h2>
             </header>
             <div class="cc-grid cc-grid--destacados">
-                <TarjetaProducto v-for="p in destacados" :key="`d-${p.id}`" :producto="p" />
+                <TarjetaProducto
+                    v-for="p in destacados"
+                    :key="`d-${p.id}`"
+                    :producto="p"
+                />
             </div>
         </section>
 
         <section id="catalogo" class="cc-shop__section">
             <header class="cc-shop__section-head">
                 <div>
-                    <h2>{{ hayFiltros ? 'Resultados' : 'Catálogo completo' }}</h2>
+                    <h2>
+                        {{ hayFiltros ? 'Resultados' : 'Catálogo completo' }}
+                    </h2>
                     <p v-if="!error">
                         {{ productos.meta.total }}
-                        {{ productos.meta.total === 1 ? 'producto' : 'productos' }}
+                        {{
+                            productos.meta.total === 1
+                                ? 'producto'
+                                : 'productos'
+                        }}
                     </p>
                 </div>
                 <div class="cc-shop__section-tools">
                     <label class="cc-select">
                         <span class="sr-only">Ordenar por</span>
                         <select v-model="form.orden" @change="aplicar()">
-                            <option v-for="o in ordenes" :key="o.value" :value="o.value">
+                            <option
+                                v-for="o in ordenes"
+                                :key="o.value"
+                                :value="o.value"
+                            >
                                 {{ o.label }}
                             </option>
                         </select>
@@ -230,7 +264,11 @@ function irAlCatalogo(): void {
                 </div>
             </header>
 
-            <nav v-if="opciones.categorias.length" class="cc-chips" aria-label="Categorías">
+            <nav
+                v-if="opciones.categorias.length"
+                class="cc-chips"
+                aria-label="Categorías"
+            >
                 <button
                     type="button"
                     class="cc-chip"
@@ -253,14 +291,25 @@ function irAlCatalogo(): void {
             </nav>
 
             <div class="cc-catalogo">
-                <aside class="cc-filtros" :class="{ 'is-open': panelAbierto }" aria-label="Filtros">
+                <aside
+                    class="cc-filtros"
+                    :class="{ 'is-open': panelAbierto }"
+                    aria-label="Filtros"
+                >
                     <form @submit.prevent="aplicar()">
                         <label class="cc-filtro">
                             <span>Marca</span>
                             <span class="cc-select">
-                                <select v-model="form.marca" @change="aplicar()">
+                                <select
+                                    v-model="form.marca"
+                                    @change="aplicar()"
+                                >
                                     <option value="">Todas las marcas</option>
-                                    <option v-for="m in opciones.marcas" :key="m.slug" :value="m.slug">
+                                    <option
+                                        v-for="m in opciones.marcas"
+                                        :key="m.slug"
+                                        :value="m.slug"
+                                    >
                                         {{ m.nombre }}
                                     </option>
                                 </select>
@@ -290,12 +339,18 @@ function irAlCatalogo(): void {
                         </fieldset>
 
                         <label class="cc-check">
-                            <input v-model="form.disponibles" type="checkbox" @change="aplicar()" />
+                            <input
+                                v-model="form.disponibles"
+                                type="checkbox"
+                                @change="aplicar()"
+                            />
                             <span>Solo con stock</span>
                         </label>
 
                         <div class="cc-filtros__acciones">
-                            <button type="submit" class="cc-button">Aplicar</button>
+                            <button type="submit" class="cc-button">
+                                Aplicar
+                            </button>
                             <button
                                 v-if="hayFiltros"
                                 type="button"
@@ -324,20 +379,40 @@ function irAlCatalogo(): void {
 
                     <div v-if="error" class="cc-vacio" role="alert">
                         <strong>No pudimos cargar el catálogo</strong>
-                        <p>Hubo un problema de conexión. Intentá de nuevo en unos minutos.</p>
-                        <button type="button" class="cc-button" @click="reintentar">
+                        <p>
+                            Hubo un problema de conexión. Intentá de nuevo en
+                            unos minutos.
+                        </p>
+                        <button
+                            type="button"
+                            class="cc-button"
+                            @click="reintentar"
+                        >
                             <RefreshCw :size="16" /> Reintentar
                         </button>
                     </div>
 
-                    <div v-else-if="productos.data.length === 0" class="cc-vacio">
+                    <div
+                        v-else-if="productos.data.length === 0"
+                        class="cc-vacio"
+                    >
                         <strong>No encontramos productos</strong>
                         <p>Probá con otra búsqueda o quitá algunos filtros.</p>
-                        <button type="button" class="cc-button" @click="limpiar">Ver todo el catálogo</button>
+                        <button
+                            type="button"
+                            class="cc-button"
+                            @click="limpiar"
+                        >
+                            Ver todo el catálogo
+                        </button>
                     </div>
 
                     <div v-else class="cc-grid">
-                        <TarjetaProducto v-for="p in productos.data" :key="p.id" :producto="p" />
+                        <TarjetaProducto
+                            v-for="p in productos.data"
+                            :key="p.id"
+                            :producto="p"
+                        />
                     </div>
 
                     <nav
@@ -353,11 +428,17 @@ function irAlCatalogo(): void {
                         >
                             <ChevronLeft :size="16" />
                         </button>
-                        <span>Página {{ productos.meta.current_page }} de {{ productos.meta.last_page }}</span>
+                        <span
+                            >Página {{ productos.meta.current_page }} de
+                            {{ productos.meta.last_page }}</span
+                        >
                         <button
                             type="button"
                             aria-label="Página siguiente"
-                            :disabled="productos.meta.current_page >= productos.meta.last_page"
+                            :disabled="
+                                productos.meta.current_page >=
+                                productos.meta.last_page
+                            "
                             @click="aplicar(productos.meta.current_page + 1)"
                         >
                             <ChevronRight :size="16" />

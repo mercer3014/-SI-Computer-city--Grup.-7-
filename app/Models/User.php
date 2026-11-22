@@ -30,6 +30,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $fecha_bloqueo
  * @property int|null $nivel_bloqueo
  * @property-read string $name
+ * @property-read Personal|null $personal
+ * @property-read Rol|null $rol
+ * @property-read Cliente|null $cliente
  */
 #[Table('usuario')]
 #[Fillable([
@@ -139,6 +142,8 @@ class User extends Authenticatable
 
     /**
      * Nombre visible, tomado del personal vinculado.
+     *
+     * @return Attribute<string, never>
      */
     protected function name(): Attribute
     {

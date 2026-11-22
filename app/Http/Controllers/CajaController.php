@@ -490,6 +490,7 @@ class CajaController extends Controller
      */
     private function formatMovimiento(object $fila): array
     {
+        /** @var object{fecha: mixed, origen: string, origen_id: int|string, tipo: string, categoria: string|null, descripcion: string|null, metodo: string|null, referencia: string|null, monto: int|float|string|null, estado: string|null} $fila */
         $fecha = $fila->fecha !== null
             ? CarbonImmutable::parse($fila->fecha)->timezone(config('app.timezone'))
             : null;

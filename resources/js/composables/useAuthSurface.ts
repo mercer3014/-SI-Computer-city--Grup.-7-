@@ -30,7 +30,9 @@ function readSurface(): AuthSurface | null {
     }
 
     try {
-        return JSON.parse(sessionStorage.getItem(SURFACE_KEY) ?? '') as AuthSurface;
+        return JSON.parse(
+            sessionStorage.getItem(SURFACE_KEY) ?? '',
+        ) as AuthSurface;
     } catch {
         return null;
     }
@@ -42,7 +44,9 @@ function readSize(): AuthPanelSize | null {
     }
 
     try {
-        return JSON.parse(sessionStorage.getItem(SIZE_KEY) ?? '') as AuthPanelSize;
+        return JSON.parse(
+            sessionStorage.getItem(SIZE_KEY) ?? '',
+        ) as AuthPanelSize;
     } catch {
         return null;
     }
@@ -73,10 +77,15 @@ export function rememberVisual(next: AuthSurface): void {
 }
 
 export function rememberOutgoing(next?: AuthSurface): void {
-    writeSurface(next ?? visual ?? lastSettled ?? readSurface() ?? {
-        mode: 'login',
-        side: 'right',
-    });
+    writeSurface(
+        next ??
+            visual ??
+            lastSettled ??
+            readSurface() ?? {
+                mode: 'login',
+                side: 'right',
+            },
+    );
 }
 
 export function persistSettled(next: AuthSurface): void {

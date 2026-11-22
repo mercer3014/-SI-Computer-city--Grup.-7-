@@ -232,8 +232,16 @@
     border: 1px solid var(--cc-border);
     border-radius: 16px;
     background:
-        radial-gradient(120% 120% at 100% 0%, color-mix(in srgb, var(--cc-accent) 22%, transparent), transparent 55%),
-        radial-gradient(90% 90% at 0% 100%, color-mix(in srgb, var(--cc-secondary) 16%, transparent), transparent 60%),
+        radial-gradient(
+            120% 120% at 100% 0%,
+            color-mix(in srgb, var(--cc-accent) 22%, transparent),
+            transparent 55%
+        ),
+        radial-gradient(
+            90% 90% at 0% 100%,
+            color-mix(in srgb, var(--cc-secondary) 16%, transparent),
+            transparent 60%
+        ),
         var(--cc-surface);
     padding: 48px;
 }
@@ -488,7 +496,8 @@
 
 .cc-card:hover {
     border-color: var(--cc-accent);
-    box-shadow: 0 12px 32px -18px color-mix(in srgb, var(--cc-accent) 70%, transparent);
+    box-shadow: 0 12px 32px -18px
+        color-mix(in srgb, var(--cc-accent) 70%, transparent);
     transform: translateY(-2px);
 }
 

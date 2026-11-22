@@ -83,7 +83,7 @@ class StripePasarela implements PasarelaPagos
             'amount' => (int) $intento->amount,
             'currency' => strtolower((string) $intento->currency),
             'client_secret' => $intento->client_secret,
-            'metadata' => $intento->metadata?->toArray() ?? [],
+            'metadata' => $intento->metadata->toArray(),
             'error' => $this->motivoRechazo($intento),
         ];
     }
@@ -96,7 +96,10 @@ class StripePasarela implements PasarelaPagos
             return null;
         }
 
-        return match ($error->decline_code ?? $error->code) {
+        $datos = $error->toArray();
+        $codigo = $datos['decline_code'] ?? $datos['code'] ?? null;
+
+        return match ($codigo) {
             'insufficient_funds' => 'La tarjeta no tiene fondos suficientes. Probá con otra tarjeta.',
             'expired_card' => 'La tarjeta está vencida. Probá con otra tarjeta.',
             'incorrect_cvc', 'invalid_cvc' => 'El código de seguridad (CVC) es incorrecto.',

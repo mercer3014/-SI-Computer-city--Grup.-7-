@@ -154,7 +154,7 @@ class GarantiaController extends Controller
             default => $query,
         };
 
-        return $query->get()->map(fn (object $fila): array => $this->formatearGarantia($fila))->all();
+        return array_values($query->get()->map(fn (object $fila): array => $this->formatearGarantia($fila))->all());
     }
 
     /**
@@ -162,10 +162,10 @@ class GarantiaController extends Controller
      */
     private function consultarGarantia(string $numeroSerie): array
     {
-        return array_map(
+        return array_values(array_map(
             fn (object $fila): array => $this->formatearGarantia($fila, $numeroSerie),
             DB::select('SELECT * FROM public.fn_validar_garantia(?)', [$numeroSerie]),
-        );
+        ));
     }
 
     /**
@@ -173,17 +173,18 @@ class GarantiaController extends Controller
      */
     private function formatearGarantia(object $fila, ?string $numeroSerie = null): array
     {
+        /** @var object{numero_venta: string|null, producto: string|null, numero_serie?: string|null, fecha_venta: mixed, fecha_fin_garantia: mixed, vigente?: mixed, estado_item: string|null, cliente?: string|null} $fila */
         return [
-                'numero_venta' => (string) $fila->numero_venta,
-                'producto' => (string) $fila->producto,
-                'numero_serie' => $numeroSerie ?? ($fila->numero_serie ?? null),
-                'fecha_venta' => $fila->fecha_venta,
-                'fecha_fin_garantia' => $fila->fecha_fin_garantia,
-                'vigente' => isset($fila->vigente)
-                    ? (bool) $fila->vigente
-                    : ($fila->fecha_fin_garantia !== null && $fila->fecha_fin_garantia >= now()->toDateString()),
-                'estado_item' => (string) $fila->estado_item,
-                'cliente' => $fila->cliente ?? null,
+            'numero_venta' => (string) $fila->numero_venta,
+            'producto' => (string) $fila->producto,
+            'numero_serie' => $numeroSerie ?? ($fila->numero_serie ?? null),
+            'fecha_venta' => $fila->fecha_venta,
+            'fecha_fin_garantia' => $fila->fecha_fin_garantia,
+            'vigente' => isset($fila->vigente)
+                ? (bool) $fila->vigente
+                : ($fila->fecha_fin_garantia !== null && $fila->fecha_fin_garantia >= now()->toDateString()),
+            'estado_item' => (string) $fila->estado_item,
+            'cliente' => $fila->cliente ?? null,
         ];
     }
 }

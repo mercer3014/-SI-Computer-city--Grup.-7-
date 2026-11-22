@@ -79,6 +79,7 @@ class CompraController extends Controller
         return Inertia::render('NuevaCompra', [
             'compras' => [
                 'data' => $pagina->getCollection()->map(function (object $compra) use ($lineas): array {
+                    /** @var object{id: int|string, numero_compra: string|null, fecha_compra: mixed, estado: string|null, proveedor_id: int|string, razon_social: string|null, nombre_comercial: string|null, lineas: int|string|null, unidades: int|string|null, total: int|float|string|null} $compra */
                     $id = (int) $compra->id;
 
                     return [
@@ -270,7 +271,7 @@ class CompraController extends Controller
     }
 
     /**
-     * @param  list<int>  $compraIds
+     * @param  array<array-key, mixed>  $compraIds
      * @return array<int, list<array<string, mixed>>>
      */
     private function lineasDe(array $compraIds): array
@@ -356,7 +357,7 @@ class CompraController extends Controller
     {
         $ultimas = $this->ultimasPorVariante();
 
-        return VarianteProducto::query()
+        return array_values(VarianteProducto::query()
             ->with(['producto:id,nombre,estado', 'valores.atributo'])
             ->where('variante_producto.estado', 'ACTIVO')
             ->whereHas('producto', fn ($producto) => $producto->where('estado', 'ACTIVO'))
@@ -385,7 +386,7 @@ class CompraController extends Controller
                     'ultima_fecha' => $ultima['fecha'] ?? null,
                 ];
             })
-            ->all();
+            ->all());
     }
 
     private function fecha(mixed $valor): ?string

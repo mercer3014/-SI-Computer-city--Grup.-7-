@@ -59,13 +59,13 @@ class VentaKardexEmulador
             ]);
         }
 
-        $fechaVenta = $detalle->venta?->fecha
+        $fechaVenta = $detalle->venta->fecha
             ?? Venta::query()->whereKey($detalle->venta_id)->value('fecha')
             ?? now();
         $meses = max(0, (int) $detalle->meses_garantia);
 
         if ($detalle->fecha_fin_garantia === null) {
-            $detalle->fecha_fin_garantia = Carbon::parse($fechaVenta)->addMonths($meses)->toDateString();
+            $detalle->fecha_fin_garantia = Carbon::parse($fechaVenta)->addMonths($meses)->startOfDay();
         }
 
         if ($detalle->costo_unitario_snapshot === null) {

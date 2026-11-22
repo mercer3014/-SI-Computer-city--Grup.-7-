@@ -35,7 +35,9 @@ const props = defineProps<{
 
 defineOptions({
     layout: {
-        breadcrumbs: [{ title: 'Garantías y devoluciones', href: '/garantias' }],
+        breadcrumbs: [
+            { title: 'Garantías y devoluciones', href: '/garantias' },
+        ],
     },
 });
 
@@ -349,7 +351,9 @@ function inactiva(resultado: Resultado): boolean {
                                 <td>
                                     <span class="cc-log__when">
                                         Vence
-                                        {{ fecha(resultado.fecha_fin_garantia) }}
+                                        {{
+                                            fecha(resultado.fecha_fin_garantia)
+                                        }}
                                         <small
                                             >Compra
                                             {{
@@ -389,9 +393,14 @@ function inactiva(resultado: Resultado): boolean {
                 </div>
 
                 <div class="cc-log-board">
-                    <p v-if="props.resultados.length === 0" class="cc-log__empty">
+                    <p
+                        v-if="props.resultados.length === 0"
+                        class="cc-log__empty"
+                    >
                         <strong>{{
-                            props.busqueda ? 'Sin coincidencias' : 'Sin garantías'
+                            props.busqueda
+                                ? 'Sin coincidencias'
+                                : 'Sin garantías'
                         }}</strong>
                         {{
                             props.busqueda
@@ -452,7 +461,10 @@ function inactiva(resultado: Resultado): boolean {
             </motion.div>
         </section>
 
-        <Dialog :open="modalAbierto" @update:open="(abierto) => !abierto && cerrarDevolucion()">
+        <Dialog
+            :open="modalAbierto"
+            @update:open="(abierto) => !abierto && cerrarDevolucion()"
+        >
             <DialogContent
                 class="cc-theme cc-admin cc-log-dialog"
                 style="max-width: 520px"
@@ -466,8 +478,14 @@ function inactiva(resultado: Resultado): boolean {
                     </DialogDescription>
                 </DialogHeader>
 
-                <form class="cc-modal-form" @submit.prevent="procesarDevolucion">
-                    <dl v-if="resultadoSeleccionado" class="cc-log-detalle__datos">
+                <form
+                    class="cc-modal-form"
+                    @submit.prevent="procesarDevolucion"
+                >
+                    <dl
+                        v-if="resultadoSeleccionado"
+                        class="cc-log-detalle__datos"
+                    >
                         <div>
                             <dt>Producto</dt>
                             <dd>{{ resultadoSeleccionado.producto }}</dd>
@@ -519,10 +537,14 @@ function inactiva(resultado: Resultado): boolean {
                     </label>
 
                     <p
-                        v-if="form.errors.numero_venta || form.errors.numero_serie"
+                        v-if="
+                            form.errors.numero_venta || form.errors.numero_serie
+                        "
                         class="cc-modal-error"
                     >
-                        {{ form.errors.numero_venta || form.errors.numero_serie }}
+                        {{
+                            form.errors.numero_venta || form.errors.numero_serie
+                        }}
                     </p>
 
                     <div class="cc-modal-actions">

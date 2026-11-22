@@ -72,16 +72,21 @@ class UsuarioController extends Controller
 
         return response()->streamDownload(function () use ($consulta): void {
             $salida = fopen('php://output', 'w');
+
+            if ($salida === false) {
+                return;
+            }
+
             fwrite($salida, "\xEF\xBB\xBF");
             fputcsv($salida, ['Usuario', 'Correo', 'Rol', 'Personal asociado', 'Cargo', 'Estado']);
 
             foreach ($consulta->cursor() as $u) {
                 fputcsv($salida, [
-                    $u->personal?->nombre_completo ?? '',
+                    $this->nombrePersonal($u->personal),
                     $u->email,
-                    $u->rol?->nombre ?? '',
-                    $u->personal?->nombre_completo ?? '',
-                    $u->personal?->cargo ?? '',
+                    $this->nombreRol($u->rol),
+                    $this->nombrePersonal($u->personal),
+                    $this->cargoPersonal($u->personal),
                     $u->estado ?? 'ACTIVO',
                 ]);
             }
@@ -340,7 +345,7 @@ class UsuarioController extends Controller
     {
         return [
             'id' => $u->id,
-            'nombre' => $u->personal?->nombre_completo ?? $u->email,
+            'nombre' => $this->nombreVisible($u->personal, $u->email),
             'email' => $u->email,
             'rol_id' => $u->rol_id,
             'rol' => $u->rol?->nombre,
@@ -355,5 +360,33 @@ class UsuarioController extends Controller
             'es_actual' => $actual !== null && $u->id === $actual->id,
             'protegido' => $unicoAdminId !== null && $u->id === $unicoAdminId,
         ];
+    }
+
+    private function nombreVisible(?Personal $personal, string $email): string
+    {
+        if ($personal === null) {
+            return $email;
+        }
+
+        return $personal->nombre_completo;
+    }
+
+    private function nombrePersonal(?Personal $personal): string
+    {
+        return $personal === null ? '' : $personal->nombre_completo;
+    }
+
+    private function cargoPersonal(?Personal $personal): string
+    {
+        if ($personal === null) {
+            return '';
+        }
+
+        return $personal->cargo ?? '';
+    }
+
+    private function nombreRol(?Rol $rol): string
+    {
+        return $rol === null ? '' : $rol->nombre;
     }
 }

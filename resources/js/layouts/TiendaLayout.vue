@@ -48,7 +48,10 @@ onMounted(() => {
 });
 
 function buscar(): void {
-    router.get('/tienda', busqueda.value.trim() ? { q: busqueda.value.trim() } : {});
+    router.get(
+        '/tienda',
+        busqueda.value.trim() ? { q: busqueda.value.trim() } : {},
+    );
 }
 
 function whatsapp(numero: string): string {
@@ -60,11 +63,22 @@ function whatsapp(numero: string): string {
     <div class="cc-theme cc-shop">
         <header class="cc-shop__header">
             <div class="cc-shop__bar">
-                <Link href="/tienda" class="cc-shop__brand" aria-label="Computer City, ir al catálogo">
-                    <img src="/images/computer-city/logo.png?v=5" alt="Computer City" />
+                <Link
+                    href="/tienda"
+                    class="cc-shop__brand"
+                    aria-label="Computer City, ir al catálogo"
+                >
+                    <img
+                        src="/images/computer-city/logo.png?v=5"
+                        alt="Computer City"
+                    />
                 </Link>
 
-                <form class="cc-shop__search" role="search" @submit.prevent="buscar">
+                <form
+                    class="cc-shop__search"
+                    role="search"
+                    @submit.prevent="buscar"
+                >
                     <Search :size="16" aria-hidden="true" />
                     <input
                         v-model="busqueda"
@@ -84,7 +98,9 @@ function whatsapp(numero: string): string {
                             <UserRound :size="16" />
                             <span>Ingresar</span>
                         </Link>
-                        <Link href="/registro" class="cc-button cc-shop__cta">Crear cuenta</Link>
+                        <Link href="/registro" class="cc-button cc-shop__cta"
+                            >Crear cuenta</Link
+                        >
                     </template>
                     <template v-else-if="usuario.es_cliente">
                         <Link href="/tienda/pedidos" class="cc-shop__link">
@@ -106,9 +122,16 @@ function whatsapp(numero: string): string {
                         <span>Panel</span>
                     </Link>
 
-                    <Link href="/tienda/carrito" class="cc-shop__cart" aria-label="Ver carrito">
+                    <Link
+                        href="/tienda/carrito"
+                        class="cc-shop__cart"
+                        aria-label="Ver carrito"
+                    >
                         <ShoppingCart :size="18" />
-                        <span v-if="montado && cantidadTotal > 0" class="cc-shop__cart-badge">
+                        <span
+                            v-if="montado && cantidadTotal > 0"
+                            class="cc-shop__cart-badge"
+                        >
                             {{ cantidadTotal > 99 ? '99+' : cantidadTotal }}
                         </span>
                     </Link>
@@ -130,8 +153,10 @@ function whatsapp(numero: string): string {
                     />
                     <p>
                         Periféricos y servicio técnico en
-                        {{ tienda?.centro_comercial ?? 'el Comercial Chiriguano' }}.
-                        Comprá en línea y retirá en tienda.
+                        {{
+                            tienda?.centro_comercial ??
+                            'el Comercial Chiriguano'
+                        }}. Comprá en línea y retirá en tienda.
                     </p>
                 </div>
                 <div v-if="tienda">
@@ -159,7 +184,10 @@ function whatsapp(numero: string): string {
                     </dl>
                 </div>
             </div>
-            <p class="cc-shop__copy">© {{ new Date().getFullYear() }} Computer City · Pagos seguros con Stripe</p>
+            <p class="cc-shop__copy">
+                © {{ new Date().getFullYear() }} Computer City · Pagos seguros
+                con Stripe
+            </p>
         </footer>
 
         <Toaster />

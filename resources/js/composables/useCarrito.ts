@@ -73,23 +73,30 @@ export function useCarrito() {
         items.value.reduce((suma, item) => suma + item.cantidad, 0),
     );
 
-    const total = computed(() =>
-        Math.round(
-            items.value.reduce(
-                (suma, item) => suma + item.precio * item.cantidad,
-                0,
-            ) * 100,
-        ) / 100,
+    const total = computed(
+        () =>
+            Math.round(
+                items.value.reduce(
+                    (suma, item) => suma + item.precio * item.cantidad,
+                    0,
+                ) * 100,
+            ) / 100,
     );
 
-    function agregar(item: Omit<ItemCarrito, 'cantidad'>, cantidad = 1): number {
+    function agregar(
+        item: Omit<ItemCarrito, 'cantidad'>,
+        cantidad = 1,
+    ): number {
         const existente = items.value.find(
             (actual) => actual.variante_id === item.variante_id,
         );
         const maximo = tope(item.stock);
 
         if (existente) {
-            existente.cantidad = Math.min(existente.cantidad + cantidad, maximo);
+            existente.cantidad = Math.min(
+                existente.cantidad + cantidad,
+                maximo,
+            );
             Object.assign(existente, { ...item, cantidad: existente.cantidad });
         } else if (maximo > 0) {
             items.value.push({ ...item, cantidad: Math.min(cantidad, maximo) });
@@ -98,24 +105,32 @@ export function useCarrito() {
         guardar();
 
         return (
-            items.value.find((actual) => actual.variante_id === item.variante_id)
-                ?.cantidad ?? 0
+            items.value.find(
+                (actual) => actual.variante_id === item.variante_id,
+            )?.cantidad ?? 0
         );
     }
 
     function cambiarCantidad(varianteId: number, cantidad: number): void {
-        const item = items.value.find((actual) => actual.variante_id === varianteId);
+        const item = items.value.find(
+            (actual) => actual.variante_id === varianteId,
+        );
 
         if (!item) {
             return;
         }
 
-        item.cantidad = Math.max(1, Math.min(Math.floor(cantidad) || 1, tope(item.stock)));
+        item.cantidad = Math.max(
+            1,
+            Math.min(Math.floor(cantidad) || 1, tope(item.stock)),
+        );
         guardar();
     }
 
     function quitar(varianteId: number): void {
-        items.value = items.value.filter((item) => item.variante_id !== varianteId);
+        items.value = items.value.filter(
+            (item) => item.variante_id !== varianteId,
+        );
         guardar();
     }
 
@@ -135,19 +150,25 @@ export function useCarrito() {
             const actual = porId.get(item.variante_id);
 
             if (!actual || !actual.disponible || actual.stock <= 0) {
-                avisos.push(`${item.producto} ya no está disponible y lo quitamos del carrito.`);
+                avisos.push(
+                    `${item.producto} ya no está disponible y lo quitamos del carrito.`,
+                );
 
                 return [];
             }
 
             if (actual.precio !== item.precio) {
-                avisos.push(`El precio de ${item.producto} cambió a Bs ${actual.precio.toFixed(2)}.`);
+                avisos.push(
+                    `El precio de ${item.producto} cambió a Bs ${actual.precio.toFixed(2)}.`,
+                );
             }
 
             const cantidad = Math.min(item.cantidad, tope(actual.stock));
 
             if (cantidad < item.cantidad) {
-                avisos.push(`Solo quedan ${actual.stock} unidades de ${item.producto}.`);
+                avisos.push(
+                    `Solo quedan ${actual.stock} unidades de ${item.producto}.`,
+                );
             }
 
             return [

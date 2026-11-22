@@ -281,7 +281,7 @@ class PedidoEnLineaService
             }
 
             if ($cantidad > $variante->stock_actual) {
-                $nombre = $variante->producto?->nombre ?? $variante->sku;
+                $nombre = $variante->producto->nombre;
 
                 throw ValidationException::withMessages([
                     'items' => $variante->stock_actual > 0

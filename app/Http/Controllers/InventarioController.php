@@ -236,7 +236,7 @@ class InventarioController extends Controller
      */
     private function ultimosMovimientos(): array
     {
-        return DB::table('detalle_movimiento_inventario as d')
+        return array_values(DB::table('detalle_movimiento_inventario as d')
             ->join('movimiento_inventario as m', 'm.id', '=', 'd.movimiento_id')
             ->join('variante_producto as vp', 'vp.id', '=', 'd.variante_id')
             ->join('producto as p', 'p.id', '=', 'vp.producto_id')
@@ -258,7 +258,7 @@ class InventarioController extends Controller
                 'u.email',
             ])
             ->map(fn (object $fila) => $this->formatMovimiento($fila))
-            ->all();
+            ->all());
     }
 
     /**
@@ -307,6 +307,7 @@ class InventarioController extends Controller
                 'u.email',
             ])
             ->map(function (object $fila) use (&$saldo): array {
+                /** @var object{id: int|string, tipo: string, fecha: mixed, referencia: string|null, observacion: string|null, cantidad: int|string, nombre_completo?: string|null, email?: string|null} $fila */
                 $efecto = $this->efecto($fila->tipo, $fila->referencia, (int) $fila->cantidad);
                 $saldo += $efecto;
                 $momento = $this->momento($fila->fecha);
@@ -333,7 +334,7 @@ class InventarioController extends Controller
                 'producto' => $variante->producto?->nombre,
                 'stock_actual' => $variante->stock_actual,
             ],
-            'lineas' => $lineas,
+            'lineas' => array_values($lineas),
         ];
     }
 
@@ -412,7 +413,7 @@ class InventarioController extends Controller
     private function formatVariante(VarianteProducto $v): array
     {
         $atributos = $v->valores
-            ->map(fn ($valor) => ($valor->atributo?->nombre ?? 'Atributo').': '.$valor->valor)
+            ->map(fn ($valor) => ($valor->atributo->nombre ?? 'Atributo').': '.$valor->valor)
             ->sort()
             ->values()
             ->all();
@@ -435,6 +436,7 @@ class InventarioController extends Controller
      */
     private function formatMovimiento(object $fila): array
     {
+        /** @var object{id: int|string, tipo: string, fecha: mixed, referencia: string|null, observacion: string|null, cantidad: int|string, sku?: string|null, producto?: string|null, nombre_completo?: string|null, email?: string|null} $fila */
         $efecto = $this->efecto($fila->tipo, $fila->referencia, (int) $fila->cantidad);
         $momento = $this->momento($fila->fecha);
 

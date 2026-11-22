@@ -85,7 +85,7 @@ class CatalogoController extends Controller
             'fecha_hora' => now(),
         ]);
 
-        $relacionados = $this->consulta(['categoria' => $producto->categoria?->slug ?? ''] + $this->filtros(new Request))
+        $relacionados = $this->consulta(['categoria' => $producto->categoria->slug] + $this->filtros(new Request))
             ->where('producto.id', '<>', $producto->id)
             ->limit(4)
             ->get()
@@ -206,15 +206,24 @@ class CatalogoController extends Controller
         }
 
         if ($filtros['precio_min'] !== '') {
-            $query->whereRaw('('.$precio->toSql().') >= cast(? as decimal(12,2))', [...$precio->getBindings(), (float) $filtros['precio_min']]);
+            $query->whereRaw(
+                '(select min(precio_venta) from "variante_producto" where "variante_producto"."producto_id" = "producto"."id" and "variante_producto"."estado" = ?) >= cast(? as decimal(12,2))',
+                ['ACTIVO', (float) $filtros['precio_min']],
+            );
         }
 
         if ($filtros['precio_max'] !== '') {
-            $query->whereRaw('('.$precio->toSql().') <= cast(? as decimal(12,2))', [...$precio->getBindings(), (float) $filtros['precio_max']]);
+            $query->whereRaw(
+                '(select min(precio_venta) from "variante_producto" where "variante_producto"."producto_id" = "producto"."id" and "variante_producto"."estado" = ?) <= cast(? as decimal(12,2))',
+                ['ACTIVO', (float) $filtros['precio_max']],
+            );
         }
 
         if ($filtros['disponibles']) {
-            $query->whereRaw('('.$stock->toSql().') > 0', $stock->getBindings());
+            $query->whereRaw(
+                '(select coalesce(sum(case when stock_actual > 0 then stock_actual else 0 end), 0) from "variante_producto" where "variante_producto"."producto_id" = "producto"."id" and "variante_producto"."estado" = ?) > 0',
+                ['ACTIVO'],
+            );
         }
 
         match ($filtros['orden']) {
@@ -222,10 +231,10 @@ class CatalogoController extends Controller
             'precio_desc' => $query->orderByDesc('precio_desde')->orderBy('producto.nombre'),
             'populares' => $query->orderByDesc('visitas')->orderBy('producto.nombre'),
             'nombre' => $query->orderBy('producto.nombre'),
-            default => $query
-                ->orderByRaw('case when ('.$stock->toRawSql().') > 0 then 0 else 1 end')
-                ->orderByDesc('visitas')
-                ->orderBy('producto.nombre'),
+            default => $query->orderByRaw(
+                'case when (select coalesce(sum(case when stock_actual > 0 then stock_actual else 0 end), 0) from "variante_producto" where "variante_producto"."producto_id" = "producto"."id" and "variante_producto"."estado" = ?) > 0 then 0 else 1 end',
+                ['ACTIVO'],
+            )->orderByDesc('visitas')->orderBy('producto.nombre'),
         };
 
         return $query;
@@ -267,13 +276,12 @@ class CatalogoController extends Controller
      */
     private function destacados(): array
     {
-        return $this->consulta(['orden' => 'populares', 'disponibles' => true] + $this->filtros(new Request))
+        return array_values($this->consulta(['orden' => 'populares', 'disponibles' => true] + $this->filtros(new Request))
             ->whereHas('imagenes')
             ->limit(4)
             ->get()
             ->map(fn (Producto $p) => $this->tarjeta($p))
-            ->values()
-            ->all();
+            ->all());
     }
 
     /**
@@ -283,12 +291,12 @@ class CatalogoController extends Controller
     {
         $activos = fn ($p) => $p->where('estado', 'ACTIVO');
 
-        $precios = VarianteProducto::query()
+        $basePrecios = VarianteProducto::query()
             ->where('estado', 'ACTIVO')
             ->where('precio_venta', '>', 0)
-            ->whereHas('producto', $activos)
-            ->selectRaw('min(precio_venta) as minimo, max(precio_venta) as maximo')
-            ->first();
+            ->whereHas('producto', $activos);
+        $minimo = (clone $basePrecios)->min('precio_venta');
+        $maximo = (clone $basePrecios)->max('precio_venta');
 
         return [
             'categorias' => Categoria::query()
@@ -308,8 +316,8 @@ class CatalogoController extends Controller
                 ->map(fn (Marca $m) => ['nombre' => $m->nombre, 'slug' => $m->slug])
                 ->values(),
             'precio' => [
-                'min' => (float) floor((float) ($precios?->minimo ?? 0)),
-                'max' => (float) ceil((float) ($precios?->maximo ?? 0)),
+                'min' => (float) floor((float) ($minimo ?? 0)),
+                'max' => (float) ceil((float) ($maximo ?? 0)),
             ],
         ];
     }
@@ -345,13 +353,16 @@ class CatalogoController extends Controller
             'anuncio' => $config->anuncio ?? null,
             'moneda' => $config->moneda ?? 'BOB',
             'horarios' => $horarios
-                ->map(fn (object $h) => [
-                    'dia' => $dias[(int) $h->dia_semana] ?? (string) $h->dia_semana,
-                    'cerrado' => (bool) $h->cerrado,
-                    'horario' => $h->cerrado || $h->hora_apertura === null
-                        ? null
-                        : substr((string) $h->hora_apertura, 0, 5).' – '.substr((string) $h->hora_cierre, 0, 5),
-                ])
+                ->map(function (object $h) use ($dias): array {
+                    /** @var object{dia_semana: int|string, cerrado: bool|int|string|null, hora_apertura: string|null, hora_cierre: string|null} $h */
+                    return [
+                        'dia' => $dias[(int) $h->dia_semana] ?? (string) $h->dia_semana,
+                        'cerrado' => (bool) $h->cerrado,
+                        'horario' => $h->cerrado || $h->hora_apertura === null
+                            ? null
+                            : substr((string) $h->hora_apertura, 0, 5).' – '.substr((string) $h->hora_cierre, 0, 5),
+                    ];
+                })
                 ->values(),
         ];
     }

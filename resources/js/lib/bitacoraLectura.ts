@@ -159,7 +159,19 @@ export function valorLegible(valor: unknown): string {
         return valor.map(valorLegible).join(', ');
     }
 
-    return String(valor);
+    if (typeof valor === 'bigint') {
+        return valor.toString();
+    }
+
+    if (typeof valor === 'object') {
+        try {
+            return JSON.stringify(valor) ?? '—';
+        } catch {
+            return '—';
+        }
+    }
+
+    return '—';
 }
 
 export function cambiosDe(anterior: unknown, nuevo: unknown): CambioBitacora[] {

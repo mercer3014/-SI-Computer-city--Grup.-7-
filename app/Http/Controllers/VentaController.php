@@ -477,7 +477,7 @@ class VentaController extends Controller
      */
     private function catalogo(): array
     {
-        return VarianteProducto::query()
+        return array_values(VarianteProducto::query()
             ->with(['producto:id,nombre,estado', 'valores.atributo'])
             ->where('variante_producto.estado', 'ACTIVO')
             ->whereHas('producto', fn ($p) => $p->where('estado', 'ACTIVO'))
@@ -494,7 +494,7 @@ class VentaController extends Controller
                 'stock_actual' => $v->stock_actual,
                 'stock_minimo' => $v->stock_minimo,
             ])
-            ->all();
+            ->all());
     }
 
     /**
@@ -502,7 +502,7 @@ class VentaController extends Controller
      */
     private function clientesPos(): array
     {
-        return Cliente::query()
+        return array_values(Cliente::query()
             ->where('estado', 'ACTIVO')
             ->orderByRaw("case when nombre = 'Cliente Final' then 0 else 1 end")
             ->orderBy('nombre')
@@ -518,11 +518,11 @@ class VentaController extends Controller
                 'email' => $c->email,
                 'es_generico' => $c->nombre === 'Cliente Final',
             ])
-            ->all();
+            ->all());
     }
 
     /**
-     * @param  list<int>  $ids
+     * @param  array<array-key, mixed>  $ids
      * @return array<int, float>
      */
     private function totalesPagina(array $ids): array
@@ -602,7 +602,7 @@ class VentaController extends Controller
             'cliente' => [
                 'id' => $venta->cliente?->id,
                 'nombre' => $venta->cliente?->nombre,
-                'documento' => trim(($venta->cliente?->tipo_documento ?? '').' '.($venta->cliente?->numero_documento ?? '')),
+                'documento' => trim(($venta->cliente->tipo_documento ?? '').' '.($venta->cliente->numero_documento ?? '')),
                 'email' => $venta->cliente?->email,
                 'telefono' => $venta->cliente?->telefono,
             ],

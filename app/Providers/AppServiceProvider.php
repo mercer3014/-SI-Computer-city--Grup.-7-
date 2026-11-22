@@ -45,9 +45,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PasarelaPagos::class, StripePasarela::class);
     }
 
-    /**
-     * @param  array<string, mixed>  $config
-     */
     private function registerUserProvider(): void
     {
         Auth::provider('eloquent', function ($app, array $config) {
@@ -77,7 +74,7 @@ class AppServiceProvider extends ServiceProvider
 
             return (new BrevoTransportFactory(
                 client: HttpClient::create([
-                    'timeout' => (int) env('MAIL_TIMEOUT', 8),
+                    'timeout' => (int) config('mail.mailers.smtp.timeout', 8),
                 ]),
             ))->create(new Dsn(
                 'brevo+api',

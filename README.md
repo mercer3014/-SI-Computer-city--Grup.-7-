@@ -33,9 +33,7 @@ Si faltan tablas:
 php artisan migrate
 ```
 
-
-
-### Probar 
+### Probar
 
 **1. Backend** — este es el que se abre en el navegador:
 
@@ -65,16 +63,12 @@ pnpm build
 php artisan serve
 ```
 
-
-
 ## SMTP en local (recuperar cuenta)
 
 El OTP de **recuperar cuenta** sale por correo. En local podés:
 
 1. **Log** (sin Gmail): `MAIL_MAILER=log`. El código queda en `storage/logs/laravel.log`.
 2. **SMTP real** (Gmail), para que el código llegue a la bandeja.
-
-
 
 ### Activar Gmail SMTP
 
@@ -123,11 +117,11 @@ Reiniciá `php artisan serve` si estaba corriendo.
 
 ### Qué probar en auth
 
-| Flujo | URL | Qué esperar |
-| --- | --- | --- |
-| Login | `/login` | Correo y clave del alta de usuarios |
-| Primer ingreso | `/primer-ingreso` | Si `primer_login` es true |
-| Recuperar | `/forgot-password` | OTP al correo (Gmail local / Brevo en Render) |
+| Flujo          | URL                | Qué esperar                                   |
+| -------------- | ------------------ | --------------------------------------------- |
+| Login          | `/login`           | Correo y clave del alta de usuarios           |
+| Primer ingreso | `/primer-ingreso`  | Si `primer_login` es true                     |
+| Recuperar      | `/forgot-password` | OTP al correo (Gmail local / Brevo en Render) |
 
 ## Estructura
 
@@ -162,8 +156,6 @@ tienda-de-perifericos/
 └── vite.config.ts          Vite en 127.0.0.1:5173, abre el login de :8000
 ```
 
-
-
 ### Por qué está partido así
 
 - `app/` **y** `routes/` deciden qué hace el servidor (OTP, guardar clave, redirecciones).
@@ -171,12 +163,9 @@ tienda-de-perifericos/
 - `database/` es el modelo de la tienda (`usuario`, ventas, stock) más tablas que Laravel necesita (`sessions`, `password_reset_tokens`).
 - `tests/` cubre los flujos de auth.
 
-
-
 ## Stack
 
 - Laravel 13, Fortify, Inertia Vue 3
 - Vite + Tailwind
 - PostgreSQL local; Supabase (también Postgres) para producción
 - Auth: login, primer ingreso, recuperar cuenta con OTP
-

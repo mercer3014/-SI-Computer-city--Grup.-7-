@@ -2,7 +2,12 @@
 
 namespace App\Auth;
 
+use Illuminate\Auth\AuthManager;
 use Illuminate\Auth\Passwords\PasswordBrokerManager;
+use Illuminate\Config\Repository;
+use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\DatabaseManager;
+use Illuminate\Foundation\Application;
 use InvalidArgumentException;
 
 class OtpPasswordBrokerManager extends PasswordBrokerManager
@@ -18,11 +23,16 @@ class OtpPasswordBrokerManager extends PasswordBrokerManager
             throw new InvalidArgumentException("Password resetter [{$name}] is not defined.");
         }
 
+        $app = $this->aplicacion();
+        $auth = $app->make(AuthManager::class);
+        $configuracion = $app->make(Repository::class);
+        $proveedor = $config['provider'] ?? null;
+
         return new OtpPasswordBroker(
             $this->createTokenRepository($config),
-            $this->app['auth']->createUserProvider($config['provider'] ?? null),
-            $this->app['events'] ?? null,
-            timeboxDuration: $this->app['config']->get('auth.timebox_duration', 200000),
+            $auth->createUserProvider(is_string($proveedor) ? $proveedor : null),
+            $app->bound(Dispatcher::class) ? $app->make(Dispatcher::class) : null,
+            timeboxDuration: (int) $configuracion->get('auth.timebox_duration', 200000),
         );
     }
 
@@ -31,19 +41,43 @@ class OtpPasswordBrokerManager extends PasswordBrokerManager
      */
     protected function createTokenRepository(array $config)
     {
-        $key = $this->app['config']['app.key'];
+        $app = $this->aplicacion();
+        $configuracion = $app->make(Repository::class);
+        $key = $configuracion->get('app.key');
 
-        if (str_starts_with($key, 'base64:')) {
-            $key = base64_decode(substr($key, 7));
+        if (! is_string($key) || $key === '') {
+            throw new InvalidArgumentException('APP_KEY no está configurada.');
         }
 
+        if (str_starts_with($key, 'base64:')) {
+            $decoded = base64_decode(substr($key, 7), true);
+            $key = is_string($decoded) ? $decoded : $key;
+        }
+
+        $hash = $app->make('hash');
+        $db = $app->make(DatabaseManager::class);
+
+        $conexion = $config['connection'] ?? null;
+        $tabla = $config['table'] ?? 'password_reset_tokens';
+
         return new OtpTokenRepository(
-            $this->app['db']->connection($config['connection'] ?? null),
-            $this->app['hash'],
-            $config['table'],
+            $db->connection(is_string($conexion) ? $conexion : null),
+            $hash,
+            is_string($tabla) ? $tabla : 'password_reset_tokens',
             $key,
-            ($config['expire'] ?? 60) * 60,
-            $config['throttle'] ?? 0,
+            (int) ($config['expire'] ?? 60) * 60,
+            (int) ($config['throttle'] ?? 0),
         );
+    }
+
+    private function aplicacion(): Application
+    {
+        $app = $this->app;
+
+        if (! $app instanceof Application) {
+            throw new InvalidArgumentException('Se esperaba el contenedor de Laravel.');
+        }
+
+        return $app;
     }
 }
