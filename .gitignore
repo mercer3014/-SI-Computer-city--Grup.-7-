@@ -43,3 +43,6 @@ yarn-error.log
 /opencode.json
 /opencode.jsonc
 /supabase/.temp
+
+/docs
+/prompt.md
