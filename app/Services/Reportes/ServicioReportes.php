@@ -26,13 +26,24 @@ class ServicioReportes
         }
 
         $filtros = array_intersect_key($filtros, array_flip($catalogo[$clave]['filtros']));
-        $generador = app($catalogo[$clave]['generador']);
+
+        return $this->armar($clave, $catalogo[$clave]['titulo'], app($catalogo[$clave]['generador']), $periodo, $filtros, $usuario);
+    }
+
+    /**
+     * Arma el resultado con encabezado para un generador que no está en el catálogo de reportes
+     * (por ejemplo, los productos más visitados de CU20).
+     *
+     * @param  array<string, int|string>  $filtros
+     */
+    public function armar(string $clave, string $titulo, GeneradorReporte $generador, PeriodoReporte $periodo, array $filtros, User $usuario): ReporteResultado
+    {
         $datos = $generador->generar($periodo, $filtros);
         $tienda = $this->tienda->actual();
 
         return new ReporteResultado(
             clave: $clave,
-            titulo: $catalogo[$clave]['titulo'],
+            titulo: $titulo,
             encabezado: [
                 'tienda' => $tienda['nombre'],
                 'ubicacion' => $tienda['ubicacion'],

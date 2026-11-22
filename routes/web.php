@@ -7,6 +7,7 @@ use App\Http\Controllers\CalificacionController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\ConfiguracionTiendaController;
+use App\Http\Controllers\CotizacionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FirstLoginController;
 use App\Http\Controllers\GarantiaController;
@@ -229,6 +230,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('plantillas', [AsistenteController::class, 'guardarPlantilla'])->name('plantillas.guardar');
         Route::post('plantillas/{plantilla}/ejecutar', [AsistenteController::class, 'ejecutarPlantilla'])->middleware('throttle:asistente')->whereNumber('plantilla')->name('plantillas.ejecutar');
         Route::delete('plantillas/{plantilla}', [AsistenteController::class, 'eliminarPlantilla'])->whereNumber('plantilla')->name('plantillas.eliminar');
+    });
+
+    // ── CU20: Gestión de cotizaciones y productos más visitados ─────────
+    Route::middleware('permiso:cotizaciones.gestionar')->prefix('cotizaciones')->name('cotizaciones.')->group(function () {
+        Route::get('/', [CotizacionController::class, 'index'])->name('index');
+        Route::get('mas-visitados', [CotizacionController::class, 'masVisitados'])->name('mas-visitados');
+        Route::get('{cotizacion}', [CotizacionController::class, 'show'])->whereNumber('cotizacion')->name('show');
+        Route::patch('{cotizacion}/estado', [CotizacionController::class, 'estado'])->whereNumber('cotizacion')->name('estado');
+        Route::post('{cotizacion}/renovar', [CotizacionController::class, 'renovar'])->whereNumber('cotizacion')->name('renovar');
     });
 
     // ── CU24: Moderación de calificaciones ──────────────────────────────
