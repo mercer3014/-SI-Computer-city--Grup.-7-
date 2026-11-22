@@ -525,7 +525,11 @@ const calificacion = computed(() => props.financieros?.calificacion);
                                     data-test="alerta-cotizaciones"
                                 >
                                     {{ operativos.cotizaciones.total }}
-                                    pendientes
+                                    {{
+                                        operativos.cotizaciones.total === 1
+                                            ? 'pendiente'
+                                            : 'pendientes'
+                                    }}
                                 </Link>
                                 <span v-else>No disponible</span>
                             </header>
