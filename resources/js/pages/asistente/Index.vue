@@ -263,6 +263,8 @@ async function enviar(contenido: string = texto.value): Promise<void> {
             fijarConversacion(datos.conversacion_id);
         }
 
+        void router.reload({ only: ['conversaciones'] });
+
         if (asistente) {
             mensajes.value.push({
                 ...asistente,
@@ -379,6 +381,7 @@ async function ejecutarPlantilla(id: number): Promise<void> {
         if (usuario && asistente && typeof datos.conversacion_id === 'number') {
             mensajes.value.push(usuario, asistente);
             fijarConversacion(datos.conversacion_id);
+            void router.reload({ only: ['conversaciones'] });
         }
     } finally {
         enviando.value = false;
@@ -995,6 +998,10 @@ const dosPartes = (contenido: string): string[] => contenido.split('\n');
     align-items: flex-start;
     margin: 0;
     color: var(--cc-text);
+}
+
+.cc-asi__aviso svg {
+    flex: none;
 }
 
 .cc-asi__burbuja.tipo-error .cc-asi__aviso svg {
