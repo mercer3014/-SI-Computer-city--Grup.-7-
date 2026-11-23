@@ -19,7 +19,14 @@ import {
     UserRound,
     X,
 } from '@lucide/vue';
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import {
+    computed,
+    onBeforeUnmount,
+    onMounted,
+    reactive,
+    ref,
+    watch,
+} from 'vue';
 import { toast } from 'vue-sonner';
 import CcRevealSelect from '@/components/admin/CcRevealSelect.vue';
 import CcRadialFab from '@/components/admin/CcRadialFab.vue';
@@ -102,7 +109,12 @@ type Ficha = {
     };
     vendedor: string | null;
     items: LineaFicha[];
-    pagos: { id: number; metodo: string | null; monto: number; referencia: string | null }[];
+    pagos: {
+        id: number;
+        metodo: string | null;
+        monto: number;
+        referencia: string | null;
+    }[];
 };
 
 type LineaCarrito = {
@@ -117,6 +129,32 @@ type LineaCarrito = {
     descuento: number;
     numero_serie: string;
     meses_garantia: number;
+    /** Solo al convertir una cotización (CU20): precio cotizado y actual, y cuál se usa. */
+    precio_cotizado?: number;
+    precio_actual?: number;
+    usar_cotizado?: boolean;
+};
+
+type CotizacionPos = {
+    id: number;
+    codigo: string;
+    estado: string;
+    vence: string | null;
+    vigente: boolean;
+    puede_convertir: boolean;
+    motivo: string | null;
+    cliente: { id: number; nombre: string };
+    items: {
+        variante_id: number;
+        sku: string;
+        producto: string;
+        atributos: string;
+        cantidad: number;
+        precio_cotizado: number;
+        precio_actual: number;
+        stock: number;
+        activa: boolean;
+    }[];
 };
 
 type PagoFila = {
@@ -135,6 +173,7 @@ type Filtros = {
     cliente: string;
     creada: string;
     ficha: string;
+    cotizacion: string;
 };
 
 const props = defineProps<{
@@ -152,6 +191,7 @@ const props = defineProps<{
     clientes: ClientePos[];
     metodos: Metodo[];
     ficha: Ficha | null;
+    cotizacion: CotizacionPos | null;
     kpis: { hoy: number; completadas: number; anuladas: number };
     filtros: Filtros;
     abrirAlta: boolean;
@@ -187,7 +227,10 @@ onBeforeUnmount(() => {
     document.removeEventListener('pointerdown', cerrarMenuVenta);
 });
 
-function consulta(origen: Filtros, pagina?: number): Record<string, string | number> {
+function consulta(
+    origen: Filtros,
+    pagina?: number,
+): Record<string, string | number> {
     const query: Record<string, string | number> = {};
     (Object.keys(origen) as (keyof Filtros)[]).forEach((clave) => {
         if (origen[clave] !== '') query[clave] = origen[clave];
@@ -279,7 +322,12 @@ const metodoInicial = computed(() =>
     props.metodos[0] ? String(props.metodos[0].id) : '',
 );
 const pagos = ref<PagoFila[]>([
-    { clave: uid(), metodo_pago_id: metodoInicial.value, monto: '', referencia: '' },
+    {
+        clave: uid(),
+        metodo_pago_id: metodoInicial.value,
+        monto: '',
+        referencia: '',
+    },
 ]);
 
 watch(
@@ -292,7 +340,8 @@ watch(
 const reservado = computed(() => {
     const mapa: Record<number, number> = {};
     carrito.value.forEach((linea) => {
-        mapa[linea.variante_id] = (mapa[linea.variante_id] ?? 0) + linea.cantidad;
+        mapa[linea.variante_id] =
+            (mapa[linea.variante_id] ?? 0) + linea.cantidad;
     });
     return mapa;
 });
@@ -326,7 +375,9 @@ function agregar(item: VariantePos): void {
     if (!props.puedeCrear) return;
     const stock = disponible(item);
     if (stock <= 0) {
-        toast.error(`Sin stock para ${item.sku}. Disponible: ${item.stock_actual}.`);
+        toast.error(
+            `Sin stock para ${item.sku}. Disponible: ${item.stock_actual}.`,
+        );
         return;
     }
     const existente = carrito.value.find(
@@ -357,7 +408,11 @@ function quitar(clave: string): void {
 
 function ajustarCantidad(linea: LineaCarrito): void {
     const otras = carrito.value
-        .filter((otra) => otra.variante_id === linea.variante_id && otra.clave !== linea.clave)
+        .filter(
+            (otra) =>
+                otra.variante_id === linea.variante_id &&
+                otra.clave !== linea.clave,
+        )
         .reduce((acc, otra) => acc + otra.cantidad, 0);
     const max = Math.max(1, linea.stock - otras);
     if (linea.cantidad > max) {
@@ -369,23 +424,35 @@ function ajustarCantidad(linea: LineaCarrito): void {
 
 const subtotal = computed(() =>
     carrito.value.reduce(
-        (acc, linea) => acc + linea.cantidad * linea.precio - Number(linea.descuento || 0),
+        (acc, linea) =>
+            acc + linea.cantidad * linea.precio - Number(linea.descuento || 0),
         0,
     ),
 );
-const total = computed(() =>
-    Math.round((subtotal.value - Number(descuentoGlobal.value || 0)) * 100) / 100,
+const total = computed(
+    () =>
+        Math.round(
+            (subtotal.value - Number(descuentoGlobal.value || 0)) * 100,
+        ) / 100,
 );
-const pagado = computed(() =>
-    Math.round(
-        pagos.value.reduce((acc, pago) => acc + Number(pago.monto || 0), 0) * 100,
-    ) / 100,
+const pagado = computed(
+    () =>
+        Math.round(
+            pagos.value.reduce(
+                (acc, pago) => acc + Number(pago.monto || 0),
+                0,
+            ) * 100,
+        ) / 100,
 );
-const saldo = computed(() => Math.round((total.value - pagado.value) * 100) / 100);
+const saldo = computed(
+    () => Math.round((total.value - pagado.value) * 100) / 100,
+);
 const pagosOk = computed(
     () =>
         pagos.value.length > 0 &&
-        pagos.value.every((pago) => Number(pago.monto) > 0 && pago.metodo_pago_id !== '') &&
+        pagos.value.every(
+            (pago) => Number(pago.monto) > 0 && pago.metodo_pago_id !== '',
+        ) &&
         Math.abs(saldo.value) < 0.01,
 );
 
@@ -428,6 +495,7 @@ const opcionesMetodo = computed(() =>
 type ItemVenta = {
     variante_id: number;
     cantidad: number;
+    precio_unitario?: number;
     descuento: number;
     numero_serie: string;
     meses_garantia: number;
@@ -440,6 +508,7 @@ type PagoVentaForm = {
 };
 
 const formVenta = useForm({
+    cotizacion_id: null as number | null,
     cliente_id: null as number | null,
     cliente_nuevo: null as null | {
         tipo_documento: string;
@@ -460,11 +529,15 @@ function clienteEstaListo(): boolean {
         return alta.nombre.trim() !== '' && alta.numero_documento.trim() !== '';
     }
 
-    return clienteId.value !== null && !(clienteElegido.value?.es_generico ?? false);
+    return (
+        clienteId.value !== null &&
+        !(clienteElegido.value?.es_generico ?? false)
+    );
 }
 
 const puedeConfirmar = computed(() => {
     if (!props.puedeCrear) return false;
+    if (props.cotizacion && !props.cotizacion.puede_convertir) return false;
     if (carrito.value.length === 0) return false;
     if (!clienteEstaListo()) return false;
     if (!pagosOk.value) return false;
@@ -504,9 +577,15 @@ function confirmarVenta(): void {
     formVenta.descuento_global = Number(descuentoGlobal.value || 0);
     formVenta.observacion = observacion.value;
     formVenta.enviar_email = enviarEmail.value;
+    formVenta.cotizacion_id = props.cotizacion?.id ?? null;
     formVenta.items = carrito.value.map((linea) => ({
         variante_id: linea.variante_id,
         cantidad: linea.cantidad,
+        ...(props.cotizacion &&
+        linea.usar_cotizado &&
+        linea.precio_cotizado !== undefined
+            ? { precio_unitario: linea.precio_cotizado }
+            : {}),
         descuento: Number(linea.descuento || 0),
         numero_serie: linea.numero_serie,
         meses_garantia: linea.meses_garantia,
@@ -629,7 +708,10 @@ const resumen = computed(() => {
 });
 
 const chips = computed(() => {
-    const lista: { clave: 'q' | 'estado' | 'desde' | 'hasta'; texto: string }[] = [];
+    const lista: {
+        clave: 'q' | 'estado' | 'desde' | 'hasta';
+        texto: string;
+    }[] = [];
 
     if (formFiltro.q) {
         lista.push({ clave: 'q', texto: `Buscar: ${formFiltro.q}` });
@@ -667,6 +749,84 @@ function limpiarConsulta(): void {
     aplicar({ q: '', estado: '', desde: '', hasta: '' });
 }
 
+/* ── CU20: venta desde una cotización ── */
+
+function elegirPrecio(linea: LineaCarrito, usarCotizado: boolean): void {
+    linea.usar_cotizado = usarCotizado;
+    linea.precio =
+        (usarCotizado ? linea.precio_cotizado : linea.precio_actual) ??
+        linea.precio;
+}
+
+function cargarCotizacion(cotizacion: CotizacionPos): void {
+    limpiarVenta();
+    modoCliente.value = 'frecuente';
+    clienteId.value = cotizacion.cliente.id;
+    observacion.value = `Venta desde la cotización ${cotizacion.codigo}`;
+
+    carrito.value = cotizacion.items
+        .filter((item) => item.activa)
+        .map((item) => {
+            const mantener =
+                cotizacion.vigente &&
+                item.precio_cotizado !== item.precio_actual;
+
+            return {
+                clave: uid(),
+                variante_id: item.variante_id,
+                sku: item.sku,
+                producto: item.producto,
+                atributos: item.atributos,
+                precio: mantener ? item.precio_cotizado : item.precio_actual,
+                stock: item.stock,
+                cantidad: item.cantidad,
+                descuento: 0,
+                numero_serie: '',
+                meses_garantia: 3,
+                precio_cotizado: item.precio_cotizado,
+                precio_actual: item.precio_actual,
+                usar_cotizado: mantener,
+            };
+        });
+
+    const primero = pagos.value[0];
+
+    if (primero) {
+        primero.monto = String(total.value);
+    }
+
+    ventaAbierta.value = true;
+}
+
+watch(
+    () => props.cotizacion,
+    (cotizacion) => {
+        if (cotizacion && props.puedeCrear) {
+            cargarCotizacion(cotizacion);
+        }
+    },
+    { immediate: true },
+);
+
+/** Con un solo pago, el monto sigue al total mientras se elige qué precio usar. */
+watch(total, (nuevo) => {
+    const unico = pagos.value[0];
+
+    if (props.cotizacion && pagos.value.length === 1 && unico) {
+        unico.monto = String(nuevo);
+    }
+});
+
+watch(ventaAbierta, (abierta) => {
+    if (!abierta && props.cotizacion) {
+        aplicar({ cotizacion: '' });
+    }
+});
+
+const lineasSinStock = computed(() =>
+    carrito.value.filter((linea) => linea.cantidad > linea.stock),
+);
+
 const erroresVenta = computed(() => Object.values(formVenta.errors));
 
 watch(erroresVenta, (errores) => {
@@ -674,7 +834,7 @@ watch(erroresVenta, (errores) => {
 });
 </script>
 
-<template>  
+<template>
     <div>
         <Head title="Ventas" />
 
@@ -706,12 +866,24 @@ watch(erroresVenta, (errores) => {
                             Nueva venta
                             <ChevronDown :size="16" />
                         </button>
-                        <div v-if="menuVenta" class="cc-pos__menu-panel" role="menu">
-                            <button type="button" role="menuitem" @click="abrirVenta('frecuente')">
+                        <div
+                            v-if="menuVenta"
+                            class="cc-pos__menu-panel"
+                            role="menu"
+                        >
+                            <button
+                                type="button"
+                                role="menuitem"
+                                @click="abrirVenta('frecuente')"
+                            >
                                 <UserRound :size="16" />
                                 Cliente frecuente
                             </button>
-                            <button type="button" role="menuitem" @click="abrirVenta('nuevo')">
+                            <button
+                                type="button"
+                                role="menuitem"
+                                @click="abrirVenta('nuevo')"
+                            >
                                 <UserPlus :size="16" />
                                 Nuevo cliente
                             </button>
@@ -734,7 +906,9 @@ watch(erroresVenta, (errores) => {
             </motion.div>
 
             <Dialog v-if="!filtros.creada" v-model:open="ventaAbierta">
-                <DialogContent class="cc-theme cc-admin cc-log-dialog cc-pos-form">
+                <DialogContent
+                    class="cc-theme cc-admin cc-log-dialog cc-pos-form"
+                >
                     <DialogHeader>
                         <DialogTitle>
                             {{
@@ -753,8 +927,47 @@ watch(erroresVenta, (errores) => {
                     </DialogHeader>
                     <form class="cc-pos-sheet" @submit.prevent="confirmarVenta">
                         <div class="cc-pos-sheet__cuerpo">
-                            <div v-if="erroresVenta.length" class="cc-pos__alertas">
-                                <p v-for="(error, i) in erroresVenta" :key="i">{{ error }}</p>
+                            <div
+                                v-if="cotizacion"
+                                class="cc-pos__cotizacion"
+                                data-test="banner-cotizacion"
+                            >
+                                <strong
+                                    >Venta desde la cotización
+                                    {{ cotizacion.codigo }}</strong
+                                >
+                                <span>
+                                    Cliente {{ cotizacion.cliente.nombre }} ·
+                                    vigente hasta {{ cotizacion.vence }}
+                                </span>
+                                <p
+                                    v-if="!cotizacion.puede_convertir"
+                                    class="cc-modal-error"
+                                    role="alert"
+                                >
+                                    {{ cotizacion.motivo }}
+                                </p>
+                                <p
+                                    v-else-if="lineasSinStock.length"
+                                    class="cc-modal-error"
+                                    role="alert"
+                                    data-test="aviso-stock"
+                                >
+                                    Sin stock suficiente en
+                                    {{
+                                        lineasSinStock
+                                            .map((l) => l.sku)
+                                            .join(', ')
+                                    }}. Ajusta las cantidades para continuar.
+                                </p>
+                            </div>
+                            <div
+                                v-if="erroresVenta.length"
+                                class="cc-pos__alertas"
+                            >
+                                <p v-for="(error, i) in erroresVenta" :key="i">
+                                    {{ error }}
+                                </p>
                             </div>
 
                             <section class="cc-pos__bloque">
@@ -767,22 +980,39 @@ watch(erroresVenta, (errores) => {
                                         placeholder="SKU, código de barras o nombre..."
                                     />
                                 </label>
-                                <div v-if="catalogoFiltrado.length" class="cc-pos__lista">
+                                <div
+                                    v-if="catalogoFiltrado.length"
+                                    class="cc-pos__lista"
+                                >
                                     <button
                                         v-for="item in catalogoFiltrado"
                                         :key="item.id"
                                         type="button"
                                         class="cc-pos__prod"
-                                        :disabled="disponible(item) <= 0 || !puedeCrear"
+                                        :disabled="
+                                            disponible(item) <= 0 || !puedeCrear
+                                        "
                                         @click="agregar(item)"
                                     >
                                         <div>
                                             <b>{{ item.producto }}</b>
-                                            <small>{{ item.sku }} · {{ item.atributos || '—' }}</small>
+                                            <small
+                                                >{{ item.sku }} ·
+                                                {{
+                                                    item.atributos || '—'
+                                                }}</small
+                                            >
                                         </div>
                                         <div class="cc-pos__prod-meta">
-                                            <span>{{ moneda.format(item.precio_venta) }}</span>
-                                            <em :class="['cc-log__badge', tonoStock(item)]">
+                                            <span>{{
+                                                moneda.format(item.precio_venta)
+                                            }}</span>
+                                            <em
+                                                :class="[
+                                                    'cc-log__badge',
+                                                    tonoStock(item),
+                                                ]"
+                                            >
                                                 {{ disponible(item) }} uds.
                                             </em>
                                         </div>
@@ -801,9 +1031,16 @@ watch(erroresVenta, (errores) => {
                                 <h2 class="cc-pos__h">
                                     <ShoppingCart :size="16" />
                                     Carrito
-                                    <span v-if="carrito.length" class="cc-pos__cuenta">{{ carrito.length }}</span>
+                                    <span
+                                        v-if="carrito.length"
+                                        class="cc-pos__cuenta"
+                                        >{{ carrito.length }}</span
+                                    >
                                 </h2>
-                                <p v-if="carrito.length === 0" class="cc-pos__vacio">
+                                <p
+                                    v-if="carrito.length === 0"
+                                    class="cc-pos__vacio"
+                                >
                                     Todavía no hay productos.
                                 </p>
                                 <div v-else class="cc-pos__carrito">
@@ -831,11 +1068,17 @@ watch(erroresVenta, (errores) => {
                                                 <span>Cant.</span>
                                                 <span class="cc-log__control">
                                                     <input
-                                                        v-model.number="linea.cantidad"
+                                                        v-model.number="
+                                                            linea.cantidad
+                                                        "
                                                         type="number"
                                                         min="1"
                                                         :max="linea.stock"
-                                                        @change="ajustarCantidad(linea)"
+                                                        @change="
+                                                            ajustarCantidad(
+                                                                linea,
+                                                            )
+                                                        "
                                                     />
                                                 </span>
                                             </label>
@@ -843,7 +1086,9 @@ watch(erroresVenta, (errores) => {
                                                 <span>Desc. Bs</span>
                                                 <span class="cc-log__control">
                                                     <input
-                                                        v-model.number="linea.descuento"
+                                                        v-model.number="
+                                                            linea.descuento
+                                                        "
                                                         type="number"
                                                         min="0"
                                                         step="0.01"
@@ -854,7 +1099,9 @@ watch(erroresVenta, (errores) => {
                                                 <span>Serie</span>
                                                 <span class="cc-log__control">
                                                     <input
-                                                        v-model="linea.numero_serie"
+                                                        v-model="
+                                                            linea.numero_serie
+                                                        "
                                                         type="text"
                                                         maxlength="100"
                                                         placeholder="Opcional"
@@ -865,7 +1112,9 @@ watch(erroresVenta, (errores) => {
                                                 <span>Garantía</span>
                                                 <span class="cc-log__control">
                                                     <input
-                                                        v-model.number="linea.meses_garantia"
+                                                        v-model.number="
+                                                            linea.meses_garantia
+                                                        "
                                                         type="number"
                                                         min="0"
                                                         max="60"
@@ -873,8 +1122,83 @@ watch(erroresVenta, (errores) => {
                                                 </span>
                                             </label>
                                         </div>
+                                        <div
+                                            v-if="
+                                                cotizacion &&
+                                                linea.precio_cotizado !==
+                                                    linea.precio_actual
+                                            "
+                                            class="cc-pos__precios"
+                                            data-test="diferencia-precios"
+                                        >
+                                            <span>
+                                                Cotizado
+                                                {{
+                                                    moneda.format(
+                                                        linea.precio_cotizado ??
+                                                            0,
+                                                    )
+                                                }}
+                                                / Actual
+                                                {{
+                                                    moneda.format(
+                                                        linea.precio_actual ??
+                                                            0,
+                                                    )
+                                                }}
+                                            </span>
+                                            <label>
+                                                <input
+                                                    type="radio"
+                                                    :name="`precio-${linea.clave}`"
+                                                    :checked="
+                                                        linea.usar_cotizado
+                                                    "
+                                                    :disabled="
+                                                        !cotizacion.vigente
+                                                    "
+                                                    @change="
+                                                        elegirPrecio(
+                                                            linea,
+                                                            true,
+                                                        )
+                                                    "
+                                                />
+                                                Mantener cotizado
+                                            </label>
+                                            <label>
+                                                <input
+                                                    type="radio"
+                                                    :name="`precio-${linea.clave}`"
+                                                    :checked="
+                                                        !linea.usar_cotizado
+                                                    "
+                                                    @change="
+                                                        elegirPrecio(
+                                                            linea,
+                                                            false,
+                                                        )
+                                                    "
+                                                />
+                                                Actualizar
+                                            </label>
+                                        </div>
+                                        <p
+                                            v-if="linea.cantidad > linea.stock"
+                                            class="cc-modal-error"
+                                            data-test="sin-stock"
+                                        >
+                                            Sin stock suficiente: disponible
+                                            {{ linea.stock }}.
+                                        </p>
                                         <p class="cc-pos__sub">
-                                            {{ moneda.format(linea.cantidad * linea.precio - linea.descuento) }}
+                                            {{
+                                                moneda.format(
+                                                    linea.cantidad *
+                                                        linea.precio -
+                                                        linea.descuento,
+                                                )
+                                            }}
                                             · stock {{ linea.stock }}
                                         </p>
                                     </article>
@@ -884,10 +1208,16 @@ watch(erroresVenta, (errores) => {
                             <section class="cc-pos__bloque">
                                 <h2 class="cc-pos__h">
                                     <UserRound :size="16" />
-                                    {{ modoCliente === 'nuevo' ? 'Cliente nuevo' : 'Cliente frecuente' }}
+                                    {{
+                                        modoCliente === 'nuevo'
+                                            ? 'Cliente nuevo'
+                                            : 'Cliente frecuente'
+                                    }}
                                 </h2>
                                 <template v-if="modoCliente === 'frecuente'">
-                                    <label class="cc-log__control cc-log__search">
+                                    <label
+                                        class="cc-log__control cc-log__search"
+                                    >
                                         <Search :size="16" />
                                         <input
                                             v-model="clienteQ"
@@ -895,29 +1225,45 @@ watch(erroresVenta, (errores) => {
                                             placeholder="Nombre o CI/NIT..."
                                         />
                                     </label>
-                                    <div v-if="clientesFiltrados.length" class="cc-pos__chips">
+                                    <div
+                                        v-if="clientesFiltrados.length"
+                                        class="cc-pos__chips"
+                                    >
                                         <button
                                             v-for="c in clientesFiltrados"
                                             :key="c.id"
                                             type="button"
                                             class="cc-pos__chip"
-                                            :class="{ 'is-on': clienteId === c.id }"
+                                            :class="{
+                                                'is-on': clienteId === c.id,
+                                            }"
                                             @click="clienteId = c.id"
                                         >
                                             {{ c.nombre }}
                                         </button>
                                     </div>
-                                    <p v-else-if="clienteQ.trim()" class="cc-pos__vacio">
+                                    <p
+                                        v-else-if="clienteQ.trim()"
+                                        class="cc-pos__vacio"
+                                    >
                                         No hay clientes con ese dato.
                                     </p>
                                     <p v-else class="cc-pos__vacio">
                                         Buscá por nombre o documento.
                                     </p>
-                                    <p v-if="clienteElegido && !clienteElegido.es_generico" class="cc-pos__elegido">
+                                    <p
+                                        v-if="
+                                            clienteElegido &&
+                                            !clienteElegido.es_generico
+                                        "
+                                        class="cc-pos__elegido"
+                                    >
                                         {{ clienteElegido.nombre }}
                                         <small>
                                             {{ clienteElegido.tipo_documento }}
-                                            {{ clienteElegido.numero_documento }}
+                                            {{
+                                                clienteElegido.numero_documento
+                                            }}
                                         </small>
                                     </p>
                                 </template>
@@ -925,10 +1271,26 @@ watch(erroresVenta, (errores) => {
                                     <label class="cc-modal-field">
                                         <span>Nombre</span>
                                         <span class="cc-log__control">
-                                            <input v-model="alta.nombre" type="text" maxlength="200" required />
+                                            <input
+                                                v-model="alta.nombre"
+                                                type="text"
+                                                maxlength="200"
+                                                required
+                                            />
                                         </span>
-                                        <small v-if="formVenta.errors['cliente_nuevo.nombre']" class="cc-modal-error">
-                                            {{ formVenta.errors['cliente_nuevo.nombre'] }}
+                                        <small
+                                            v-if="
+                                                formVenta.errors[
+                                                    'cliente_nuevo.nombre'
+                                                ]
+                                            "
+                                            class="cc-modal-error"
+                                        >
+                                            {{
+                                                formVenta.errors[
+                                                    'cliente_nuevo.nombre'
+                                                ]
+                                            }}
                                         </small>
                                     </label>
                                     <div class="cc-pos__pareja">
@@ -938,8 +1300,14 @@ watch(erroresVenta, (errores) => {
                                                 v-model="alta.tipo_documento"
                                                 etiqueta="CI o NIT"
                                                 :opciones="[
-                                                    { value: 'CI', label: 'CI' },
-                                                    { value: 'NIT', label: 'NIT' },
+                                                    {
+                                                        value: 'CI',
+                                                        label: 'CI',
+                                                    },
+                                                    {
+                                                        value: 'NIT',
+                                                        label: 'NIT',
+                                                    },
                                                 ]"
                                             />
                                         </div>
@@ -947,14 +1315,27 @@ watch(erroresVenta, (errores) => {
                                             <span>Número de documento</span>
                                             <span class="cc-log__control">
                                                 <input
-                                                    v-model="alta.numero_documento"
+                                                    v-model="
+                                                        alta.numero_documento
+                                                    "
                                                     type="text"
                                                     maxlength="50"
                                                     required
                                                 />
                                             </span>
-                                            <small v-if="formVenta.errors['cliente_nuevo.numero_documento']" class="cc-modal-error">
-                                                {{ formVenta.errors['cliente_nuevo.numero_documento'] }}
+                                            <small
+                                                v-if="
+                                                    formVenta.errors[
+                                                        'cliente_nuevo.numero_documento'
+                                                    ]
+                                                "
+                                                class="cc-modal-error"
+                                            >
+                                                {{
+                                                    formVenta.errors[
+                                                        'cliente_nuevo.numero_documento'
+                                                    ]
+                                                }}
                                             </small>
                                         </label>
                                     </div>
@@ -962,19 +1343,49 @@ watch(erroresVenta, (errores) => {
                                         <label class="cc-modal-field">
                                             <span>Teléfono</span>
                                             <span class="cc-log__control">
-                                                <input v-model="alta.telefono" type="tel" maxlength="15" />
+                                                <input
+                                                    v-model="alta.telefono"
+                                                    type="tel"
+                                                    maxlength="15"
+                                                />
                                             </span>
-                                            <small v-if="formVenta.errors['cliente_nuevo.telefono']" class="cc-modal-error">
-                                                {{ formVenta.errors['cliente_nuevo.telefono'] }}
+                                            <small
+                                                v-if="
+                                                    formVenta.errors[
+                                                        'cliente_nuevo.telefono'
+                                                    ]
+                                                "
+                                                class="cc-modal-error"
+                                            >
+                                                {{
+                                                    formVenta.errors[
+                                                        'cliente_nuevo.telefono'
+                                                    ]
+                                                }}
                                             </small>
                                         </label>
                                         <label class="cc-modal-field">
                                             <span>Email</span>
                                             <span class="cc-log__control">
-                                                <input v-model="alta.email" type="email" maxlength="150" />
+                                                <input
+                                                    v-model="alta.email"
+                                                    type="email"
+                                                    maxlength="150"
+                                                />
                                             </span>
-                                            <small v-if="formVenta.errors['cliente_nuevo.email']" class="cc-modal-error">
-                                                {{ formVenta.errors['cliente_nuevo.email'] }}
+                                            <small
+                                                v-if="
+                                                    formVenta.errors[
+                                                        'cliente_nuevo.email'
+                                                    ]
+                                                "
+                                                class="cc-modal-error"
+                                            >
+                                                {{
+                                                    formVenta.errors[
+                                                        'cliente_nuevo.email'
+                                                    ]
+                                                }}
                                             </small>
                                         </label>
                                     </div>
@@ -983,8 +1394,12 @@ watch(erroresVenta, (errores) => {
 
                             <section class="cc-pos__bloque">
                                 <h2 class="cc-pos__h">Pago</h2>
-                                <p v-if="carrito.length > 0 && !pagosOk" class="cc-pos__aviso">
-                                    El pago tiene que coincidir con el total. Saldo
+                                <p
+                                    v-if="carrito.length > 0 && !pagosOk"
+                                    class="cc-pos__aviso"
+                                >
+                                    El pago tiene que coincidir con el total.
+                                    Saldo
                                     {{ moneda.format(saldo) }}.
                                 </p>
                                 <div
@@ -1033,7 +1448,11 @@ watch(erroresVenta, (errores) => {
                                         <Trash2 :size="14" />
                                     </button>
                                 </div>
-                                <button type="button" class="cc-button cc-button--ghost" @click="agregarPago">
+                                <button
+                                    type="button"
+                                    class="cc-button cc-button--ghost"
+                                    @click="agregarPago"
+                                >
                                     <Plus :size="14" />
                                     Otro pago
                                 </button>
@@ -1050,28 +1469,42 @@ watch(erroresVenta, (errores) => {
                                         </span>
                                     </label>
                                     <label class="cc-pos__check">
-                                        <input v-model="enviarEmail" type="checkbox" />
+                                        <input
+                                            v-model="enviarEmail"
+                                            type="checkbox"
+                                        />
                                         Enviar nota por email
                                     </label>
                                 </div>
                                 <label class="cc-modal-field">
                                     <span>Observación</span>
-                                    <span class="cc-log__control cc-log__control--area">
-                                        <textarea v-model="observacion" rows="2" maxlength="1000" />
+                                    <span
+                                        class="cc-log__control cc-log__control--area"
+                                    >
+                                        <textarea
+                                            v-model="observacion"
+                                            rows="2"
+                                            maxlength="1000"
+                                        />
                                     </span>
                                 </label>
                             </section>
                         </div>
                         <div class="cc-pos__cierre">
                             <div class="cc-pos__totales">
-                                <span>Subtotal {{ moneda.format(subtotal) }}</span>
+                                <span
+                                    >Subtotal
+                                    {{ moneda.format(subtotal) }}</span
+                                >
                                 <b>Total {{ moneda.format(total) }}</b>
                             </div>
                             <button
                                 type="submit"
                                 class="cc-button cc-pos__confirmar"
                                 :class="{ 'is-load': formVenta.processing }"
-                                :disabled="!puedeConfirmar || formVenta.processing"
+                                :disabled="
+                                    !puedeConfirmar || formVenta.processing
+                                "
                             >
                                 Confirmar venta
                             </button>
@@ -1080,230 +1513,252 @@ watch(erroresVenta, (errores) => {
                 </DialogContent>
             </Dialog>
 
-                <form class="cc-log__filters" @submit.prevent="aplicar()">
-                    <div class="cc-log__row">
-                        <label class="cc-log__control cc-log__search">
-                            <Search :size="16" />
-                            <input
-                                v-model="formFiltro.q"
-                                type="search"
-                                placeholder="N° de venta, cliente o serie..."
-                                @input="buscarLuego"
-                            />
-                            <button
-                                v-if="formFiltro.q"
-                                type="button"
-                                class="cc-log__clear"
-                                aria-label="Limpiar búsqueda"
-                                @click="quitarFiltro('q')"
-                            >
-                                <X :size="14" />
-                            </button>
-                        </label>
-                        <CcRevealSelect
-                            v-model="formFiltro.estado"
-                            etiqueta="Todos los estados"
-                            :opciones="opcionesEstado"
-                            @change="aplicar()"
+            <form class="cc-log__filters" @submit.prevent="aplicar()">
+                <div class="cc-log__row">
+                    <label class="cc-log__control cc-log__search">
+                        <Search :size="16" />
+                        <input
+                            v-model="formFiltro.q"
+                            type="search"
+                            placeholder="N° de venta, cliente o serie..."
+                            @input="buscarLuego"
                         />
-                        <div class="cc-log__row-actions">
-                            <button type="submit" class="cc-button">
-                                <Search :size="16" />
-                                Buscar
-                            </button>
-                            <button
-                                type="button"
-                                class="cc-button cc-button--ghost"
-                                @click="limpiarConsulta"
-                            >
-                                <RotateCcw :size="16" />
-                                Limpiar
-                            </button>
-                        </div>
-                    </div>
-                    <div class="cc-log__row">
-                        <div class="cc-log__dates-par cc-ventas-fechas">
-                            <label class="cc-modal-field">
-                                <span>Desde</span>
-                                <span class="cc-log__control">
-                                    <Calendar :size="16" />
-                                    <input v-model="formFiltro.desde" type="date" @change="aplicar()" />
-                                </span>
-                            </label>
-                            <label class="cc-modal-field">
-                                <span>Hasta</span>
-                                <span class="cc-log__control">
-                                    <Calendar :size="16" />
-                                    <input v-model="formFiltro.hasta" type="date" @change="aplicar()" />
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-                    <div v-if="chips.length" class="cc-admin__chips">
                         <button
-                            v-for="chip in chips"
-                            :key="chip.clave"
+                            v-if="formFiltro.q"
                             type="button"
-                            class="cc-admin__chip"
-                            :aria-label="`Quitar filtro ${chip.texto}`"
-                            @click="quitarFiltro(chip.clave)"
+                            class="cc-log__clear"
+                            aria-label="Limpiar búsqueda"
+                            @click="quitarFiltro('q')"
                         >
-                            {{ chip.texto }}
-                            <X :size="12" />
+                            <X :size="14" />
+                        </button>
+                    </label>
+                    <CcRevealSelect
+                        v-model="formFiltro.estado"
+                        etiqueta="Todos los estados"
+                        :opciones="opcionesEstado"
+                        @change="aplicar()"
+                    />
+                    <div class="cc-log__row-actions">
+                        <button type="submit" class="cc-button">
+                            <Search :size="16" />
+                            Buscar
+                        </button>
+                        <button
+                            type="button"
+                            class="cc-button cc-button--ghost"
+                            @click="limpiarConsulta"
+                        >
+                            <RotateCcw :size="16" />
+                            Limpiar
                         </button>
                     </div>
-                </form>
+                </div>
+                <div class="cc-log__row">
+                    <div class="cc-log__dates-par cc-ventas-fechas">
+                        <label class="cc-modal-field">
+                            <span>Desde</span>
+                            <span class="cc-log__control">
+                                <Calendar :size="16" />
+                                <input
+                                    v-model="formFiltro.desde"
+                                    type="date"
+                                    @change="aplicar()"
+                                />
+                            </span>
+                        </label>
+                        <label class="cc-modal-field">
+                            <span>Hasta</span>
+                            <span class="cc-log__control">
+                                <Calendar :size="16" />
+                                <input
+                                    v-model="formFiltro.hasta"
+                                    type="date"
+                                    @change="aplicar()"
+                                />
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div v-if="chips.length" class="cc-admin__chips">
+                    <button
+                        v-for="chip in chips"
+                        :key="chip.clave"
+                        type="button"
+                        class="cc-admin__chip"
+                        :aria-label="`Quitar filtro ${chip.texto}`"
+                        @click="quitarFiltro(chip.clave)"
+                    >
+                        {{ chip.texto }}
+                        <X :size="12" />
+                    </button>
+                </div>
+            </form>
 
-                <motion.div layout class="cc-log__panel" :transition="adminSpring">
-                    <div class="cc-log__table-wrap">
-                        <table class="cc-log__table">
-                            <thead>
-                                <tr>
-                                    <th>N°</th>
-                                    <th>Fecha</th>
-                                    <th>Cliente</th>
-                                    <th>Total</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="venta in ventas.data" :key="venta.id">
-                                    <td>
+            <motion.div layout class="cc-log__panel" :transition="adminSpring">
+                <div class="cc-log__table-wrap">
+                    <table class="cc-log__table">
+                        <thead>
+                            <tr>
+                                <th>N°</th>
+                                <th>Fecha</th>
+                                <th>Cliente</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="venta in ventas.data" :key="venta.id">
+                                <td>
+                                    <button
+                                        type="button"
+                                        class="cc-pos__link"
+                                        @click="
+                                            aplicar({ ficha: String(venta.id) })
+                                        "
+                                    >
+                                        {{ venta.numero }}
+                                    </button>
+                                </td>
+                                <td>{{ venta.fecha }}</td>
+                                <td>
+                                    {{ venta.cliente }}
+                                    <small class="cc-pos__muted">{{
+                                        venta.documento
+                                    }}</small>
+                                </td>
+                                <td>{{ moneda.format(venta.total) }}</td>
+                                <td>
+                                    <em
+                                        class="cc-log__badge"
+                                        :class="
+                                            venta.estado === 'ANULADA'
+                                                ? 'cc-log__badge--error'
+                                                : 'cc-log__badge--crear'
+                                        "
+                                    >
+                                        {{ venta.estado }}
+                                    </em>
+                                </td>
+                                <td>
+                                    <span class="cc-row-actions">
                                         <button
                                             type="button"
-                                            class="cc-pos__link"
-                                            @click="aplicar({ ficha: String(venta.id) })"
-                                        >
-                                            {{ venta.numero }}
-                                        </button>
-                                    </td>
-                                    <td>{{ venta.fecha }}</td>
-                                    <td>
-                                        {{ venta.cliente }}
-                                        <small class="cc-pos__muted">{{ venta.documento }}</small>
-                                    </td>
-                                    <td>{{ moneda.format(venta.total) }}</td>
-                                    <td>
-                                        <em
-                                            class="cc-log__badge"
-                                            :class="
-                                                venta.estado === 'ANULADA'
-                                                    ? 'cc-log__badge--error'
-                                                    : 'cc-log__badge--crear'
+                                            class="cc-log__eye"
+                                            :aria-label="`Ver nota ${venta.numero}`"
+                                            @click="
+                                                aplicar({
+                                                    ficha: String(venta.id),
+                                                })
                                             "
                                         >
-                                            {{ venta.estado }}
-                                        </em>
-                                    </td>
-                                    <td>
-                                        <span class="cc-row-actions">
-                                            <button
-                                                type="button"
-                                                class="cc-log__eye"
-                                                :aria-label="`Ver nota ${venta.numero}`"
-                                                @click="aplicar({ ficha: String(venta.id) })"
-                                            >
-                                                <Eye :size="15" />
-                                            </button>
-                                            <button
-                                                v-if="puedeAnular && venta.estado !== 'ANULADA'"
-                                                type="button"
-                                                class="cc-log__eye cc-log__eye--danger"
-                                                :aria-label="`Anular nota ${venta.numero}`"
-                                                @click="pedirAnular(venta)"
-                                            >
-                                                <Ban :size="15" />
-                                            </button>
-                                        </span>
-                                    </td>
-                                </tr>
-                                <tr v-if="ventas.data.length === 0">
-                                    <td class="cc-log__empty" colspan="6">
-                                        <strong>Sin ventas</strong>
-                                        No hay ventas con esos filtros.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="cc-log-board">
-                        <p v-if="ventas.data.length === 0" class="cc-log__empty">
-                            <strong>Sin ventas</strong>
-                            No hay ventas con esos filtros.
-                        </p>
-                        <article
-                            v-for="venta in ventas.data"
-                            :key="`pin-${venta.id}`"
-                            class="cc-log-pin"
-                            :class="{ 'is-off': venta.estado === 'ANULADA' }"
+                                            <Eye :size="15" />
+                                        </button>
+                                        <button
+                                            v-if="
+                                                puedeAnular &&
+                                                venta.estado !== 'ANULADA'
+                                            "
+                                            type="button"
+                                            class="cc-log__eye cc-log__eye--danger"
+                                            :aria-label="`Anular nota ${venta.numero}`"
+                                            @click="pedirAnular(venta)"
+                                        >
+                                            <Ban :size="15" />
+                                        </button>
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr v-if="ventas.data.length === 0">
+                                <td class="cc-log__empty" colspan="6">
+                                    <strong>Sin ventas</strong>
+                                    No hay ventas con esos filtros.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="cc-log-board">
+                    <p v-if="ventas.data.length === 0" class="cc-log__empty">
+                        <strong>Sin ventas</strong>
+                        No hay ventas con esos filtros.
+                    </p>
+                    <article
+                        v-for="venta in ventas.data"
+                        :key="`pin-${venta.id}`"
+                        class="cc-log-pin"
+                        :class="{ 'is-off': venta.estado === 'ANULADA' }"
+                    >
+                        <button
+                            type="button"
+                            class="cc-log-pin__abrir"
+                            @click="aplicar({ ficha: String(venta.id) })"
                         >
-                            <button
-                                type="button"
-                                class="cc-log-pin__abrir"
-                                @click="aplicar({ ficha: String(venta.id) })"
-                            >
-                                <span class="cc-log-pin__cuerpo">
-                                    <strong>{{ venta.numero }}</strong>
-                                    <p>
-                                        {{ venta.cliente }}
-                                        · {{ moneda.format(venta.total) }}
-                                    </p>
-                                    <small>
-                                        {{ venta.fecha }}
-                                        · {{ venta.documento || 'Sin documento' }}
-                                    </small>
-                                </span>
-                            </button>
-                            <span class="cc-row-actions">
-                                <span
-                                    class="cc-log__badge"
-                                    :class="
-                                        venta.estado === 'ANULADA'
-                                            ? 'cc-log__badge--error'
-                                            : 'cc-log__badge--crear'
-                                    "
-                                >
-                                    {{ venta.estado }}
-                                </span>
-                                <button
-                                    v-if="puedeAnular && venta.estado !== 'ANULADA'"
-                                    type="button"
-                                    class="cc-log__eye cc-log__eye--danger"
-                                    :aria-label="`Anular nota ${venta.numero}`"
-                                    @click="pedirAnular(venta)"
-                                >
-                                    <Ban :size="15" />
-                                </button>
+                            <span class="cc-log-pin__cuerpo">
+                                <strong>{{ venta.numero }}</strong>
+                                <p>
+                                    {{ venta.cliente }}
+                                    · {{ moneda.format(venta.total) }}
+                                </p>
+                                <small>
+                                    {{ venta.fecha }}
+                                    · {{ venta.documento || 'Sin documento' }}
+                                </small>
                             </span>
-                        </article>
+                        </button>
+                        <span class="cc-row-actions">
+                            <span
+                                class="cc-log__badge"
+                                :class="
+                                    venta.estado === 'ANULADA'
+                                        ? 'cc-log__badge--error'
+                                        : 'cc-log__badge--crear'
+                                "
+                            >
+                                {{ venta.estado }}
+                            </span>
+                            <button
+                                v-if="puedeAnular && venta.estado !== 'ANULADA'"
+                                type="button"
+                                class="cc-log__eye cc-log__eye--danger"
+                                :aria-label="`Anular nota ${venta.numero}`"
+                                @click="pedirAnular(venta)"
+                            >
+                                <Ban :size="15" />
+                            </button>
+                        </span>
+                    </article>
+                </div>
+                <footer class="cc-log__foot">
+                    <p>{{ resumen }}</p>
+                    <div class="cc-log__pager">
+                        <button
+                            type="button"
+                            aria-label="Página anterior"
+                            :disabled="ventas.meta.current_page <= 1"
+                            @click="aplicar({}, ventas.meta.current_page - 1)"
+                        >
+                            <ChevronLeft :size="16" />
+                        </button>
+                        <span>
+                            Página {{ ventas.meta.current_page }} de
+                            {{ ventas.meta.last_page }}
+                        </span>
+                        <button
+                            type="button"
+                            aria-label="Página siguiente"
+                            :disabled="
+                                ventas.meta.current_page >=
+                                ventas.meta.last_page
+                            "
+                            @click="aplicar({}, ventas.meta.current_page + 1)"
+                        >
+                            <ChevronRight :size="16" />
+                        </button>
                     </div>
-                    <footer class="cc-log__foot">
-                        <p>{{ resumen }}</p>
-                        <div class="cc-log__pager">
-                            <button
-                                type="button"
-                                aria-label="Página anterior"
-                                :disabled="ventas.meta.current_page <= 1"
-                                @click="aplicar({}, ventas.meta.current_page - 1)"
-                            >
-                                <ChevronLeft :size="16" />
-                            </button>
-                            <span>
-                                Página {{ ventas.meta.current_page }} de
-                                {{ ventas.meta.last_page }}
-                            </span>
-                            <button
-                                type="button"
-                                aria-label="Página siguiente"
-                                :disabled="ventas.meta.current_page >= ventas.meta.last_page"
-                                @click="aplicar({}, ventas.meta.current_page + 1)"
-                            >
-                                <ChevronRight :size="16" />
-                            </button>
-                        </div>
-                    </footer>
-                </motion.div>
+                </footer>
+            </motion.div>
         </section>
 
         <Teleport v-if="enCliente && puedeCrear" to="#cc-portal">
@@ -1321,7 +1776,10 @@ watch(erroresVenta, (errores) => {
         </Teleport>
 
         <Dialog v-model:open="fichaAbierta">
-            <DialogContent class="cc-theme cc-admin cc-log-dialog" style="max-width: 640px">
+            <DialogContent
+                class="cc-theme cc-admin cc-log-dialog"
+                style="max-width: 640px"
+            >
                 <DialogHeader>
                     <DialogTitle>Nota {{ ficha?.numero }}</DialogTitle>
                     <DialogDescription>
@@ -1336,12 +1794,19 @@ watch(erroresVenta, (errores) => {
                     <ul>
                         <li v-for="item in ficha.items" :key="item.id">
                             {{ item.cantidad }} × {{ item.producto }}
-                            <small v-if="item.numero_serie"> · serie {{ item.numero_serie }}</small>
+                            <small v-if="item.numero_serie">
+                                · serie {{ item.numero_serie }}</small
+                            >
                             <small> · {{ item.meses_garantia }} meses</small>
                         </li>
                     </ul>
                     <div class="cc-modal-actions">
-                        <a :href="ficha.pdf" class="cc-button" target="_blank" rel="noopener">
+                        <a
+                            :href="ficha.pdf"
+                            class="cc-button"
+                            target="_blank"
+                            rel="noopener"
+                        >
                             <Download :size="14" />
                             Descargar PDF
                         </a>
@@ -1368,7 +1833,10 @@ watch(erroresVenta, (errores) => {
         </Dialog>
 
         <Dialog v-model:open="clienteNuevo">
-            <DialogContent class="cc-theme cc-admin cc-log-dialog" style="max-width: 520px">
+            <DialogContent
+                class="cc-theme cc-admin cc-log-dialog"
+                style="max-width: 520px"
+            >
                 <DialogHeader>
                     <DialogTitle>Nuevo cliente</DialogTitle>
                     <DialogDescription>
@@ -1379,7 +1847,11 @@ watch(erroresVenta, (errores) => {
                     <label class="cc-modal-field">
                         <span>Nombre</span>
                         <span class="cc-log__control">
-                            <input v-model="alta.nombre" required maxlength="200" />
+                            <input
+                                v-model="alta.nombre"
+                                required
+                                maxlength="200"
+                            />
                         </span>
                     </label>
                     <div class="cc-pos__campos">
@@ -1394,12 +1866,12 @@ watch(erroresVenta, (errores) => {
                         <label class="cc-modal-field">
                             <span>Documento</span>
                             <span class="cc-log__control">
-                            <input
-                                v-model="alta.numero_documento"
-                                required
-                                maxlength="50"
-                                placeholder="Número"
-                            />
+                                <input
+                                    v-model="alta.numero_documento"
+                                    required
+                                    maxlength="50"
+                                    placeholder="Número"
+                                />
                             </span>
                         </label>
                     </div>
@@ -1415,11 +1887,18 @@ watch(erroresVenta, (errores) => {
                             <input v-model="alta.telefono" type="tel" />
                         </span>
                     </label>
-                    <p v-if="alta.errors.numero_documento" class="cc-modal-error">
+                    <p
+                        v-if="alta.errors.numero_documento"
+                        class="cc-modal-error"
+                    >
                         {{ alta.errors.numero_documento }}
                     </p>
                     <div class="cc-modal-actions">
-                        <button type="submit" class="cc-button" :disabled="alta.processing">
+                        <button
+                            type="submit"
+                            class="cc-button"
+                            :disabled="alta.processing"
+                        >
                             Guardar cliente
                         </button>
                     </div>
@@ -1428,9 +1907,14 @@ watch(erroresVenta, (errores) => {
         </Dialog>
 
         <Dialog v-model:open="anularAbierto">
-            <DialogContent class="cc-theme cc-admin cc-log-dialog" style="max-width: 480px">
+            <DialogContent
+                class="cc-theme cc-admin cc-log-dialog"
+                style="max-width: 480px"
+            >
                 <DialogHeader>
-                    <DialogTitle>Anular {{ objetivoAnular?.numero }}</DialogTitle>
+                    <DialogTitle
+                        >Anular {{ objetivoAnular?.numero }}</DialogTitle
+                    >
                     <DialogDescription>
                         El stock vuelve al inventario. El motivo es obligatorio.
                     </DialogDescription>
@@ -1439,11 +1923,19 @@ watch(erroresVenta, (errores) => {
                     <label class="cc-modal-field">
                         <span>Motivo</span>
                         <span class="cc-log__control cc-log__control--area">
-                            <textarea v-model="motivoAnular" rows="3" required minlength="5" />
+                            <textarea
+                                v-model="motivoAnular"
+                                rows="3"
+                                required
+                                minlength="5"
+                            />
                         </span>
                     </label>
                     <div class="cc-modal-actions">
-                        <button type="submit" class="cc-button cc-button--danger">
+                        <button
+                            type="submit"
+                            class="cc-button cc-button--danger"
+                        >
                             Anular venta
                         </button>
                     </div>
@@ -1752,7 +2244,9 @@ watch(erroresVenta, (errores) => {
 }
 .cc-pos__pago {
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(96px, 0.8fr) minmax(0, 1fr) 36px;
+    grid-template-columns:
+        minmax(0, 1.15fr) minmax(96px, 0.8fr) minmax(0, 1fr)
+        36px;
     gap: 10px;
     align-items: center;
 }

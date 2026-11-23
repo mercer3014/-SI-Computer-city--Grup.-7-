@@ -22,8 +22,7 @@ const authConfigContent = computed<TwoFactorConfigContent>(() => {
 
     return {
         title: 'Código de autenticación',
-        description:
-            'Ingresá el código de tu app autenticadora.',
+        description: 'Ingresá el código de tu app autenticadora.',
         buttonText: 'usar un código de recuperación',
     };
 });
@@ -71,9 +70,9 @@ const toggleRecoveryMode = (clearErrors: () => void): void => {
                         required
                         v-focus
                         @input="
-                            code = (
-                                $event.target as HTMLInputElement
-                            ).value.replace(/\D/g, '').slice(0, 6)
+                            code = ($event.target as HTMLInputElement).value
+                                .replace(/\D/g, '')
+                                .slice(0, 6)
                         "
                     />
                 </span>
@@ -129,11 +128,7 @@ const toggleRecoveryMode = (clearErrors: () => void): void => {
                 />
             </label>
 
-            <button
-                type="submit"
-                class="cc-button"
-                :disabled="processing"
-            >
+            <button type="submit" class="cc-button" :disabled="processing">
                 <Spinner v-if="processing" />
                 <AuthActionIcon v-else />
                 <span>Continuar</span>

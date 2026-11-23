@@ -6,6 +6,7 @@ export type User = {
     rol?: string | null;
     permisos?: string[];
     es_cliente?: boolean;
+    puede_asistente?: boolean;
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
     created_at: string;

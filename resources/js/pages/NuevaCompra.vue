@@ -13,7 +13,14 @@ import {
     Trash2,
     X,
 } from '@lucide/vue';
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import {
+    computed,
+    onBeforeUnmount,
+    onMounted,
+    reactive,
+    ref,
+    watch,
+} from 'vue';
 import CcRadialFab from '@/components/admin/CcRadialFab.vue';
 import CcRevealSelect from '@/components/admin/CcRevealSelect.vue';
 import {
@@ -108,7 +115,12 @@ const props = defineProps<{
     proveedores: ProveedorOpcion[];
     metodos: Metodo[];
     catalogo: VarianteCompra[];
-    kpis: { compras: number; agotados: number; bajos: number; total_mes: number };
+    kpis: {
+        compras: number;
+        agotados: number;
+        bajos: number;
+        total_mes: number;
+    };
     filtros: Filtros;
     numeroSugerido: string;
     fechaHoy: string;
@@ -230,7 +242,9 @@ const reposicionFiltrada = computed(() => {
 const todosVisibles = computed(
     () =>
         reposicionFiltrada.value.length > 0 &&
-        reposicionFiltrada.value.every((item) => seleccion.value.includes(item.sku)),
+        reposicionFiltrada.value.every((item) =>
+            seleccion.value.includes(item.sku),
+        ),
 );
 
 const catalogoFiltrado = computed(() => {
@@ -258,15 +272,20 @@ function subtotal(linea: LineaCarrito): number {
     return Math.round(linea.cantidad * costo * 100) / 100;
 }
 
-const total = computed(() =>
-    Math.round(carrito.value.reduce((acc, linea) => acc + subtotal(linea), 0) * 100) / 100,
+const total = computed(
+    () =>
+        Math.round(
+            carrito.value.reduce((acc, linea) => acc + subtotal(linea), 0) *
+                100,
+        ) / 100,
 );
 
 const errores = computed(() => Object.values(form.errors));
 
 const puedeRegistrar = computed(() => {
     if (form.proveedor_id === '' || form.metodo_pago_id === '') return false;
-    if (form.numero_compra.trim() === '' || form.fecha_compra === '') return false;
+    if (form.numero_compra.trim() === '' || form.fecha_compra === '')
+        return false;
     if (carrito.value.length === 0) return false;
 
     return carrito.value.every((linea) => {
@@ -287,7 +306,10 @@ const resumen = computed(() => {
     return `Mostrando ${from}–${to} de ${cantidadFmt.format(cantidad)} compras`;
 });
 
-function consulta(origen: Filtros, pagina?: number): Record<string, string | number> {
+function consulta(
+    origen: Filtros,
+    pagina?: number,
+): Record<string, string | number> {
     const query: Record<string, string | number> = {};
     if (origen.q !== '') query.q = origen.q;
     if (origen.proveedor !== '') query.proveedor = origen.proveedor;
@@ -330,7 +352,8 @@ function cantidadDe(item: VarianteCompra): number {
 
 function fijarCantidad(item: VarianteCompra, evento: Event): void {
     const valor = Number((evento.target as HTMLInputElement).value);
-    cantidades[item.sku] = Number.isFinite(valor) && valor >= 1 ? Math.floor(valor) : 1;
+    cantidades[item.sku] =
+        Number.isFinite(valor) && valor >= 1 ? Math.floor(valor) : 1;
 }
 
 function marcar(sku: string): void {
@@ -341,7 +364,9 @@ function marcar(sku: string): void {
 
 function alternarVisibles(): void {
     if (todosVisibles.value) {
-        const visibles = new Set(reposicionFiltrada.value.map((item) => item.sku));
+        const visibles = new Set(
+            reposicionFiltrada.value.map((item) => item.sku),
+        );
         seleccion.value = seleccion.value.filter((sku) => !visibles.has(sku));
         return;
     }
@@ -353,7 +378,9 @@ function alternarVisibles(): void {
 
 function marcarAgotados(): void {
     const set = new Set(seleccion.value);
-    props.reposicion.filter((item) => item.agotado).forEach((item) => set.add(item.sku));
+    props.reposicion
+        .filter((item) => item.agotado)
+        .forEach((item) => set.add(item.sku));
     seleccion.value = [...set];
     vistaRepo.value = 'agotados';
 }
@@ -384,12 +411,18 @@ function abrirNueva(): void {
 }
 
 function comprarLote(): void {
-    const elegidos = props.reposicion.filter((item) => seleccion.value.includes(item.sku));
+    const elegidos = props.reposicion.filter((item) =>
+        seleccion.value.includes(item.sku),
+    );
     if (elegidos.length === 0) return;
 
     carrito.value = elegidos.map((item) => lineaDesde(item, cantidadDe(item)));
     const origenes = [
-        ...new Set(elegidos.map((item) => item.proveedor_id).filter((id): id is number => id !== null)),
+        ...new Set(
+            elegidos
+                .map((item) => item.proveedor_id)
+                .filter((id): id is number => id !== null),
+        ),
     ];
     form.clearErrors();
     form.proveedor_id = origenes.length === 1 ? String(origenes[0]) : '';
@@ -412,7 +445,10 @@ function agregar(item: VarianteCompra): void {
     );
 
     if (existente) {
-        existente.cantidad += item.agotado || item.stock_actual <= item.stock_minimo ? item.sugerido : 1;
+        existente.cantidad +=
+            item.agotado || item.stock_actual <= item.stock_minimo
+                ? item.sugerido
+                : 1;
         busqueda.value = '';
         return;
     }
@@ -427,7 +463,8 @@ function quitar(clave: string): void {
 }
 
 function ajustarCantidad(linea: LineaCarrito): void {
-    if (!Number.isFinite(linea.cantidad) || linea.cantidad < 1) linea.cantidad = 1;
+    if (!Number.isFinite(linea.cantidad) || linea.cantidad < 1)
+        linea.cantidad = 1;
     linea.cantidad = Math.floor(linea.cantidad);
 }
 
@@ -436,7 +473,8 @@ function registrar(): void {
         sku: linea.sku,
         cantidad: linea.cantidad,
         costo_unitario: Number(linea.costo),
-        numero_serie: linea.numero_serie.trim() === '' ? null : linea.numero_serie.trim(),
+        numero_serie:
+            linea.numero_serie.trim() === '' ? null : linea.numero_serie.trim(),
     }));
     form.numero_compra = form.numero_compra.trim();
     form.post('/compras', {
@@ -473,10 +511,15 @@ function fabElegir(id: string): void {
                     <h1>Compras</h1>
                     <p>
                         Revisá lo que ya compraste y armá un lote con los
-                        productos agotados. Cada uno muestra de qué proveedor vino.
+                        productos agotados. Cada uno muestra de qué proveedor
+                        vino.
                     </p>
                 </motion.div>
-                <motion.div layout class="cc-log__actions" :transition="adminSpring">
+                <motion.div
+                    layout
+                    class="cc-log__actions"
+                    :transition="adminSpring"
+                >
                     <button type="button" class="cc-button" @click="abrirNueva">
                         <Plus :size="16" />
                         Nueva compra
@@ -484,7 +527,11 @@ function fabElegir(id: string): void {
                 </motion.div>
             </motion.div>
 
-            <motion.div layout class="cc-admin__kpis cc-compra-kpis" :transition="adminSpring">
+            <motion.div
+                layout
+                class="cc-admin__kpis cc-compra-kpis"
+                :transition="adminSpring"
+            >
                 <motion.div
                     v-for="kpi in kpis"
                     :key="kpi.label"
@@ -513,7 +560,10 @@ function fabElegir(id: string): void {
                             type="button"
                             class="cc-log__clear"
                             aria-label="Limpiar búsqueda"
-                            @click="filtros.q = ''; aplicar()"
+                            @click="
+                                filtros.q = '';
+                                aplicar();
+                            "
                         >
                             <X :size="14" />
                         </button>
@@ -529,7 +579,11 @@ function fabElegir(id: string): void {
                             <Search :size="16" />
                             Buscar
                         </button>
-                        <button type="button" class="cc-button cc-button--ghost" @click="limpiar">
+                        <button
+                            type="button"
+                            class="cc-button cc-button--ghost"
+                            @click="limpiar"
+                        >
                             <RotateCcw :size="16" />
                             Limpiar
                         </button>
@@ -560,7 +614,9 @@ function fabElegir(id: string): void {
                             <tr v-for="compra in compras.data" :key="compra.id">
                                 <td>
                                     <span class="cc-log__when">
-                                        <strong>{{ compra.numero_compra }}</strong>
+                                        <strong>{{
+                                            compra.numero_compra
+                                        }}</strong>
                                         <small>{{ compra.estado }}</small>
                                     </span>
                                 </td>
@@ -568,10 +624,17 @@ function fabElegir(id: string): void {
                                 <td>
                                     <span class="cc-log__when">
                                         <strong>{{ compra.proveedor }}</strong>
-                                        <small>{{ compra.nombre_comercial ?? 'Sin nombre comercial' }}</small>
+                                        <small>{{
+                                            compra.nombre_comercial ??
+                                            'Sin nombre comercial'
+                                        }}</small>
                                     </span>
                                 </td>
-                                <td>{{ cantidadFmt.format(compra.lineas) }} · {{ cantidadFmt.format(compra.unidades) }} uds.</td>
+                                <td>
+                                    {{ cantidadFmt.format(compra.lineas) }} ·
+                                    {{ cantidadFmt.format(compra.unidades) }}
+                                    uds.
+                                </td>
                                 <td>{{ moneda.format(compra.total) }}</td>
                                 <td>
                                     <button
@@ -592,15 +655,28 @@ function fabElegir(id: string): void {
                         <strong>Sin compras</strong>
                         Todavía no hay compras con ese filtro.
                     </p>
-                    <article v-for="compra in compras.data" :key="`pin-${compra.id}`" class="cc-log-pin">
-                        <button type="button" class="cc-log-pin__abrir" @click="ficha = compra">
+                    <article
+                        v-for="compra in compras.data"
+                        :key="`pin-${compra.id}`"
+                        class="cc-log-pin"
+                    >
+                        <button
+                            type="button"
+                            class="cc-log-pin__abrir"
+                            @click="ficha = compra"
+                        >
                             <span class="cc-log-pin__cuerpo">
                                 <strong>{{ compra.numero_compra }}</strong>
                                 <p>{{ compra.proveedor }}</p>
-                                <small>{{ compra.fecha ?? 'Sin fecha' }} · {{ compra.lineas }} líneas</small>
+                                <small
+                                    >{{ compra.fecha ?? 'Sin fecha' }} ·
+                                    {{ compra.lineas }} líneas</small
+                                >
                             </span>
                         </button>
-                        <span class="cc-log-pin__valor">{{ moneda.format(compra.total) }}</span>
+                        <span class="cc-log-pin__valor">{{
+                            moneda.format(compra.total)
+                        }}</span>
                     </article>
                 </div>
                 <footer class="cc-log__foot">
@@ -614,11 +690,17 @@ function fabElegir(id: string): void {
                         >
                             <ChevronLeft :size="16" />
                         </button>
-                        <span>Página {{ compras.meta.current_page }} de {{ compras.meta.last_page }}</span>
+                        <span
+                            >Página {{ compras.meta.current_page }} de
+                            {{ compras.meta.last_page }}</span
+                        >
                         <button
                             type="button"
                             aria-label="Página siguiente"
-                            :disabled="compras.meta.current_page >= compras.meta.last_page"
+                            :disabled="
+                                compras.meta.current_page >=
+                                compras.meta.last_page
+                            "
                             @click="ir(compras.meta.current_page + 1)"
                         >
                             <ChevronRight :size="16" />
@@ -631,10 +713,17 @@ function fabElegir(id: string): void {
                 <div class="cc-compra__bloque-head">
                     <div>
                         <h2>Para reponer</h2>
-                        <p>Marcá los agotados y compralos en un solo lote. La cantidad cubre el mínimo.</p>
+                        <p>
+                            Marcá los agotados y compralos en un solo lote. La
+                            cantidad cubre el mínimo.
+                        </p>
                     </div>
                     <div class="cc-compra__lote">
-                        <button type="button" class="cc-button cc-button--ghost" @click="marcarAgotados">
+                        <button
+                            type="button"
+                            class="cc-button cc-button--ghost"
+                            @click="marcarAgotados"
+                        >
                             Sold out
                         </button>
                         <button
@@ -688,46 +777,93 @@ function fabElegir(id: string): void {
                                 <tr v-if="reposicionFiltrada.length === 0">
                                     <td class="cc-log__empty" colspan="6">
                                         <strong>Nada para reponer</strong>
-                                        No hay productos agotados ni bajo el mínimo.
+                                        No hay productos agotados ni bajo el
+                                        mínimo.
                                     </td>
                                 </tr>
-                                <tr v-for="item in reposicionFiltrada" :key="item.sku">
+                                <tr
+                                    v-for="item in reposicionFiltrada"
+                                    :key="item.sku"
+                                >
                                     <td>
                                         <input
                                             type="checkbox"
-                                            :checked="seleccion.includes(item.sku)"
+                                            :checked="
+                                                seleccion.includes(item.sku)
+                                            "
                                             :aria-label="`Seleccionar ${item.sku}`"
                                             @change="marcar(item.sku)"
                                         />
                                     </td>
                                     <td>
                                         <span class="cc-log__when">
-                                            <strong>{{ item.producto ?? item.sku }}</strong>
-                                            <small>{{ item.sku }} · {{ item.atributos || 'Sin atributos' }}</small>
+                                            <strong>{{
+                                                item.producto ?? item.sku
+                                            }}</strong>
+                                            <small
+                                                >{{ item.sku }} ·
+                                                {{
+                                                    item.atributos ||
+                                                    'Sin atributos'
+                                                }}</small
+                                            >
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="cc-log__badge" :class="badgeRepo(item)">
-                                            {{ item.agotado ? 'Agotado' : 'Bajo' }}
-                                            {{ cantidadFmt.format(item.stock_actual) }}/{{ cantidadFmt.format(item.stock_minimo) }}
+                                        <span
+                                            class="cc-log__badge"
+                                            :class="badgeRepo(item)"
+                                        >
+                                            {{
+                                                item.agotado
+                                                    ? 'Agotado'
+                                                    : 'Bajo'
+                                            }}
+                                            {{
+                                                cantidadFmt.format(
+                                                    item.stock_actual,
+                                                )
+                                            }}/{{
+                                                cantidadFmt.format(
+                                                    item.stock_minimo,
+                                                )
+                                            }}
                                         </span>
                                     </td>
                                     <td>
                                         <span class="cc-log__when">
-                                            <strong>{{ item.proveedor ?? 'Sin compras' }}</strong>
-                                            <small>{{ item.ultima_compra ? `${item.ultima_compra} · ${item.ultima_fecha ?? ''}` : 'Todavía no se compró' }}</small>
+                                            <strong>{{
+                                                item.proveedor ?? 'Sin compras'
+                                            }}</strong>
+                                            <small>{{
+                                                item.ultima_compra
+                                                    ? `${item.ultima_compra} · ${item.ultima_fecha ?? ''}`
+                                                    : 'Todavía no se compró'
+                                            }}</small>
                                         </span>
                                     </td>
-                                    <td>{{ item.costo_ultimo === null ? '—' : moneda.format(item.costo_ultimo) }}</td>
                                     <td>
-                                        <span class="cc-log__control cc-compra__num">
+                                        {{
+                                            item.costo_ultimo === null
+                                                ? '—'
+                                                : moneda.format(
+                                                      item.costo_ultimo,
+                                                  )
+                                        }}
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="cc-log__control cc-compra__num"
+                                        >
                                             <input
                                                 type="number"
                                                 min="1"
                                                 step="1"
                                                 :value="cantidadDe(item)"
                                                 :aria-label="`Cantidad del lote de ${item.sku}`"
-                                                @change="fijarCantidad(item, $event)"
+                                                @change="
+                                                    fijarCantidad(item, $event)
+                                                "
                                             />
                                         </span>
                                     </td>
@@ -736,11 +872,18 @@ function fabElegir(id: string): void {
                         </table>
                     </div>
                     <div class="cc-log-board">
-                        <p v-if="reposicionFiltrada.length === 0" class="cc-log__empty">
+                        <p
+                            v-if="reposicionFiltrada.length === 0"
+                            class="cc-log__empty"
+                        >
                             <strong>Nada para reponer</strong>
                             No hay productos agotados ni bajo el mínimo.
                         </p>
-                        <article v-for="item in reposicionFiltrada" :key="`repo-${item.sku}`" class="cc-log-pin">
+                        <article
+                            v-for="item in reposicionFiltrada"
+                            :key="`repo-${item.sku}`"
+                            class="cc-log-pin"
+                        >
                             <label class="cc-compra__check">
                                 <input
                                     type="checkbox"
@@ -752,8 +895,13 @@ function fabElegir(id: string): void {
                             <span class="cc-log-pin__cuerpo">
                                 <strong>{{ item.producto ?? item.sku }}</strong>
                                 <p>{{ item.sku }}</p>
-                                <small>{{ item.proveedor ?? 'Sin compras anteriores' }}</small>
-                                <span class="cc-log__badge" :class="badgeRepo(item)">
+                                <small>{{
+                                    item.proveedor ?? 'Sin compras anteriores'
+                                }}</small>
+                                <span
+                                    class="cc-log__badge"
+                                    :class="badgeRepo(item)"
+                                >
                                     {{ item.agotado ? 'Agotado' : 'Bajo' }}
                                 </span>
                             </span>
@@ -772,17 +920,25 @@ function fabElegir(id: string): void {
         </Teleport>
 
         <Dialog v-model:open="compraAbierta">
-            <DialogContent class="cc-theme cc-admin cc-log-dialog cc-compra-dialog">
+            <DialogContent
+                class="cc-theme cc-admin cc-log-dialog cc-compra-dialog"
+            >
                 <DialogHeader>
                     <DialogTitle>Nueva compra</DialogTitle>
                     <DialogDescription>
-                        {{ carrito.length }} {{ carrito.length === 1 ? 'línea' : 'líneas' }} · {{ moneda.format(total) }}
+                        {{ carrito.length }}
+                        {{ carrito.length === 1 ? 'línea' : 'líneas' }} ·
+                        {{ moneda.format(total) }}
                     </DialogDescription>
                 </DialogHeader>
                 <form class="cc-compra" @submit.prevent="registrar">
-                    <div v-if="avisoLote" class="cc-compra__aviso">{{ avisoLote }}</div>
+                    <div v-if="avisoLote" class="cc-compra__aviso">
+                        {{ avisoLote }}
+                    </div>
                     <div v-if="errores.length" class="cc-compra__alertas">
-                        <p v-for="(error, i) in errores" :key="i">{{ error }}</p>
+                        <p v-for="(error, i) in errores" :key="i">
+                            {{ error }}
+                        </p>
                     </div>
                     <div class="cc-compra__datos">
                         <div class="cc-modal-field">
@@ -804,13 +960,23 @@ function fabElegir(id: string): void {
                         <label class="cc-modal-field">
                             <span>Número <b class="cc-req">*</b></span>
                             <span class="cc-log__control">
-                                <input v-model="form.numero_compra" type="text" maxlength="50" required />
+                                <input
+                                    v-model="form.numero_compra"
+                                    type="text"
+                                    maxlength="50"
+                                    required
+                                />
                             </span>
                         </label>
                         <label class="cc-modal-field">
                             <span>Fecha <b class="cc-req">*</b></span>
                             <span class="cc-log__control">
-                                <input v-model="form.fecha_compra" type="date" :max="fechaHoy" required />
+                                <input
+                                    v-model="form.fecha_compra"
+                                    type="date"
+                                    :max="fechaHoy"
+                                    required
+                                />
                             </span>
                         </label>
                     </div>
@@ -825,7 +991,10 @@ function fabElegir(id: string): void {
                                 @keydown.enter.prevent
                             />
                         </label>
-                        <div v-if="catalogoFiltrado.length" class="cc-compra__lista">
+                        <div
+                            v-if="catalogoFiltrado.length"
+                            class="cc-compra__lista"
+                        >
                             <button
                                 v-for="item in catalogoFiltrado"
                                 :key="item.sku"
@@ -836,8 +1005,14 @@ function fabElegir(id: string): void {
                                 <span>
                                     <b>{{ item.producto }}</b>
                                     <small>
-                                        {{ item.sku }} · {{ item.proveedor ?? 'Sin proveedor' }} ·
-                                        {{ item.agotado ? 'Agotado' : `${item.stock_actual} uds.` }}
+                                        {{ item.sku }} ·
+                                        {{ item.proveedor ?? 'Sin proveedor' }}
+                                        ·
+                                        {{
+                                            item.agotado
+                                                ? 'Agotado'
+                                                : `${item.stock_actual} uds.`
+                                        }}
                                     </small>
                                 </span>
                                 <em><Plus :size="14" /> Agregar</em>
@@ -866,12 +1041,22 @@ function fabElegir(id: string): void {
                                 <tr v-for="linea in carrito" :key="linea.clave">
                                     <td>
                                         <span class="cc-log__when">
-                                            <strong>{{ linea.producto }}</strong>
-                                            <small>{{ linea.sku }} · {{ linea.proveedor ?? 'Sin compra anterior' }}</small>
+                                            <strong>{{
+                                                linea.producto
+                                            }}</strong>
+                                            <small
+                                                >{{ linea.sku }} ·
+                                                {{
+                                                    linea.proveedor ??
+                                                    'Sin compra anterior'
+                                                }}</small
+                                            >
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="cc-log__control cc-compra__num">
+                                        <span
+                                            class="cc-log__control cc-compra__num"
+                                        >
                                             <input
                                                 v-model.number="linea.cantidad"
                                                 type="number"
@@ -883,7 +1068,9 @@ function fabElegir(id: string): void {
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="cc-log__control cc-compra__costo">
+                                        <span
+                                            class="cc-log__control cc-compra__costo"
+                                        >
                                             <input
                                                 v-model="linea.costo"
                                                 type="number"
@@ -895,7 +1082,9 @@ function fabElegir(id: string): void {
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="cc-log__control cc-compra__serie">
+                                        <span
+                                            class="cc-log__control cc-compra__serie"
+                                        >
                                             <input
                                                 v-model="linea.numero_serie"
                                                 type="text"
@@ -905,7 +1094,9 @@ function fabElegir(id: string): void {
                                             />
                                         </span>
                                     </td>
-                                    <td>{{ moneda.format(subtotal(linea)) }}</td>
+                                    <td>
+                                        {{ moneda.format(subtotal(linea)) }}
+                                    </td>
                                     <td>
                                         <button
                                             type="button"
@@ -939,12 +1130,22 @@ function fabElegir(id: string): void {
             </DialogContent>
         </Dialog>
 
-        <Dialog :open="ficha !== null" @update:open="(abierto) => { if (!abierto) ficha = null; }">
-            <DialogContent class="cc-theme cc-admin cc-log-dialog cc-compra-dialog">
+        <Dialog
+            :open="ficha !== null"
+            @update:open="
+                (abierto) => {
+                    if (!abierto) ficha = null;
+                }
+            "
+        >
+            <DialogContent
+                class="cc-theme cc-admin cc-log-dialog cc-compra-dialog"
+            >
                 <DialogHeader>
                     <DialogTitle>{{ ficha?.numero_compra }}</DialogTitle>
                     <DialogDescription>
-                        {{ ficha?.proveedor }} · {{ ficha?.fecha ?? 'Sin fecha' }}
+                        {{ ficha?.proveedor }} ·
+                        {{ ficha?.fecha ?? 'Sin fecha' }}
                     </DialogDescription>
                 </DialogHeader>
                 <div v-if="ficha" class="cc-log__table-wrap">
@@ -959,15 +1160,22 @@ function fabElegir(id: string): void {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="item in ficha.items" :key="`${ficha.id}-${item.sku}-${item.numero_serie}`">
+                            <tr
+                                v-for="item in ficha.items"
+                                :key="`${ficha.id}-${item.sku}-${item.numero_serie}`"
+                            >
                                 <td>
                                     <span class="cc-log__when">
-                                        <strong>{{ item.producto ?? item.sku }}</strong>
+                                        <strong>{{
+                                            item.producto ?? item.sku
+                                        }}</strong>
                                         <small>{{ item.sku }}</small>
                                     </span>
                                 </td>
                                 <td>{{ cantidadFmt.format(item.cantidad) }}</td>
-                                <td>{{ moneda.format(item.costo_unitario) }}</td>
+                                <td>
+                                    {{ moneda.format(item.costo_unitario) }}
+                                </td>
                                 <td>{{ item.numero_serie ?? '—' }}</td>
                                 <td>{{ moneda.format(item.subtotal) }}</td>
                             </tr>

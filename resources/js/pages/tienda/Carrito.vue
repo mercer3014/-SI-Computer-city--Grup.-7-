@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ImageOff, Lock, Minus, Plus, ShoppingCart, Trash2 } from '@lucide/vue';
+import {
+    FileText,
+    ImageOff,
+    Lock,
+    Minus,
+    Plus,
+    ShoppingCart,
+    Trash2,
+} from '@lucide/vue';
 import { computed, onMounted, ref } from 'vue';
 import {
     bolivianos,
@@ -10,7 +18,8 @@ import {
 } from '@/composables/useCarrito';
 
 const page = usePage();
-const { items, total, cantidadTotal, cambiarCantidad, quitar, sincronizar } = useCarrito();
+const { items, total, cantidadTotal, cambiarCantidad, quitar, sincronizar } =
+    useCarrito();
 
 const montado = ref(false);
 const sincronizando = ref(false);
@@ -34,7 +43,9 @@ onMounted(async () => {
         });
 
         if (respuesta.ok) {
-            const datos = (await respuesta.json()) as { variantes: VarianteVigente[] };
+            const datos = (await respuesta.json()) as {
+                variantes: VarianteVigente[];
+            };
             avisos.value = sincronizar(datos.variantes);
         }
     } finally {
@@ -44,6 +55,14 @@ onMounted(async () => {
 
 function irAPagar(): void {
     router.visit('/tienda/checkout');
+}
+
+function generarCotizacion(): void {
+    if (items.value.length === 0) {
+        return;
+    }
+
+    router.visit('/tienda/cotizar');
 }
 </script>
 
@@ -55,7 +74,8 @@ function irAPagar(): void {
             <div>
                 <h1>Tu carrito</h1>
                 <p v-if="montado">
-                    {{ cantidadTotal }} {{ cantidadTotal === 1 ? 'artículo' : 'artículos' }}
+                    {{ cantidadTotal }}
+                    {{ cantidadTotal === 1 ? 'artículo' : 'artículos' }}
                 </p>
             </div>
         </header>
@@ -70,29 +90,69 @@ function irAPagar(): void {
             <ShoppingCart :size="32" aria-hidden="true" />
             <strong>Tu carrito está vacío</strong>
             <p>Explorá el catálogo y agregá lo que necesites.</p>
-            <Link href="/tienda" class="cc-button cc-button--solid">Ir al catálogo</Link>
+            <div class="cc-vacio__acciones">
+                <Link href="/tienda" class="cc-button cc-button--solid"
+                    >Ir al catálogo</Link
+                >
+                <button
+                    type="button"
+                    class="cc-button"
+                    disabled
+                    title="Agrega productos para generar una cotización"
+                    data-test="generar-cotizacion"
+                >
+                    <FileText :size="16" />
+                    Generar cotización
+                </button>
+            </div>
         </div>
 
         <div v-else class="cc-checkout">
             <ul class="cc-lineas" :aria-busy="sincronizando">
-                <li v-for="item in items" :key="item.variante_id" class="cc-linea">
-                    <Link :href="`/tienda/producto/${item.slug}`" class="cc-linea__media">
-                        <img v-if="item.imagen" :src="item.imagen" :alt="item.producto" width="88" height="88" />
+                <li
+                    v-for="item in items"
+                    :key="item.variante_id"
+                    class="cc-linea"
+                >
+                    <Link
+                        :href="`/tienda/producto/${item.slug}`"
+                        class="cc-linea__media"
+                    >
+                        <img
+                            v-if="item.imagen"
+                            :src="item.imagen"
+                            :alt="item.producto"
+                            width="88"
+                            height="88"
+                        />
                         <ImageOff v-else :size="24" aria-hidden="true" />
                     </Link>
                     <div class="cc-linea__info">
                         <Link :href="`/tienda/producto/${item.slug}`">
                             <strong>{{ item.producto }}</strong>
                         </Link>
-                        <small>{{ item.etiqueta ?? item.sku }} · {{ bolivianos(item.precio) }} c/u</small>
-                        <small v-if="item.stock <= 5" class="cc-linea__alerta">Quedan {{ item.stock }}</small>
+                        <small
+                            >{{ item.etiqueta ?? item.sku }} ·
+                            {{ bolivianos(item.precio) }} c/u</small
+                        >
+                        <small v-if="item.stock <= 5" class="cc-linea__alerta"
+                            >Quedan {{ item.stock }}</small
+                        >
                     </div>
-                    <div class="cc-stepper" :aria-label="`Cantidad de ${item.producto}`">
+                    <div
+                        class="cc-stepper"
+                        :aria-label="`Cantidad de ${item.producto}`"
+                    >
                         <button
                             type="button"
                             aria-label="Quitar una"
                             :disabled="item.cantidad <= 1"
-                            @click="cambiarCantidad(item.variante_id, item.cantidad - 1)"
+                            @click="
+                                cambiarCantidad(
+                                    item.variante_id,
+                                    item.cantidad - 1,
+                                )
+                            "
                         >
                             <Minus :size="14" />
                         </button>
@@ -100,13 +160,23 @@ function irAPagar(): void {
                         <button
                             type="button"
                             aria-label="Agregar una"
-                            :disabled="item.cantidad >= Math.min(item.stock, MAXIMO_POR_PRODUCTO)"
-                            @click="cambiarCantidad(item.variante_id, item.cantidad + 1)"
+                            :disabled="
+                                item.cantidad >=
+                                Math.min(item.stock, MAXIMO_POR_PRODUCTO)
+                            "
+                            @click="
+                                cambiarCantidad(
+                                    item.variante_id,
+                                    item.cantidad + 1,
+                                )
+                            "
                         >
                             <Plus :size="14" />
                         </button>
                     </div>
-                    <strong class="cc-linea__subtotal">{{ bolivianos(item.precio * item.cantidad) }}</strong>
+                    <strong class="cc-linea__subtotal">{{
+                        bolivianos(item.precio * item.cantidad)
+                    }}</strong>
                     <button
                         type="button"
                         class="cc-linea__quitar"
@@ -121,9 +191,18 @@ function irAPagar(): void {
             <aside class="cc-resumen" aria-label="Resumen">
                 <h2>Resumen</h2>
                 <dl>
-                    <div><dt>Subtotal</dt><dd>{{ bolivianos(total) }}</dd></div>
-                    <div><dt>Entrega</dt><dd>Retiro en tienda · gratis</dd></div>
-                    <div class="cc-resumen__total"><dt>Total</dt><dd>{{ bolivianos(total) }}</dd></div>
+                    <div>
+                        <dt>Subtotal</dt>
+                        <dd>{{ bolivianos(total) }}</dd>
+                    </div>
+                    <div>
+                        <dt>Entrega</dt>
+                        <dd>Retiro en tienda · gratis</dd>
+                    </div>
+                    <div class="cc-resumen__total">
+                        <dt>Total</dt>
+                        <dd>{{ bolivianos(total) }}</dd>
+                    </div>
                 </dl>
                 <button
                     type="button"
@@ -134,10 +213,26 @@ function irAPagar(): void {
                     <Lock :size="16" />
                     Ir a pagar
                 </button>
-                <p v-if="invitado" class="cc-resumen__nota">
-                    Para pagar te pediremos iniciar sesión o crear tu cuenta. Tu carrito se mantiene.
+                <button
+                    type="button"
+                    class="cc-button cc-button--block"
+                    :disabled="sincronizando || items.length === 0"
+                    data-test="generar-cotizacion"
+                    @click="generarCotizacion"
+                >
+                    <FileText :size="16" />
+                    Generar cotización
+                </button>
+                <p class="cc-resumen__nota">
+                    La cotización es gratis, vale unos días y no reserva stock.
                 </p>
-                <Link href="/tienda" class="cc-resumen__seguir">Seguir comprando</Link>
+                <p v-if="invitado" class="cc-resumen__nota">
+                    Para pagar o cotizar te pediremos iniciar sesión o crear tu
+                    cuenta. Tu carrito se mantiene.
+                </p>
+                <Link href="/tienda" class="cc-resumen__seguir"
+                    >Seguir comprando</Link
+                >
             </aside>
         </div>
     </div>

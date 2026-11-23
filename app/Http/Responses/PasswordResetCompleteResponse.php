@@ -3,6 +3,7 @@
 namespace App\Http\Responses;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Laravel\Fortify\Contracts\PasswordResetResponse as PasswordResetResponseContract;
 
 class PasswordResetCompleteResponse implements PasswordResetResponseContract
@@ -10,7 +11,7 @@ class PasswordResetCompleteResponse implements PasswordResetResponseContract
     public function __construct(public string $status) {}
 
     /**
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      */
     public function toResponse($request)
     {

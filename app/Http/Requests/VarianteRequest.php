@@ -112,7 +112,8 @@ class VarianteRequest extends FormRequest
         $sku = $this->input('sku');
         $codigo = $this->input('codigo_barras');
 
-        $atributos = collect($this->input('atributos', []))
+        $entrada = $this->input('atributos', []);
+        $atributos = collect(is_array($entrada) ? $entrada : [])
             ->filter(fn ($item) => is_array($item))
             ->map(fn (array $item) => [
                 'atributo_id' => $item['atributo_id'] ?? null,

@@ -489,7 +489,10 @@
 
     .cc-field__control.is-shaking {
         animation: cc-field-shake
-            calc(var(--cc-shake-dur-a, 80ms) * 2 + var(--cc-shake-dur-b, 60ms) * 2)
+            calc(
+                var(--cc-shake-dur-a, 80ms) * 2 + var(--cc-shake-dur-b, 60ms) *
+                    2
+            )
             linear;
     }
 
@@ -572,19 +575,31 @@
     @keyframes cc-field-shake {
         0% {
             transform: translateX(0);
-            animation-timing-function: var(--cc-shake-ease, cubic-bezier(0.22, 1, 0.36, 1));
+            animation-timing-function: var(
+                --cc-shake-ease,
+                cubic-bezier(0.22, 1, 0.36, 1)
+            );
         }
         28.57% {
             transform: translateX(var(--cc-shake-distance, 6px));
-            animation-timing-function: var(--cc-shake-ease, cubic-bezier(0.22, 1, 0.36, 1));
+            animation-timing-function: var(
+                --cc-shake-ease,
+                cubic-bezier(0.22, 1, 0.36, 1)
+            );
         }
         57.14% {
             transform: translateX(calc(var(--cc-shake-distance, 6px) * -1));
-            animation-timing-function: var(--cc-shake-ease, cubic-bezier(0.22, 1, 0.36, 1));
+            animation-timing-function: var(
+                --cc-shake-ease,
+                cubic-bezier(0.22, 1, 0.36, 1)
+            );
         }
         78.57% {
             transform: translateX(var(--cc-shake-overshoot, 4px));
-            animation-timing-function: var(--cc-shake-ease, cubic-bezier(0.22, 1, 0.36, 1));
+            animation-timing-function: var(
+                --cc-shake-ease,
+                cubic-bezier(0.22, 1, 0.36, 1)
+            );
         }
         100% {
             transform: translateX(0);
@@ -921,10 +936,7 @@
             margin-inline: 0;
             background: transparent;
             color: var(--cc-text);
-            padding:
-                max(72px, env(safe-area-inset-top))
-                24px
-                56px;
+            padding: max(72px, env(safe-area-inset-top)) 24px 56px;
         }
 
         .cc-auth-brand strong,
@@ -1061,7 +1073,6 @@
             transform: none;
         }
     }
-
 
     .cc-app-shell {
         min-height: 100svh;
@@ -1292,11 +1303,8 @@
         .cc-appbar {
             height: auto;
             min-height: 64px;
-            padding:
-                max(8px, env(safe-area-inset-top))
-                max(12px, env(safe-area-inset-right))
-                8px
-                8px;
+            padding: max(8px, env(safe-area-inset-top))
+                max(12px, env(safe-area-inset-right)) 8px 8px;
         }
 
         .cc-app-main {
@@ -1548,7 +1556,8 @@
 
     .cc-log__table td {
         padding: 12px 14px;
-        border-bottom: 1px solid color-mix(in srgb, var(--cc-border) 70%, transparent);
+        border-bottom: 1px solid
+            color-mix(in srgb, var(--cc-border) 70%, transparent);
         color: var(--cc-text);
         font-size: 13px;
         line-height: 18px;

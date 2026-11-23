@@ -58,6 +58,33 @@ const ETIQUETAS: Record<string, string> = {
     numero_venta: 'N° de venta',
     cliente: 'Cliente',
     total: 'Total',
+    nombre_tienda: 'Nombre de la tienda',
+    centro_comercial: 'Centro comercial',
+    direccion: 'Dirección',
+    numero_pasillo: 'Pasillo',
+    numero_local: 'Local',
+    whatsapp: 'WhatsApp',
+    latitud: 'Latitud',
+    longitud: 'Longitud',
+    google_maps_url: 'Enlace de Google Maps',
+    logo_url: 'Logo',
+    moneda: 'Moneda',
+    anuncio: 'Anuncio',
+    consulta: 'Consulta',
+    origen: 'Origen',
+    tipo: 'Tipo',
+    especificacion: 'Especificación aplicada',
+    formato: 'Formato',
+    puntuacion: 'Puntuación',
+    comentario: 'Comentario',
+    pedido: 'Pedido',
+    codigo: 'Código',
+    productos: 'Productos',
+    vence: 'Vence',
+    observacion: 'Observación',
+    cantidad: 'Cantidad',
+    estado_anterior: 'Estado anterior',
+    estado_nuevo: 'Estado nuevo',
 };
 
 const ENTIDADES: Record<string, string> = {
@@ -70,6 +97,13 @@ const ENTIDADES: Record<string, string> = {
     producto: 'producto',
     cliente: 'cliente',
     venta: 'venta',
+    configuracion_tienda: 'configuración de la tienda',
+    reporte: 'reporte',
+    mensaje_asistente: 'consulta al asistente',
+    conversacion_asistente: 'conversación del asistente',
+    plantilla_reporte: 'plantilla de reporte',
+    calificacion: 'calificación',
+    cotizacion: 'cotización',
 };
 
 const TIPOS: Record<string, string> = {
@@ -82,6 +116,13 @@ const TIPOS: Record<string, string> = {
     producto: 'Producto',
     cliente: 'Cliente',
     venta: 'Venta',
+    configuracion_tienda: 'Configuración de la tienda',
+    reporte: 'Reporte',
+    mensaje_asistente: 'Consulta al asistente',
+    conversacion_asistente: 'Conversación del asistente',
+    plantilla_reporte: 'Plantilla de reporte',
+    calificacion: 'Calificación',
+    cotizacion: 'Cotización',
 };
 
 const ACCIONES: Record<string, string> = {
@@ -113,6 +154,22 @@ const ACCIONES: Record<string, string> = {
     ELIMINAR_CLIENTE: 'Baja de cliente',
     REGISTRAR_VENTA: 'Venta registrada',
     ANULAR_VENTA: 'Venta anulada',
+    ACTUALIZAR_CONFIGURACION_TIENDA: 'Configuración de la tienda',
+    ACTUALIZAR_HORARIOS: 'Horarios de atención',
+    GENERAR_REPORTE: 'Reporte generado',
+    EXPORTAR_REPORTE: 'Reporte exportado',
+    CONSULTA_ASISTENTE: 'Consulta al asistente',
+    ESPECIFICACION_RECHAZADA: 'Consulta rechazada',
+    EXPORTAR_REPORTE_DINAMICO: 'Reporte del asistente exportado',
+    GUARDAR_PLANTILLA_REPORTE: 'Plantilla guardada',
+    CALIFICAR_PRODUCTO: 'Producto calificado',
+    PUBLICAR_CALIFICACION: 'Calificación publicada',
+    OCULTAR_CALIFICACION: 'Calificación oculta',
+    GENERAR_COTIZACION_WEB: 'Cotización web generada',
+    CAMBIAR_ESTADO_COTIZACION: 'Estado de cotización',
+    RENOVAR_COTIZACION: 'Cotización renovada',
+    CONVERTIR_COTIZACION: 'Cotización convertida en venta',
+    VENCER_COTIZACIONES: 'Cotizaciones vencidas',
 };
 
 function esRecord(valor: unknown): valor is Record<string, unknown> {
@@ -159,7 +216,19 @@ export function valorLegible(valor: unknown): string {
         return valor.map(valorLegible).join(', ');
     }
 
-    return String(valor);
+    if (typeof valor === 'bigint') {
+        return valor.toString();
+    }
+
+    if (typeof valor === 'object') {
+        try {
+            return JSON.stringify(valor) ?? '—';
+        } catch {
+            return '—';
+        }
+    }
+
+    return '—';
 }
 
 export function cambiosDe(anterior: unknown, nuevo: unknown): CambioBitacora[] {

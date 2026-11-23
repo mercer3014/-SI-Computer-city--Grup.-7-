@@ -56,6 +56,7 @@ class BloqueoLoginTest extends TestCase
             'email' => $user->email,
             'password' => 'password',
         ]);
+
         $this->assertGuest();
 
         $this->assertSame(3, $user->fresh()->intentos_fallidos);
@@ -117,6 +118,7 @@ class BloqueoLoginTest extends TestCase
             'email' => $user->email,
             'password' => 'password',
         ])->assertSessionHasErrors('email');
+
         $this->assertGuest();
     }
 

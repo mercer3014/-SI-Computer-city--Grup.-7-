@@ -6,6 +6,7 @@ use App\Http\Requests\ClienteRequest;
 use App\Http\Requests\VentaRequest;
 use App\Mail\NotaVentaMail;
 use App\Models\Cliente;
+use App\Models\Cotizacion;
 use App\Models\DetalleVenta;
 use App\Models\MetodoPago;
 use App\Models\PagoVenta;
@@ -13,6 +14,7 @@ use App\Models\User;
 use App\Models\VarianteProducto;
 use App\Models\Venta;
 use App\Services\BitacoraService;
+use App\Services\Cotizaciones\ConversionCotizacionService;
 use App\Services\NotaVentaPdf;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
@@ -29,7 +31,10 @@ use Throwable;
 
 class VentaController extends Controller
 {
-    public function __construct(private NotaVentaPdf $notaPdf) {}
+    public function __construct(
+        private NotaVentaPdf $notaPdf,
+        private ConversionCotizacionService $conversion,
+    ) {}
 
     /**
      * POS (nueva venta) + consulta de ventas.
@@ -44,9 +49,19 @@ class VentaController extends Controller
         $tab = $request->string('tab')->value();
         $desde = $request->string('desde')->value();
         $hasta = $request->string('hasta')->value();
+        $soloWeb = $request->string('origen')->value() === 'web';
         $clienteId = $request->integer('cliente');
         $creadaId = $request->integer('creada');
         $fichaId = $request->integer('ficha');
+        $cotizacionId = $request->integer('cotizacion');
+
+        if ($cotizacionId > 0) {
+            abort_unless(
+                $request->user()?->tienePermiso('ventas.crear'),
+                403,
+                'No tenés permiso para convertir cotizaciones en ventas.',
+            );
+        }
 
         if (! in_array($tab, ['nueva', 'consultar'], true)) {
             $tab = 'consultar';
@@ -74,6 +89,10 @@ class VentaController extends Controller
             $query->where('estado', $estado);
         }
 
+        if ($soloWeb) {
+            $query->whereNotNull('pedido_id');
+        }
+
         if ($desde !== '') {
             $query->whereDate('fecha', '>=', $desde);
         }
@@ -89,6 +108,7 @@ class VentaController extends Controller
             ->withQueryString();
 
         $totales = $this->totalesPagina($ventas->getCollection()->pluck('id')->all());
+        $cotizacion = $cotizacionId > 0 ? $this->cotizacionParaVenta($cotizacionId) : null;
 
         return Inertia::render('Ventas', [
             'ventas' => [
@@ -104,7 +124,8 @@ class VentaController extends Controller
                 ],
             ],
             'catalogo' => $this->catalogo(),
-            'clientes' => $this->clientesPos(),
+            'clientes' => $this->clientesPos($cotizacion['cliente']['id'] ?? null),
+            'cotizacion' => $cotizacion,
             'metodos' => MetodoPago::query()
                 ->where('estado', 'ACTIVO')
                 ->whereNotIn('codigo', ['COMBINADO', 'TARJETA'])
@@ -125,6 +146,7 @@ class VentaController extends Controller
                 'cliente' => $clienteId > 0 ? (string) $clienteId : '',
                 'creada' => $creadaId > 0 ? (string) $creadaId : '',
                 'ficha' => $fichaId > 0 ? (string) $fichaId : '',
+                'cotizacion' => $cotizacion !== null ? (string) $cotizacionId : '',
             ],
             'abrirAlta' => $request->boolean('alta'),
             'puedeCrear' => $request->user()?->tienePermiso('ventas.crear') ?? false,
@@ -140,12 +162,22 @@ class VentaController extends Controller
     public function store(VentaRequest $request): RedirectResponse
     {
         $datos = $request->validated();
-        $usuarioId = (int) $request->user()->id;
+        $usuario = $request->user();
+        $usuarioId = (int) $usuario?->id;
 
         $nombreClienteNuevo = null;
 
         try {
-            $venta = DB::transaction(function () use ($datos, $usuarioId, &$nombreClienteNuevo) {
+            $venta = DB::transaction(function () use ($datos, $usuario, $usuarioId, &$nombreClienteNuevo) {
+                $cotizacion = null;
+
+                if (isset($datos['cotizacion_id'])) {
+                    $cotizacion = Cotizacion::query()->whereKey((int) $datos['cotizacion_id'])->lockForUpdate()->firstOrFail();
+                    $this->conversion->exigirConvertible($cotizacion);
+                }
+
+                $preciosCotizados = $this->conversion->preciosMantenidos($cotizacion, $datos['items']);
+
                 $variantes = $this->variantesBloqueadas($datos['items']);
                 $this->validarStock($datos['items'], $variantes);
 
@@ -178,6 +210,7 @@ class VentaController extends Controller
 
                 $venta = Venta::query()->create([
                     'cliente_id' => $clienteId,
+                    'cotizacion_id' => $cotizacion?->id,
                     'usuario_id' => $usuarioId,
                     'numero_venta' => Venta::siguienteNumero(),
                     'fecha' => now(),
@@ -195,7 +228,7 @@ class VentaController extends Controller
                         'venta_id' => $venta->id,
                         'variante_id' => $variante->id,
                         'cantidad' => (int) $item['cantidad'],
-                        'precio_unitario' => $variante->precio_venta,
+                        'precio_unitario' => $preciosCotizados[$variante->id] ?? $variante->precio_venta,
                         'descuento' => (float) ($item['descuento'] ?? 0),
                         'costo_unitario_snapshot' => $this->ultimoCosto($variante->id),
                         'nombre_producto_snapshot' => $variante->producto?->nombre,
@@ -232,6 +265,10 @@ class VentaController extends Controller
                     ],
                     'Venta '.$venta->numero_venta,
                 );
+
+                if ($cotizacion !== null && $usuario instanceof User) {
+                    $this->conversion->marcarConvertida($cotizacion, $venta, $usuario);
+                }
 
                 return $venta;
             });
@@ -477,7 +514,7 @@ class VentaController extends Controller
      */
     private function catalogo(): array
     {
-        return VarianteProducto::query()
+        return array_values(VarianteProducto::query()
             ->with(['producto:id,nombre,estado', 'valores.atributo'])
             ->where('variante_producto.estado', 'ACTIVO')
             ->whereHas('producto', fn ($p) => $p->where('estado', 'ACTIVO'))
@@ -494,20 +531,33 @@ class VentaController extends Controller
                 'stock_actual' => $v->stock_actual,
                 'stock_minimo' => $v->stock_minimo,
             ])
-            ->all();
+            ->all());
     }
 
     /**
+     * Los 300 primeros clientes activos, más el de la cotización que se está convirtiendo.
+     *
      * @return list<array<string, mixed>>
      */
-    private function clientesPos(): array
+    private function clientesPos(?int $clienteExtraId = null): array
     {
-        return Cliente::query()
+        $columnas = ['id', 'nombre', 'razon_social', 'tipo_documento', 'numero_documento', 'telefono', 'email'];
+        $clientes = Cliente::query()
             ->where('estado', 'ACTIVO')
             ->orderByRaw("case when nombre = 'Cliente Final' then 0 else 1 end")
             ->orderBy('nombre')
             ->limit(300)
-            ->get(['id', 'nombre', 'razon_social', 'tipo_documento', 'numero_documento', 'telefono', 'email'])
+            ->get($columnas);
+
+        if ($clienteExtraId !== null && ! $clientes->contains('id', $clienteExtraId)) {
+            $extra = Cliente::query()->find($clienteExtraId, $columnas);
+
+            if ($extra !== null) {
+                $clientes->push($extra);
+            }
+        }
+
+        return array_values($clientes
             ->map(fn (Cliente $c) => [
                 'id' => $c->id,
                 'nombre' => $c->nombre,
@@ -518,11 +568,58 @@ class VentaController extends Controller
                 'email' => $c->email,
                 'es_generico' => $c->nombre === 'Cliente Final',
             ])
-            ->all();
+            ->all());
     }
 
     /**
-     * @param  list<int>  $ids
+     * CU20: datos para precargar el POS con una cotización (precio cotizado y vigente, stock y vigencia).
+     *
+     * @return array<string, mixed>|null
+     */
+    private function cotizacionParaVenta(int $id): ?array
+    {
+        $cotizacion = Cotizacion::query()
+            ->with(['cliente:id,nombre', 'detalles.variante.producto', 'detalles.variante.valores.atributo'])
+            ->find($id);
+
+        if ($cotizacion === null) {
+            return null;
+        }
+
+        $motivo = $this->conversion->motivoBloqueo($cotizacion);
+
+        return [
+            'id' => $cotizacion->id,
+            'codigo' => $cotizacion->codigo_cotizacion,
+            'estado' => $cotizacion->estado,
+            'vence' => $cotizacion->fecha_vencimiento?->format('d/m/Y'),
+            'vigente' => $cotizacion->vigente(),
+            'puede_convertir' => $motivo === null,
+            'motivo' => $motivo,
+            'cliente' => ['id' => $cotizacion->cliente->id, 'nombre' => $cotizacion->cliente->nombre],
+            'items' => $cotizacion->detalles
+                ->map(function ($d): array {
+                    $variante = $d->variante;
+
+                    return [
+                        'variante_id' => $variante->id,
+                        'sku' => $variante->sku,
+                        'producto' => $variante->producto->nombre,
+                        'atributos' => $variante->etiquetaAtributos(),
+                        'cantidad' => $d->cantidad,
+                        'precio_cotizado' => round((float) $d->precio_unitario, 2),
+                        'precio_actual' => round((float) $variante->precio_venta, 2),
+                        'stock' => $variante->stock_actual,
+                        'activa' => $variante->estado === 'ACTIVO' && $variante->producto->estado === 'ACTIVO',
+                    ];
+                })
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $ids
      * @return array<int, float>
      */
     private function totalesPagina(array $ids): array
@@ -602,7 +699,7 @@ class VentaController extends Controller
             'cliente' => [
                 'id' => $venta->cliente?->id,
                 'nombre' => $venta->cliente?->nombre,
-                'documento' => trim(($venta->cliente?->tipo_documento ?? '').' '.($venta->cliente?->numero_documento ?? '')),
+                'documento' => trim(($venta->cliente->tipo_documento ?? '').' '.($venta->cliente->numero_documento ?? '')),
                 'email' => $venta->cliente?->email,
                 'telefono' => $venta->cliente?->telefono,
             ],

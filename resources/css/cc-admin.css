@@ -519,7 +519,9 @@
         max-height: min(92dvh, 920px);
         display: block !important;
         overflow: auto !important;
-        padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)) !important;
+        padding-bottom: calc(
+            28px + env(safe-area-inset-bottom, 0px)
+        ) !important;
     }
 
     .cc-log-dialog .cc-modal-grid,
@@ -572,14 +574,30 @@
     animation: cc-admin-row 280ms ease both;
 }
 
-.cc-admin tbody tr:nth-child(1) { animation-delay: 0ms; }
-.cc-admin tbody tr:nth-child(2) { animation-delay: 30ms; }
-.cc-admin tbody tr:nth-child(3) { animation-delay: 60ms; }
-.cc-admin tbody tr:nth-child(4) { animation-delay: 90ms; }
-.cc-admin tbody tr:nth-child(5) { animation-delay: 120ms; }
-.cc-admin tbody tr:nth-child(6) { animation-delay: 150ms; }
-.cc-admin tbody tr:nth-child(7) { animation-delay: 180ms; }
-.cc-admin tbody tr:nth-child(8) { animation-delay: 210ms; }
+.cc-admin tbody tr:nth-child(1) {
+    animation-delay: 0ms;
+}
+.cc-admin tbody tr:nth-child(2) {
+    animation-delay: 30ms;
+}
+.cc-admin tbody tr:nth-child(3) {
+    animation-delay: 60ms;
+}
+.cc-admin tbody tr:nth-child(4) {
+    animation-delay: 90ms;
+}
+.cc-admin tbody tr:nth-child(5) {
+    animation-delay: 120ms;
+}
+.cc-admin tbody tr:nth-child(6) {
+    animation-delay: 150ms;
+}
+.cc-admin tbody tr:nth-child(7) {
+    animation-delay: 180ms;
+}
+.cc-admin tbody tr:nth-child(8) {
+    animation-delay: 210ms;
+}
 
 @keyframes cc-admin-row {
     from {
@@ -635,6 +653,14 @@
     grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+.cc-admin__kpis--four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.cc-admin__kpis--six {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
 @media (max-width: 768px) {
     .cc-admin .cc-log__head {
         flex-direction: row;
@@ -676,7 +702,9 @@
         padding: 10px 8px;
     }
 
-    .cc-admin__kpis--five {
+    .cc-admin__kpis--four,
+    .cc-admin__kpis--five,
+    .cc-admin__kpis--six {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
@@ -1030,8 +1058,13 @@
         display: none;
     }
 
-    .cc-admin--pins .cc-log__table-wrap {
+    .cc-admin--pins .cc-log__table-wrap:not(.cc-log__table-wrap--keep) {
         display: none;
+    }
+
+    .cc-admin--pins .cc-log__table-wrap--keep {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .cc-admin--pins .cc-log__filters,
@@ -1355,7 +1388,9 @@
     height: 18px;
     border-radius: 99px;
     background: var(--cc-text);
-    transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), background 180ms ease;
+    transition:
+        transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
+        background 180ms ease;
 }
 
 .cc-sw.is-on .cc-sw__pista {
@@ -1746,4 +1781,37 @@
 .cc-admin .cc-pos__menu-panel button:hover,
 .cc-admin .cc-pos__menu-panel button:focus-visible {
     background: color-mix(in srgb, var(--cc-accent) 14%, transparent);
+}
+
+/* ── CU20: venta desde una cotización ─────────────────────────────── */
+
+.cc-pos__cotizacion {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    border: 1px solid var(--cc-accent);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--cc-accent) 8%, transparent);
+}
+
+.cc-pos__cotizacion span {
+    color: var(--cc-muted);
+    font-size: 13px;
+}
+
+.cc-pos__precios {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    align-items: center;
+    color: var(--cc-muted);
+    font-size: 12px;
+}
+
+.cc-pos__precios label {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    color: var(--cc-text);
 }

@@ -291,28 +291,30 @@ class BitacoraController extends Controller
 
     /**
      * @param  Collection<int, array<string, mixed>>  $eventos
-     * @return Collection<int, array<string, mixed>>
+     * @return list<array<string, mixed>>
      */
-    private function nombrarObjetivos(Collection $eventos): Collection
+    private function nombrarObjetivos(Collection $eventos): array
     {
         $nombres = $this->mapaObjetivos($eventos);
+        $filas = [];
 
-        return $eventos->map(function (array $evento) use ($nombres): array {
+        foreach ($eventos as $evento) {
             $clave = $this->claveObjetivo(
                 $evento['tipo_entidad'] ?? null,
                 $evento['entidad_id'] ?? null,
             );
             $evento['objetivo'] = $clave !== null ? ($nombres[$clave] ?? null) : null;
+            $filas[] = $evento;
+        }
 
-            return $evento;
-        });
+        return $filas;
     }
 
     /**
-     * @param  Collection<int, array<string, mixed>|object>  $filas
+     * @param  iterable<int, array<string, mixed>|object>  $filas
      * @return array<string, string>
      */
-    private function mapaObjetivos(Collection $filas): array
+    private function mapaObjetivos(iterable $filas): array
     {
         $idsPorTipo = [];
 
@@ -521,6 +523,7 @@ class BitacoraController extends Controller
      */
     private function presentar(object $fila): array
     {
+        /** @var object{id: int|string, fecha_hora?: mixed, modulo: string|null, accion: string|null, direccion_ip: string|null, tipo_entidad: string|null, entidad_id: int|string|null, valor_anterior?: mixed, valor_nuevo?: mixed, nombre_completo?: string|null, email?: string|null, motivo?: string|null} $fila */
         $momento = $this->momento($fila->fecha_hora ?? null);
 
         return [
@@ -557,6 +560,7 @@ class BitacoraController extends Controller
 
     private function nombreUsuario(object $fila): string
     {
+        /** @var object{nombre_completo?: string|null, email?: string|null} $fila */
         $nombre = trim((string) ($fila->nombre_completo ?? ''));
 
         if ($nombre !== '') {
@@ -576,6 +580,7 @@ class BitacoraController extends Controller
 
     private function descripcion(object $fila): string
     {
+        /** @var object{motivo?: string|null, accion: string|null, tipo_entidad: string|null} $fila */
         $motivo = trim((string) ($fila->motivo ?? ''));
 
         if ($motivo !== '') {

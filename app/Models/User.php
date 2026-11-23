@@ -30,6 +30,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $fecha_bloqueo
  * @property int|null $nivel_bloqueo
  * @property-read string $name
+ * @property-read Personal|null $personal
+ * @property-read Rol|null $rol
+ * @property-read Cliente|null $cliente
  */
 #[Table('usuario')]
 #[Fillable([
@@ -130,6 +133,17 @@ class User extends Authenticatable
         return $this->rol->permisos->contains('clave', $clave);
     }
 
+    /**
+     * El asistente virtual (CU22) es solo del Administrador: además del permiso se exige el rol,
+     * por si alguien asigna `asistente.usar` a otro rol desde la pantalla de Roles.
+     */
+    public function puedeUsarAsistente(): bool
+    {
+        $this->loadMissing('rol');
+
+        return $this->rol?->nombre === 'Administrador' && $this->tienePermiso('asistente.usar');
+    }
+
     public function puedeIniciarSesion(): bool
     {
         $activo = $this->estado === null || $this->estado === 'ACTIVO';
@@ -139,6 +153,8 @@ class User extends Authenticatable
 
     /**
      * Nombre visible, tomado del personal vinculado.
+     *
+     * @return Attribute<string, never>
      */
     protected function name(): Attribute
     {

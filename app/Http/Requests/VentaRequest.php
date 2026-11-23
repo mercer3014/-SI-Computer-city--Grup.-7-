@@ -3,12 +3,15 @@
 namespace App\Http\Requests;
 
 use App\Models\Cliente;
+use App\Models\Cotizacion;
 use App\Models\User;
 use App\Models\VarianteProducto;
+use App\Services\Cotizaciones\ConversionCotizacionService;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 
 class VentaRequest extends FormRequest
@@ -35,7 +38,7 @@ class VentaRequest extends FormRequest
                         return;
                     }
 
-                    $cliente = Cliente::query()->find($valor);
+                    $cliente = is_numeric($valor) ? Cliente::query()->find((int) $valor) : null;
 
                     if ($cliente === null) {
                         $fail('El cliente indicado no existe.');
@@ -74,9 +77,11 @@ class VentaRequest extends FormRequest
             'descuento_global' => ['nullable', 'numeric', 'min:0'],
             'observacion' => ['nullable', 'string', 'max:1000'],
             'enviar_email' => ['sometimes', 'boolean'],
+            'cotizacion_id' => ['nullable', 'integer', 'exists:cotizacion,id'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.variante_id' => ['required', 'integer', 'exists:variante_producto,id'],
             'items.*.cantidad' => ['required', 'integer', 'min:1', 'max:100000'],
+            'items.*.precio_unitario' => ['nullable', 'numeric', 'min:0'],
             'items.*.descuento' => ['nullable', 'numeric', 'min:0'],
             'items.*.numero_serie' => ['nullable', 'string', 'max:100'],
             'items.*.meses_garantia' => ['nullable', 'integer', 'min:0', 'max:60'],
@@ -106,6 +111,26 @@ class VentaRequest extends FormRequest
                     return;
                 }
 
+                $conversion = app(ConversionCotizacionService::class);
+                $cotizacionId = $this->input('cotizacion_id');
+                $cotizacion = is_numeric($cotizacionId) ? Cotizacion::query()->find((int) $cotizacionId) : null;
+
+                try {
+                    if ($cotizacion !== null) {
+                        $conversion->exigirConvertible($cotizacion);
+                    }
+
+                    $mantenidos = $conversion->preciosMantenidos($cotizacion, $items);
+                } catch (ValidationException $e) {
+                    foreach ($e->errors() as $campo => $mensajes) {
+                        foreach ($mensajes as $mensaje) {
+                            $validator->errors()->add($campo, $mensaje);
+                        }
+                    }
+
+                    return;
+                }
+
                 $ids = collect($items)->pluck('variante_id')->map(fn ($id) => (int) $id)->unique()->all();
                 $variantes = VarianteProducto::query()
                     ->with('producto:id,nombre,estado')
@@ -131,9 +156,10 @@ class VentaRequest extends FormRequest
                         continue;
                     }
 
-                    $lineal = ($cantidad * (float) $variante->precio_venta) - $descuento;
+                    $precio = $mantenidos[$variante->id] ?? (float) $variante->precio_venta;
+                    $lineal = ($cantidad * $precio) - $descuento;
 
-                    if ($descuento > $cantidad * (float) $variante->precio_venta) {
+                    if ($descuento > $cantidad * $precio) {
                         $validator->errors()->add("items.$indice.descuento", 'El descuento no puede superar el subtotal de la línea.');
                     }
 
@@ -154,7 +180,10 @@ class VentaRequest extends FormRequest
                     $validator->errors()->add('descuento_global', 'El descuento global no puede superar el total de la venta.');
                 }
 
-                $pagado = round(collect($this->input('pagos', []))->sum(fn ($pago) => (float) ($pago['monto'] ?? 0)), 2);
+                $pagos = $this->input('pagos', []);
+                $pagado = round(collect(is_array($pagos) ? $pagos : [])->sum(
+                    fn (mixed $pago): float => is_array($pago) ? (float) ($pago['monto'] ?? 0) : 0.0,
+                ), 2);
 
                 if (abs($pagado - $total) > 0.009) {
                     $validator->errors()->add(
@@ -187,6 +216,7 @@ class VentaRequest extends FormRequest
             'pagos.*.monto.gt' => 'Cada pago debe ser mayor a 0.',
             'pagos.*.metodo_pago_id.required' => 'Elegí el método de pago.',
             'items.*.cantidad.min' => 'La cantidad debe ser al menos 1.',
+            'cotizacion_id.exists' => 'La cotización indicada no existe.',
         ];
     }
 

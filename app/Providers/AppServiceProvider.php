@@ -7,6 +7,9 @@ use App\Auth\OtpPasswordBrokerManager;
 use App\Models\DetalleVenta;
 use App\Models\User;
 use App\Models\Venta;
+use App\Services\Asistente\GrokServicioIa;
+use App\Services\Asistente\ServicioIa;
+use App\Services\Asistente\ServicioIaSimulado;
 use App\Services\BitacoraService;
 use App\Services\Pagos\PasarelaPagos;
 use App\Services\Pagos\StripePasarela;
@@ -15,11 +18,15 @@ use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -43,11 +50,15 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(PasarelaPagos::class, StripePasarela::class);
+
+        // CU22: el asistente simulado solo existe en local y testing; en producción siempre se usa xAI.
+        $this->app->bind(ServicioIa::class, function (Application $app): ServicioIa {
+            $simulado = (bool) config('services.xai.simulado') && $app->environment(['local', 'testing']);
+
+            return $simulado ? $app->make(ServicioIaSimulado::class) : $app->make(GrokServicioIa::class);
+        });
     }
 
-    /**
-     * @param  array<string, mixed>  $config
-     */
     private function registerUserProvider(): void
     {
         Auth::provider('eloquent', function ($app, array $config) {
@@ -65,6 +76,16 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configureBitacoraAuth();
         $this->emularKardexDeVentas();
+        $this->configureLimiteDelAsistente();
+    }
+
+    /**
+     * CU22 EX-08: consultas por minuto de cada usuario (ASISTENTE_LIMITE_POR_MINUTO, 10 por defecto).
+     */
+    private function configureLimiteDelAsistente(): void
+    {
+        RateLimiter::for('asistente', fn (Request $request): Limit => Limit::perMinute(max(1, (int) config('services.xai.limite_por_minuto')))
+            ->by((string) ($request->user()->id ?? $request->ip())));
     }
 
     /**
@@ -77,7 +98,7 @@ class AppServiceProvider extends ServiceProvider
 
             return (new BrevoTransportFactory(
                 client: HttpClient::create([
-                    'timeout' => (int) env('MAIL_TIMEOUT', 8),
+                    'timeout' => (int) config('mail.mailers.smtp.timeout', 8),
                 ]),
             ))->create(new Dsn(
                 'brevo+api',

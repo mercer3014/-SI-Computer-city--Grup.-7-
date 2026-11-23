@@ -125,4 +125,10 @@ class Pedido extends Model
     {
         return $this->hasOne(Venta::class, 'pedido_id');
     }
+
+    /** @return HasMany<Calificacion, $this> */
+    public function calificaciones(): HasMany
+    {
+        return $this->hasMany(Calificacion::class, 'pedido_id');
+    }
 }

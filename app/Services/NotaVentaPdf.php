@@ -3,12 +3,15 @@
 namespace App\Services;
 
 use App\Models\Venta;
+use App\Services\Tienda\ConfiguracionTiendaService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DocumentoPdf;
 use Symfony\Component\HttpFoundation\Response;
 
 class NotaVentaPdf
 {
+    public function __construct(private ConfiguracionTiendaService $configuracion) {}
+
     public function documento(Venta $venta): DocumentoPdf
     {
         $venta->loadMissing([
@@ -22,6 +25,8 @@ class NotaVentaPdf
             'venta' => $venta,
             'total' => $venta->total(),
             'zona' => config('app.timezone'),
+            'tienda' => $this->configuracion->actual(),
+            'logo' => $this->configuracion->logoParaPdf(),
         ])->setPaper('letter');
     }
 

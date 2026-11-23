@@ -24,7 +24,14 @@ import {
     Search,
     X,
 } from '@lucide/vue';
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import {
+    computed,
+    onBeforeUnmount,
+    onMounted,
+    reactive,
+    ref,
+    watch,
+} from 'vue';
 import bitacora from '@/routes/bitacora';
 import {
     Dialog,
@@ -131,7 +138,9 @@ const mensajeVacio = computed(() => {
         return props.error;
     }
 
-    const hayFiltros = Object.values(props.filtros).some((valor) => valor !== '');
+    const hayFiltros = Object.values(props.filtros).some(
+        (valor) => valor !== '',
+    );
 
     return hayFiltros
         ? 'No hay eventos que coincidan con los filtros. Probá con otro criterio o limpiá la búsqueda.'
@@ -339,380 +348,406 @@ function resumenCambio(evento: EventoBitacora): string {
 
 <template>
     <div>
-    <Head title="Consultar bitácora" />
+        <Head title="Consultar bitácora" />
 
-    <section class="cc-admin cc-log cc-admin--pins cc-admin--log">
-        <motion.div layout class="cc-log__head" :transition="adminSpring">
-            <motion.div layout :transition="adminSpring">
-                <p class="cc-log__kicker">Sistema</p>
-                <h1>Consultar bitácora</h1>
-                <p>
-                    Quién hizo qué, en qué módulo y qué valor quedó.
-                </p>
-            </motion.div>
-            <motion.div layout class="cc-log__actions" :transition="adminSpring">
-                <button
-                    type="button"
-                    class="cc-button cc-button--ghost"
-                    @click="exportarCsv"
+        <section class="cc-admin cc-log cc-admin--pins cc-admin--log">
+            <motion.div layout class="cc-log__head" :transition="adminSpring">
+                <motion.div layout :transition="adminSpring">
+                    <p class="cc-log__kicker">Sistema</p>
+                    <h1>Consultar bitácora</h1>
+                    <p>Quién hizo qué, en qué módulo y qué valor quedó.</p>
+                </motion.div>
+                <motion.div
+                    layout
+                    class="cc-log__actions"
+                    :transition="adminSpring"
                 >
-                    <Download />
-                    Exportar CSV
-                </button>
-                <button
-                    type="button"
-                    class="cc-button"
-                    :class="{ 'is-load': cargando }"
-                    :disabled="cargando"
-                    @click="actualizar"
-                >
-                    <RefreshCw :class="{ 'animate-spin': cargando }" />
-                    Actualizar
-                </button>
-            </motion.div>
-        </motion.div>
-
-        <motion.div
-            layout
-            class="cc-admin__kpis"
-            aria-label="Resumen"
-            :transition="adminSpring"
-        >
-            <motion.div layout class="cc-admin__kpi" :transition="adminSpring">
-                <b>{{ cantidad.format(eventos.meta.total) }}</b>
-                <span>Eventos</span>
-            </motion.div>
-            <motion.div layout class="cc-admin__kpi" :transition="adminSpring">
-                <b>{{ eventos.meta.current_page }}</b>
-                <span>Página actual</span>
-            </motion.div>
-            <motion.div layout class="cc-admin__kpi" :transition="adminSpring">
-                <b>{{ chips.length }}</b>
-                <span>Filtros activos</span>
-            </motion.div>
-        </motion.div>
-
-        <motion.div layout :transition="adminSpring">
-        <form
-            class="cc-log__filters"
-            @submit.prevent="aplicar"
-        >
-            <div class="cc-log__row">
-                <label class="cc-log__control cc-log__search">
-                    <Search :size="16" />
-                    <input
-                        v-model="form.q"
-                        type="search"
-                        placeholder="Buscar quién o qué cambió..."
-                        maxlength="200"
-                        @input="buscarLuego"
-                    />
-                    <button
-                        v-if="form.q"
-                        type="button"
-                        class="cc-log__clear"
-                        aria-label="Limpiar búsqueda"
-                        @click="limpiarBusqueda"
-                    >
-                        <X :size="14" />
-                    </button>
-                </label>
-
-                <CcRevealSelect
-                    v-model="form.usuario"
-                    etiqueta="Todos los usuarios"
-                    :opciones="opcionesUsuario"
-                    @change="aplicar"
-                />
-                <CcRevealSelect
-                    v-model="form.modulo"
-                    etiqueta="Todos los módulos"
-                    :opciones="opcionesModulo"
-                    @change="aplicar"
-                />
-                <CcRevealSelect
-                    v-model="form.accion"
-                    etiqueta="Todas las acciones"
-                    :opciones="opcionesAccion"
-                    @change="aplicar"
-                />
-            </div>
-
-            <div class="cc-log__row">
-                <div class="cc-log__dates-par">
-                    <label class="cc-modal-field">
-                        <span>Desde</span>
-                        <span class="cc-log__control">
-                            <Calendar :size="16" />
-                            <input
-                                v-model="form.desde"
-                                type="date"
-                                @change="aplicar"
-                            />
-                        </span>
-                    </label>
-                    <label class="cc-modal-field">
-                        <span>Hasta</span>
-                        <span class="cc-log__control">
-                            <Calendar :size="16" />
-                            <input
-                                v-model="form.hasta"
-                                type="date"
-                                @change="aplicar"
-                            />
-                        </span>
-                    </label>
-                </div>
-
-                <div class="cc-log__row-actions">
                     <button
                         type="button"
                         class="cc-button cc-button--ghost"
-                        @click="limpiar"
+                        @click="exportarCsv"
                     >
-                        <RotateCcw />
-                        Limpiar
+                        <Download />
+                        Exportar CSV
                     </button>
-                </div>
-            </div>
-            <div v-if="chips.length" class="cc-admin__chips">
-                <button
-                    v-for="chip in chips"
-                    :key="chip.clave"
-                    type="button"
-                    class="cc-admin__chip"
-                    :aria-label="`Quitar filtro ${chip.texto}`"
-                    @click="quitarFiltro(chip.clave)"
-                >
-                    {{ chip.texto }}
-                    <X :size="12" />
-                </button>
-            </div>
-        </form>
-        </motion.div>
-
-        <motion.div
-            layout
-            class="cc-log__panel"
-            :class="{ 'is-loading': cargando }"
-            :aria-busy="cargando"
-            :transition="adminSpring"
-        >
-            <div class="cc-log-board">
-                <p v-if="eventos.data.length === 0" class="cc-log__empty">
-                    <strong>
-                        {{
-                            error
-                                ? 'No se pudo leer la bitácora'
-                                : 'Sin registros'
-                        }}
-                    </strong>
-                    {{ mensajeVacio }}
-                </p>
-                <button
-                    v-for="evento in eventos.data"
-                    :key="`pin-${evento.id}`"
-                    type="button"
-                    class="cc-log-pin"
-                    @click="detalle = evento"
-                >
-                    <span class="cc-user-initials">
-                        {{ iniciales(evento.usuario) }}
-                    </span>
-                    <span class="cc-log-pin__cuerpo">
-                        <strong>{{ evento.usuario }}</strong>
-                        <p>{{ fraseEvento(evento) }}</p>
-                        <span
-                            v-if="resumenCambio(evento)"
-                            class="cc-log-pin__valor"
-                        >
-                            {{ resumenCambio(evento) }}
-                        </span>
-                        <small>
-                            {{ evento.fecha }} · {{ evento.hora }}
-                            · {{ evento.modulo }}
-                        </small>
-                    </span>
-                </button>
-            </div>
-
-            <div class="cc-log__table-wrap">
-                <table class="cc-log__table">
-                    <thead>
-                        <tr>
-                            <th>Cuándo</th>
-                            <th>Quién</th>
-                            <th>Qué pasó</th>
-                            <th>Módulo</th>
-                            <th>Detalle</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <template v-if="cargando && eventos.data.length === 0">
-                            <tr
-                                v-for="fila in esqueletos"
-                                :key="`sk-${fila}`"
-                                class="cc-admin__skel"
-                            >
-                                <td><span class="cc-admin__bone cc-admin__bone--sm" /></td>
-                                <td><span class="cc-admin__bone" /></td>
-                                <td><span class="cc-admin__bone" /></td>
-                                <td><span class="cc-admin__bone cc-admin__bone--sm" /></td>
-                                <td><span class="cc-admin__bone cc-admin__bone--sm" /></td>
-                            </tr>
-                        </template>
-                        <tr v-else-if="eventos.data.length === 0">
-                            <td class="cc-log__empty" colspan="5">
-                                <strong>
-                                    {{
-                                        error
-                                            ? 'No se pudo leer la bitácora'
-                                            : 'Sin registros'
-                                    }}
-                                </strong>
-                                {{ mensajeVacio }}
-                            </td>
-                        </tr>
-                        <tr v-for="evento in eventos.data" :key="evento.id">
-                            <td>
-                                <span class="cc-log__when">
-                                    {{ evento.fecha }}
-                                    <small>{{ evento.hora }}</small>
-                                </span>
-                            </td>
-                            <td>
-                                <span class="cc-log__who">
-                                    <span class="cc-user-initials">
-                                        {{ iniciales(evento.usuario) }}
-                                    </span>
-                                    {{ evento.usuario }}
-                                </span>
-                            </td>
-                            <td>
-                                <span class="cc-log__hecho">
-                                    {{ fraseEvento(evento) }}
-                                    <small v-if="resumenCambio(evento)">
-                                        {{ resumenCambio(evento) }}
-                                    </small>
-                                </span>
-                            </td>
-                            <td>
-                                <span
-                                    class="cc-log__badge"
-                                    :class="`cc-log__badge--${tonoAccion(evento.accion)}`"
-                                    :title="evento.accion"
-                                >
-                                    {{ evento.modulo }}
-                                </span>
-                            </td>
-                            <td>
-                                <button
-                                    type="button"
-                                    class="cc-log__eye"
-                                    :aria-label="`Ver qué cambió: ${fraseEvento(evento)}`"
-                                    @click="detalle = evento"
-                                >
-                                    <Eye :size="16" />
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <footer class="cc-log__foot">
-                <p>{{ resumen }}</p>
-                <div class="cc-log__pager">
                     <button
                         type="button"
-                        aria-label="Página anterior"
-                        :disabled="eventos.meta.current_page <= 1"
-                        @click="ir(eventos.meta.current_page - 1)"
+                        class="cc-button"
+                        :class="{ 'is-load': cargando }"
+                        :disabled="cargando"
+                        @click="actualizar"
                     >
-                        <ChevronLeft :size="16" />
+                        <RefreshCw :class="{ 'animate-spin': cargando }" />
+                        Actualizar
                     </button>
-                    <span>
-                        Página {{ eventos.meta.current_page }} de
-                        {{ eventos.meta.last_page }}
-                    </span>
-                    <button
-                        type="button"
-                        aria-label="Página siguiente"
-                        :disabled="
-                            eventos.meta.current_page >= eventos.meta.last_page
-                        "
-                        @click="ir(eventos.meta.current_page + 1)"
-                    >
-                        <ChevronRight :size="16" />
-                    </button>
-                </div>
-            </footer>
-        </motion.div>
-    </section>
+                </motion.div>
+            </motion.div>
 
-    <Teleport v-if="enCliente" to="#cc-portal">
-        <CcRadialFab
-            v-show="ancho <= 768 && !detalle"
-            :acciones="fabAcciones"
-            @elegir="fabElegir"
-        />
-    </Teleport>
-
-    <Teleport v-if="enCliente" to="#cc-portal">
-        <AnimatePresence>
             <motion.div
-                v-if="detalle && ancho <= 768"
-                key="ficha-log"
-                class="cc-user-sheet"
+                layout
+                class="cc-admin__kpis"
+                aria-label="Resumen"
+                :transition="adminSpring"
             >
-                <motion.button
-                    type="button"
-                    class="cc-user-sheet__velo"
-                    aria-label="Cerrar"
-                    :initial="{ opacity: 0 }"
-                    :animate="{ opacity: 1 }"
-                    :exit="{ opacity: 0 }"
-                    @click="detalle = null"
-                />
-                <motion.section
-                    class="cc-user-sheet__panel cc-theme cc-admin"
-                    :initial="{ y: '100%' }"
-                    :animate="{ y: 0 }"
-                    :exit="{ y: '100%' }"
+                <motion.div
+                    layout
+                    class="cc-admin__kpi"
                     :transition="adminSpring"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="cc-log-ficha"
                 >
-                    <div class="cc-user-sheet__asa" />
-                    <CcBitacoraDetalle :evento="detalle" />
-                    <div class="cc-modal-actions">
+                    <b>{{ cantidad.format(eventos.meta.total) }}</b>
+                    <span>Eventos</span>
+                </motion.div>
+                <motion.div
+                    layout
+                    class="cc-admin__kpi"
+                    :transition="adminSpring"
+                >
+                    <b>{{ eventos.meta.current_page }}</b>
+                    <span>Página actual</span>
+                </motion.div>
+                <motion.div
+                    layout
+                    class="cc-admin__kpi"
+                    :transition="adminSpring"
+                >
+                    <b>{{ chips.length }}</b>
+                    <span>Filtros activos</span>
+                </motion.div>
+            </motion.div>
+
+            <motion.div layout :transition="adminSpring">
+                <form class="cc-log__filters" @submit.prevent="aplicar">
+                    <div class="cc-log__row">
+                        <label class="cc-log__control cc-log__search">
+                            <Search :size="16" />
+                            <input
+                                v-model="form.q"
+                                type="search"
+                                placeholder="Buscar quién o qué cambió..."
+                                maxlength="200"
+                                @input="buscarLuego"
+                            />
+                            <button
+                                v-if="form.q"
+                                type="button"
+                                class="cc-log__clear"
+                                aria-label="Limpiar búsqueda"
+                                @click="limpiarBusqueda"
+                            >
+                                <X :size="14" />
+                            </button>
+                        </label>
+
+                        <CcRevealSelect
+                            v-model="form.usuario"
+                            etiqueta="Todos los usuarios"
+                            :opciones="opcionesUsuario"
+                            @change="aplicar"
+                        />
+                        <CcRevealSelect
+                            v-model="form.modulo"
+                            etiqueta="Todos los módulos"
+                            :opciones="opcionesModulo"
+                            @change="aplicar"
+                        />
+                        <CcRevealSelect
+                            v-model="form.accion"
+                            etiqueta="Todas las acciones"
+                            :opciones="opcionesAccion"
+                            @change="aplicar"
+                        />
+                    </div>
+
+                    <div class="cc-log__row">
+                        <div class="cc-log__dates-par">
+                            <label class="cc-modal-field">
+                                <span>Desde</span>
+                                <span class="cc-log__control">
+                                    <Calendar :size="16" />
+                                    <input
+                                        v-model="form.desde"
+                                        type="date"
+                                        @change="aplicar"
+                                    />
+                                </span>
+                            </label>
+                            <label class="cc-modal-field">
+                                <span>Hasta</span>
+                                <span class="cc-log__control">
+                                    <Calendar :size="16" />
+                                    <input
+                                        v-model="form.hasta"
+                                        type="date"
+                                        @change="aplicar"
+                                    />
+                                </span>
+                            </label>
+                        </div>
+
+                        <div class="cc-log__row-actions">
+                            <button
+                                type="button"
+                                class="cc-button cc-button--ghost"
+                                @click="limpiar"
+                            >
+                                <RotateCcw />
+                                Limpiar
+                            </button>
+                        </div>
+                    </div>
+                    <div v-if="chips.length" class="cc-admin__chips">
                         <button
+                            v-for="chip in chips"
+                            :key="chip.clave"
                             type="button"
-                            class="cc-button"
-                            @click="detalle = null"
+                            class="cc-admin__chip"
+                            :aria-label="`Quitar filtro ${chip.texto}`"
+                            @click="quitarFiltro(chip.clave)"
                         >
-                            Cerrar
+                            {{ chip.texto }}
+                            <X :size="12" />
                         </button>
                     </div>
-                </motion.section>
+                </form>
             </motion.div>
-        </AnimatePresence>
-    </Teleport>
 
-    <Dialog v-if="enCliente && ancho > 768" v-model:open="detalleAbierto">
-        <DialogContent
-            v-if="detalle"
-            class="cc-theme cc-admin cc-log-dialog"
-        >
-            <DialogHeader>
-                <DialogTitle>Qué pasó</DialogTitle>
-                <DialogDescription class="sr-only">
-                    {{ fraseEvento(detalle) }}
-                </DialogDescription>
-            </DialogHeader>
-            <CcBitacoraDetalle :evento="detalle" />
-        </DialogContent>
-    </Dialog>
+            <motion.div
+                layout
+                class="cc-log__panel"
+                :class="{ 'is-loading': cargando }"
+                :aria-busy="cargando"
+                :transition="adminSpring"
+            >
+                <div class="cc-log-board">
+                    <p v-if="eventos.data.length === 0" class="cc-log__empty">
+                        <strong>
+                            {{
+                                error
+                                    ? 'No se pudo leer la bitácora'
+                                    : 'Sin registros'
+                            }}
+                        </strong>
+                        {{ mensajeVacio }}
+                    </p>
+                    <button
+                        v-for="evento in eventos.data"
+                        :key="`pin-${evento.id}`"
+                        type="button"
+                        class="cc-log-pin"
+                        @click="detalle = evento"
+                    >
+                        <span class="cc-user-initials">
+                            {{ iniciales(evento.usuario) }}
+                        </span>
+                        <span class="cc-log-pin__cuerpo">
+                            <strong>{{ evento.usuario }}</strong>
+                            <p>{{ fraseEvento(evento) }}</p>
+                            <span
+                                v-if="resumenCambio(evento)"
+                                class="cc-log-pin__valor"
+                            >
+                                {{ resumenCambio(evento) }}
+                            </span>
+                            <small>
+                                {{ evento.fecha }} · {{ evento.hora }} ·
+                                {{ evento.modulo }}
+                            </small>
+                        </span>
+                    </button>
+                </div>
+
+                <div class="cc-log__table-wrap">
+                    <table class="cc-log__table">
+                        <thead>
+                            <tr>
+                                <th>Cuándo</th>
+                                <th>Quién</th>
+                                <th>Qué pasó</th>
+                                <th>Módulo</th>
+                                <th>Detalle</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template
+                                v-if="cargando && eventos.data.length === 0"
+                            >
+                                <tr
+                                    v-for="fila in esqueletos"
+                                    :key="`sk-${fila}`"
+                                    class="cc-admin__skel"
+                                >
+                                    <td>
+                                        <span
+                                            class="cc-admin__bone cc-admin__bone--sm"
+                                        />
+                                    </td>
+                                    <td><span class="cc-admin__bone" /></td>
+                                    <td><span class="cc-admin__bone" /></td>
+                                    <td>
+                                        <span
+                                            class="cc-admin__bone cc-admin__bone--sm"
+                                        />
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="cc-admin__bone cc-admin__bone--sm"
+                                        />
+                                    </td>
+                                </tr>
+                            </template>
+                            <tr v-else-if="eventos.data.length === 0">
+                                <td class="cc-log__empty" colspan="5">
+                                    <strong>
+                                        {{
+                                            error
+                                                ? 'No se pudo leer la bitácora'
+                                                : 'Sin registros'
+                                        }}
+                                    </strong>
+                                    {{ mensajeVacio }}
+                                </td>
+                            </tr>
+                            <tr v-for="evento in eventos.data" :key="evento.id">
+                                <td>
+                                    <span class="cc-log__when">
+                                        {{ evento.fecha }}
+                                        <small>{{ evento.hora }}</small>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="cc-log__who">
+                                        <span class="cc-user-initials">
+                                            {{ iniciales(evento.usuario) }}
+                                        </span>
+                                        {{ evento.usuario }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="cc-log__hecho">
+                                        {{ fraseEvento(evento) }}
+                                        <small v-if="resumenCambio(evento)">
+                                            {{ resumenCambio(evento) }}
+                                        </small>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span
+                                        class="cc-log__badge"
+                                        :class="`cc-log__badge--${tonoAccion(evento.accion)}`"
+                                        :title="evento.accion"
+                                    >
+                                        {{ evento.modulo }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button
+                                        type="button"
+                                        class="cc-log__eye"
+                                        :aria-label="`Ver qué cambió: ${fraseEvento(evento)}`"
+                                        @click="detalle = evento"
+                                    >
+                                        <Eye :size="16" />
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <footer class="cc-log__foot">
+                    <p>{{ resumen }}</p>
+                    <div class="cc-log__pager">
+                        <button
+                            type="button"
+                            aria-label="Página anterior"
+                            :disabled="eventos.meta.current_page <= 1"
+                            @click="ir(eventos.meta.current_page - 1)"
+                        >
+                            <ChevronLeft :size="16" />
+                        </button>
+                        <span>
+                            Página {{ eventos.meta.current_page }} de
+                            {{ eventos.meta.last_page }}
+                        </span>
+                        <button
+                            type="button"
+                            aria-label="Página siguiente"
+                            :disabled="
+                                eventos.meta.current_page >=
+                                eventos.meta.last_page
+                            "
+                            @click="ir(eventos.meta.current_page + 1)"
+                        >
+                            <ChevronRight :size="16" />
+                        </button>
+                    </div>
+                </footer>
+            </motion.div>
+        </section>
+
+        <Teleport v-if="enCliente" to="#cc-portal">
+            <CcRadialFab
+                v-show="ancho <= 768 && !detalle"
+                :acciones="fabAcciones"
+                @elegir="fabElegir"
+            />
+        </Teleport>
+
+        <Teleport v-if="enCliente" to="#cc-portal">
+            <AnimatePresence>
+                <motion.div
+                    v-if="detalle && ancho <= 768"
+                    key="ficha-log"
+                    class="cc-user-sheet"
+                >
+                    <motion.button
+                        type="button"
+                        class="cc-user-sheet__velo"
+                        aria-label="Cerrar"
+                        :initial="{ opacity: 0 }"
+                        :animate="{ opacity: 1 }"
+                        :exit="{ opacity: 0 }"
+                        @click="detalle = null"
+                    />
+                    <motion.section
+                        class="cc-user-sheet__panel cc-theme cc-admin"
+                        :initial="{ y: '100%' }"
+                        :animate="{ y: 0 }"
+                        :exit="{ y: '100%' }"
+                        :transition="adminSpring"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="cc-log-ficha"
+                    >
+                        <div class="cc-user-sheet__asa" />
+                        <CcBitacoraDetalle :evento="detalle" />
+                        <div class="cc-modal-actions">
+                            <button
+                                type="button"
+                                class="cc-button"
+                                @click="detalle = null"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </motion.section>
+                </motion.div>
+            </AnimatePresence>
+        </Teleport>
+
+        <Dialog v-if="enCliente && ancho > 768" v-model:open="detalleAbierto">
+            <DialogContent
+                v-if="detalle"
+                class="cc-theme cc-admin cc-log-dialog"
+            >
+                <DialogHeader>
+                    <DialogTitle>Qué pasó</DialogTitle>
+                    <DialogDescription class="sr-only">
+                        {{ fraseEvento(detalle) }}
+                    </DialogDescription>
+                </DialogHeader>
+                <CcBitacoraDetalle :evento="detalle" />
+            </DialogContent>
+        </Dialog>
     </div>
 </template>

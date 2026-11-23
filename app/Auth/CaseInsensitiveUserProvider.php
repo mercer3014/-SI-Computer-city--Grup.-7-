@@ -44,6 +44,8 @@ class CaseInsensitiveUserProvider extends EloquentUserProvider
             $query->where($key, $value);
         }
 
-        return $query->first();
+        $usuario = $query->first();
+
+        return $usuario instanceof Authenticatable ? $usuario : null;
     }
 }

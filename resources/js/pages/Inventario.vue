@@ -219,7 +219,9 @@ const chips = computed(() => {
     }
 
     if (form.alerta) {
-        const alerta = opcionesAlerta.find((opcion) => opcion.value === form.alerta);
+        const alerta = opcionesAlerta.find(
+            (opcion) => opcion.value === form.alerta,
+        );
         lista.push({ clave: 'alerta', texto: alerta?.label ?? form.alerta });
     }
 
@@ -596,7 +598,10 @@ function abrirKardex(variante: Variante): void {
                         </table>
                     </div>
                     <div class="cc-log-board">
-                        <p v-if="variantes.data.length === 0" class="cc-log__empty">
+                        <p
+                            v-if="variantes.data.length === 0"
+                            class="cc-log__empty"
+                        >
                             <strong>Sin variantes</strong>
                             No hay existencias que coincidan con la búsqueda.
                         </p>
@@ -612,17 +617,26 @@ function abrirKardex(variante: Variante): void {
                                 @click="abrirKardex(variante)"
                             >
                                 <span class="cc-log-pin__cuerpo">
-                                    <strong>{{ variante.producto ?? variante.sku }}</strong>
+                                    <strong>{{
+                                        variante.producto ?? variante.sku
+                                    }}</strong>
                                     <p>
-                                        <code class="cc-inv__sku">{{ variante.sku }}</code>
+                                        <code class="cc-inv__sku">{{
+                                            variante.sku
+                                        }}</code>
                                         · {{ variante.atributos }}
                                     </p>
                                     <small>
                                         Mínimo
-                                        {{ cantidad.format(variante.stock_minimo) }}
+                                        {{
+                                            cantidad.format(
+                                                variante.stock_minimo,
+                                            )
+                                        }}
                                         ·
                                         {{
-                                            variante.codigo_barras ?? 'Sin código'
+                                            variante.codigo_barras ??
+                                            'Sin código'
                                         }}
                                     </small>
                                 </span>
@@ -762,8 +776,7 @@ function abrirKardex(variante: Variante): void {
                             <strong>
                                 {{ mov.sku }}
                                 ·
-                                {{
-                                    mov.direccion === 'SALIDA' ? '−' : '+'
+                                {{ mov.direccion === 'SALIDA' ? '−' : '+'
                                 }}{{ cantidad.format(mov.cantidad) }}
                             </strong>
                             <p>
@@ -908,7 +921,10 @@ function abrirKardex(variante: Variante): void {
                         <strong>Elegí un SKU</strong>
                         Mostramos los movimientos en orden cronológico.
                     </p>
-                    <p v-else-if="kardex.lineas.length === 0" class="cc-log__empty">
+                    <p
+                        v-else-if="kardex.lineas.length === 0"
+                        class="cc-log__empty"
+                    >
                         <strong>Sin movimientos en el período</strong>
                         No hay kardex para ese SKU y rango de fechas.
                     </p>
@@ -923,8 +939,7 @@ function abrirKardex(variante: Variante): void {
                             </strong>
                             <p>
                                 {{ linea.tipo }}
-                                ·
-                                entrada
+                                · entrada
                                 {{
                                     linea.entrada !== null
                                         ? cantidad.format(linea.entrada)
@@ -1173,7 +1188,9 @@ function abrirKardex(variante: Variante): void {
                     </DialogHeader>
                     <form class="cc-modal-form" @submit.prevent="guardarMinimo">
                         <label class="cc-modal-field">
-                            <span>Unidades mínimas <b class="cc-req">*</b></span>
+                            <span
+                                >Unidades mínimas <b class="cc-req">*</b></span
+                            >
                             <span class="cc-log__control">
                                 <input
                                     v-model="formMinimo.stock_minimo"

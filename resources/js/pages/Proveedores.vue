@@ -11,7 +11,14 @@ import {
     Trash2,
     X,
 } from '@lucide/vue';
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import {
+    computed,
+    onBeforeUnmount,
+    onMounted,
+    reactive,
+    ref,
+    watch,
+} from 'vue';
 import CcRadialFab from '@/components/admin/CcRadialFab.vue';
 import CcRevealSelect from '@/components/admin/CcRevealSelect.vue';
 import {
@@ -89,7 +96,10 @@ onBeforeUnmount(() => {
     window.removeEventListener('resize', alRedimensionar);
 });
 
-function consulta(origen: Filtros, pagina?: number): Record<string, string | number> {
+function consulta(
+    origen: Filtros,
+    pagina?: number,
+): Record<string, string | number> {
     const query: Record<string, string | number> = {};
 
     if (origen.q !== '') query.q = origen.q;
@@ -145,21 +155,26 @@ const chips = computed(() => {
     const lista: { clave: keyof Filtros; texto: string }[] = [];
 
     if (form.q) lista.push({ clave: 'q', texto: `Búsqueda: ${form.q}` });
-    if (form.estado === 'INACTIVO') lista.push({ clave: 'estado', texto: 'Inactivos' });
-    if (form.estado === '') lista.push({ clave: 'estado', texto: 'Todos los estados' });
+    if (form.estado === 'INACTIVO')
+        lista.push({ clave: 'estado', texto: 'Inactivos' });
+    if (form.estado === '')
+        lista.push({ clave: 'estado', texto: 'Todos los estados' });
 
     return lista;
 });
 
 const resumen = computed(() => {
     const { from, to, total } = props.proveedores.meta;
-    if (!total || from === null || to === null) return 'Mostrando 0 proveedores';
+    if (!total || from === null || to === null)
+        return 'Mostrando 0 proveedores';
 
     return `Mostrando ${from}–${to} de ${cantidad.format(total)} proveedores`;
 });
 
 function badgeEstado(estado: string): string {
-    return estado === 'ACTIVO' ? 'cc-log__badge--crear' : 'cc-log__badge--error';
+    return estado === 'ACTIVO'
+        ? 'cc-log__badge--crear'
+        : 'cc-log__badge--error';
 }
 
 const editando = ref<Proveedor | null>(null);
@@ -219,7 +234,10 @@ const bajaAbierta = computed({
     },
 });
 
-function cambiarEstado(proveedor: Proveedor, estado: 'ACTIVO' | 'INACTIVO'): void {
+function cambiarEstado(
+    proveedor: Proveedor,
+    estado: 'ACTIVO' | 'INACTIVO',
+): void {
     router.patch(
         `/proveedores/${proveedor.id}/estado`,
         { estado },
@@ -253,8 +271,16 @@ function fabElegir(id: string): void {
                         tienda. Un NIT no puede repetirse.
                     </p>
                 </motion.div>
-                <motion.div layout class="cc-log__actions" :transition="adminSpring">
-                    <button type="button" class="cc-button" @click="proporcionarDatos()">
+                <motion.div
+                    layout
+                    class="cc-log__actions"
+                    :transition="adminSpring"
+                >
+                    <button
+                        type="button"
+                        class="cc-button"
+                        @click="proporcionarDatos()"
+                    >
                         <Plus :size="16" />
                         Nuevo proveedor
                     </button>
@@ -306,7 +332,11 @@ function fabElegir(id: string): void {
                             <Search :size="16" />
                             Buscar
                         </button>
-                        <button type="button" class="cc-button cc-button--ghost" @click="limpiar">
+                        <button
+                            type="button"
+                            class="cc-button cc-button--ghost"
+                            @click="limpiar"
+                        >
                             <RotateCcw :size="16" />
                             Limpiar
                         </button>
@@ -343,17 +373,22 @@ function fabElegir(id: string): void {
                             <tr v-if="proveedores.data.length === 0">
                                 <td class="cc-log__empty" colspan="5">
                                     <strong>Sin proveedores</strong>
-                                    No hay registros que coincidan con la búsqueda.
+                                    No hay registros que coincidan con la
+                                    búsqueda.
                                 </td>
                             </tr>
                             <tr
                                 v-for="proveedor in proveedores.data"
                                 :key="proveedor.id"
-                                :class="{ 'is-off': proveedor.estado === 'INACTIVO' }"
+                                :class="{
+                                    'is-off': proveedor.estado === 'INACTIVO',
+                                }"
                             >
                                 <td>
                                     <span class="cc-log__when">
-                                        <strong>{{ proveedor.razon_social }}</strong>
+                                        <strong>{{
+                                            proveedor.razon_social
+                                        }}</strong>
                                         <small>{{
                                             proveedor.nombre_comercial ??
                                             proveedor.fecha_registro ??
@@ -364,12 +399,23 @@ function fabElegir(id: string): void {
                                 <td>{{ proveedor.nit ?? '—' }}</td>
                                 <td>
                                     <span class="cc-log__when">
-                                        {{ proveedor.contacto ?? proveedor.telefono ?? 'Sin contacto' }}
-                                        <small>{{ proveedor.email ?? proveedor.telefono ?? '—' }}</small>
+                                        {{
+                                            proveedor.contacto ??
+                                            proveedor.telefono ??
+                                            'Sin contacto'
+                                        }}
+                                        <small>{{
+                                            proveedor.email ??
+                                            proveedor.telefono ??
+                                            '—'
+                                        }}</small>
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="cc-log__badge" :class="badgeEstado(proveedor.estado)">
+                                    <span
+                                        class="cc-log__badge"
+                                        :class="badgeEstado(proveedor.estado)"
+                                    >
                                         {{ proveedor.estado }}
                                     </span>
                                 </td>
@@ -380,7 +426,9 @@ function fabElegir(id: string): void {
                                             class="cc-log__eye"
                                             title="Editar"
                                             :aria-label="`Editar ${proveedor.razon_social}`"
-                                            @click="proporcionarDatos(proveedor)"
+                                            @click="
+                                                proporcionarDatos(proveedor)
+                                            "
                                         >
                                             <Pencil :size="15" />
                                         </button>
@@ -400,7 +448,12 @@ function fabElegir(id: string): void {
                                             class="cc-log__eye"
                                             title="Reactivar"
                                             :aria-label="`Reactivar ${proveedor.razon_social}`"
-                                            @click="cambiarEstado(proveedor, 'ACTIVO')"
+                                            @click="
+                                                cambiarEstado(
+                                                    proveedor,
+                                                    'ACTIVO',
+                                                )
+                                            "
                                         >
                                             <RotateCcw :size="15" />
                                         </button>
@@ -412,7 +465,10 @@ function fabElegir(id: string): void {
                 </div>
 
                 <div class="cc-log-board">
-                    <p v-if="proveedores.data.length === 0" class="cc-log__empty">
+                    <p
+                        v-if="proveedores.data.length === 0"
+                        class="cc-log__empty"
+                    >
                         <strong>Sin proveedores</strong>
                         No hay registros que coincidan con la búsqueda.
                     </p>
@@ -426,13 +482,20 @@ function fabElegir(id: string): void {
                             <strong>{{ proveedor.razon_social }}</strong>
                             <p>{{ proveedor.nit ?? 'Sin NIT' }}</p>
                             <small>
-                                {{ proveedor.contacto ?? proveedor.telefono ?? 'Sin contacto' }}
+                                {{
+                                    proveedor.contacto ??
+                                    proveedor.telefono ??
+                                    'Sin contacto'
+                                }}
                                 ·
                                 {{ proveedor.email ?? 'sin email' }}
                             </small>
                         </span>
                         <span class="cc-row-actions">
-                            <span class="cc-log__badge" :class="badgeEstado(proveedor.estado)">
+                            <span
+                                class="cc-log__badge"
+                                :class="badgeEstado(proveedor.estado)"
+                            >
                                 {{ proveedor.estado }}
                             </span>
                             <button
@@ -483,7 +546,10 @@ function fabElegir(id: string): void {
                         <button
                             type="button"
                             aria-label="Página siguiente"
-                            :disabled="proveedores.meta.current_page >= proveedores.meta.last_page"
+                            :disabled="
+                                proveedores.meta.current_page >=
+                                proveedores.meta.last_page
+                            "
                             @click="ir(proveedores.meta.current_page + 1)"
                         >
                             <ChevronRight :size="16" />
@@ -502,7 +568,10 @@ function fabElegir(id: string): void {
         </Teleport>
 
         <Dialog v-model:open="formAbierto">
-            <DialogContent class="cc-theme cc-admin cc-log-dialog" style="max-width: 560px">
+            <DialogContent
+                class="cc-theme cc-admin cc-log-dialog"
+                style="max-width: 560px"
+            >
                 <DialogHeader>
                     <DialogTitle>{{
                         editando ? 'Editar proveedor' : 'Nuevo proveedor'
@@ -516,35 +585,63 @@ function fabElegir(id: string): void {
                     <label class="cc-modal-field">
                         <span>NIT <b class="cc-req">*</b></span>
                         <span class="cc-log__control">
-                            <input v-model="alta.nit" type="text" maxlength="50" required />
+                            <input
+                                v-model="alta.nit"
+                                type="text"
+                                maxlength="50"
+                                required
+                            />
                         </span>
-                        <p v-if="alta.errors.nit" class="cc-modal-error">{{ alta.errors.nit }}</p>
+                        <p v-if="alta.errors.nit" class="cc-modal-error">
+                            {{ alta.errors.nit }}
+                        </p>
                     </label>
                     <label class="cc-modal-field">
                         <span>Razón social <b class="cc-req">*</b></span>
                         <span class="cc-log__control">
-                            <input v-model="alta.razon_social" type="text" maxlength="200" required />
+                            <input
+                                v-model="alta.razon_social"
+                                type="text"
+                                maxlength="200"
+                                required
+                            />
                         </span>
-                        <p v-if="alta.errors.razon_social" class="cc-modal-error">
+                        <p
+                            v-if="alta.errors.razon_social"
+                            class="cc-modal-error"
+                        >
                             {{ alta.errors.razon_social }}
                         </p>
                     </label>
                     <label class="cc-modal-field">
                         <span>Nombre comercial</span>
                         <span class="cc-log__control">
-                            <input v-model="alta.nombre_comercial" type="text" maxlength="200" />
+                            <input
+                                v-model="alta.nombre_comercial"
+                                type="text"
+                                maxlength="200"
+                            />
                         </span>
                     </label>
                     <label class="cc-modal-field">
                         <span>Contacto</span>
                         <span class="cc-log__control">
-                            <input v-model="alta.contacto" type="text" maxlength="150" />
+                            <input
+                                v-model="alta.contacto"
+                                type="text"
+                                maxlength="150"
+                            />
                         </span>
                     </label>
                     <label class="cc-modal-field">
                         <span>Teléfono</span>
                         <span class="cc-log__control">
-                            <input v-model="alta.telefono" type="tel" maxlength="15" inputmode="tel" />
+                            <input
+                                v-model="alta.telefono"
+                                type="tel"
+                                maxlength="15"
+                                inputmode="tel"
+                            />
                         </span>
                         <p v-if="alta.errors.telefono" class="cc-modal-error">
                             {{ alta.errors.telefono }}
@@ -553,20 +650,34 @@ function fabElegir(id: string): void {
                     <label class="cc-modal-field">
                         <span>Email</span>
                         <span class="cc-log__control">
-                            <input v-model="alta.email" type="email" maxlength="150" />
+                            <input
+                                v-model="alta.email"
+                                type="email"
+                                maxlength="150"
+                            />
                         </span>
-                        <p v-if="alta.errors.email" class="cc-modal-error">{{ alta.errors.email }}</p>
+                        <p v-if="alta.errors.email" class="cc-modal-error">
+                            {{ alta.errors.email }}
+                        </p>
                     </label>
                     <label class="cc-modal-field">
                         <span>Dirección</span>
                         <span class="cc-log__control">
-                            <input v-model="alta.direccion" type="text" maxlength="1000" />
+                            <input
+                                v-model="alta.direccion"
+                                type="text"
+                                maxlength="1000"
+                            />
                         </span>
                     </label>
                     <label class="cc-modal-field">
                         <span>Observación</span>
                         <span class="cc-log__control cc-log__control--area">
-                            <textarea v-model="alta.observacion" rows="3" maxlength="1000" />
+                            <textarea
+                                v-model="alta.observacion"
+                                rows="3"
+                                maxlength="1000"
+                            />
                         </span>
                     </label>
                     <div class="cc-modal-actions">
@@ -583,8 +694,15 @@ function fabElegir(id: string): void {
                             :class="{ 'is-load': alta.processing }"
                             :disabled="alta.processing"
                         >
-                            <span v-if="alta.processing" class="cc-admin__spin" />
-                            {{ editando ? 'Guardar cambios' : 'Registrar proveedor' }}
+                            <span
+                                v-if="alta.processing"
+                                class="cc-admin__spin"
+                            />
+                            {{
+                                editando
+                                    ? 'Guardar cambios'
+                                    : 'Registrar proveedor'
+                            }}
                         </button>
                     </div>
                 </form>
@@ -605,13 +723,20 @@ function fabElegir(id: string): void {
                     </DialogDescription>
                 </DialogHeader>
                 <div class="cc-modal-actions">
-                    <button type="button" class="cc-button cc-button--ghost" @click="objetivoBaja = null">
+                    <button
+                        type="button"
+                        class="cc-button cc-button--ghost"
+                        @click="objetivoBaja = null"
+                    >
                         Cancelar
                     </button>
                     <button
                         type="button"
                         class="cc-button cc-button--danger"
-                        @click="objetivoBaja && cambiarEstado(objetivoBaja, 'INACTIVO')"
+                        @click="
+                            objetivoBaja &&
+                            cambiarEstado(objetivoBaja, 'INACTIVO')
+                        "
                     >
                         Dejar INACTIVO
                     </button>

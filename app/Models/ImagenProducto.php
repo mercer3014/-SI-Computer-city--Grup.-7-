@@ -30,7 +30,7 @@ class ImagenProducto extends Model
     protected function casts(): array
     {
         return [
-            'es_principal'        => 'boolean',
+            'es_principal' => 'boolean',
             'orden_visualizacion' => 'integer',
         ];
     }

@@ -3,7 +3,14 @@ import confetti from 'canvas-confetti';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 /** Colores Computer City — misma idea que Magic UI / canvas-confetti. */
-const COLORS = ['#FF3D8F', '#B01050', '#5CE1FF', '#D97706', '#3DDC97', '#FFD166'];
+const COLORS = [
+    '#FF3D8F',
+    '#B01050',
+    '#5CE1FF',
+    '#D97706',
+    '#3DDC97',
+    '#FFD166',
+];
 
 type ConfettiInstance = ReturnType<typeof confetti.create>;
 

@@ -6,7 +6,6 @@ use App\Models\Categoria;
 use App\Models\ImagenProducto;
 use App\Models\Marca;
 use App\Models\Producto;
-use App\Models\VarianteProducto;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -65,17 +64,17 @@ class ProductoController extends Controller
                 'data' => $productos->items(),
                 'meta' => [
                     'current_page' => $productos->currentPage(),
-                    'last_page'    => $productos->lastPage(),
-                    'total'        => $productos->total(),
-                    'from'         => $productos->firstItem(),
-                    'to'           => $productos->lastItem(),
+                    'last_page' => $productos->lastPage(),
+                    'total' => $productos->total(),
+                    'from' => $productos->firstItem(),
+                    'to' => $productos->lastItem(),
                 ],
             ],
             'filtros' => [
-                'q'        => $request->string('q')->trim()->value(),
+                'q' => $request->string('q')->trim()->value(),
                 'categoria' => $request->string('categoria')->value(),
-                'marca'     => $request->string('marca')->value(),
-                'estado'    => $request->string('estado')->value(),
+                'marca' => $request->string('marca')->value(),
+                'estado' => $request->string('estado')->value(),
             ],
             'opciones' => [
                 'categorias' => Categoria::query()
@@ -102,12 +101,12 @@ class ProductoController extends Controller
         $this->authorize('productos.gestionar', $request);
 
         $datos = $request->validate([
-            'nombre'      => ['required', 'string', 'max:200'],
-            'slug'        => ['nullable', 'string', 'max:250', 'unique:producto,slug'],
+            'nombre' => ['required', 'string', 'max:200'],
+            'slug' => ['nullable', 'string', 'max:250', 'unique:producto,slug'],
             'categoria_id' => ['required', 'integer', 'exists:categoria,id'],
-            'marca_id'    => ['nullable', 'integer', 'exists:marca,id'],
+            'marca_id' => ['nullable', 'integer', 'exists:marca,id'],
             'descripcion' => ['nullable', 'string'],
-            'estado'      => ['required', Rule::in(['ACTIVO', 'INACTIVO'])],
+            'estado' => ['required', Rule::in(['ACTIVO', 'INACTIVO'])],
         ], [
             'slug.unique' => 'Ya existe un producto con ese slug. Usá uno diferente o dejá el campo vacío para generarlo automáticamente.',
         ]);
@@ -116,12 +115,12 @@ class ProductoController extends Controller
 
         DB::transaction(function () use ($datos, $slug) {
             Producto::query()->create([
-                'nombre'      => $datos['nombre'],
-                'slug'        => $slug,
+                'nombre' => $datos['nombre'],
+                'slug' => $slug,
                 'categoria_id' => $datos['categoria_id'],
-                'marca_id'    => $datos['marca_id'] ?? null,
+                'marca_id' => $datos['marca_id'] ?? null,
                 'descripcion' => $datos['descripcion'] ?? null,
-                'estado'      => $datos['estado'],
+                'estado' => $datos['estado'],
             ]);
         });
 
@@ -141,12 +140,12 @@ class ProductoController extends Controller
         $this->authorize('productos.gestionar', $request);
 
         $datos = $request->validate([
-            'nombre'      => ['required', 'string', 'max:200'],
-            'slug'        => ['nullable', 'string', 'max:250', Rule::unique('producto', 'slug')->ignore($producto->id)],
+            'nombre' => ['required', 'string', 'max:200'],
+            'slug' => ['nullable', 'string', 'max:250', Rule::unique('producto', 'slug')->ignore($producto->id)],
             'categoria_id' => ['required', 'integer', 'exists:categoria,id'],
-            'marca_id'    => ['nullable', 'integer', 'exists:marca,id'],
+            'marca_id' => ['nullable', 'integer', 'exists:marca,id'],
             'descripcion' => ['nullable', 'string'],
-            'estado'      => ['required', Rule::in(['ACTIVO', 'INACTIVO'])],
+            'estado' => ['required', Rule::in(['ACTIVO', 'INACTIVO'])],
         ], [
             'slug.unique' => 'Ya existe un producto con ese slug. Usá uno diferente o dejá el campo vacío para generarlo automáticamente.',
         ]);
@@ -155,12 +154,12 @@ class ProductoController extends Controller
 
         DB::transaction(function () use ($producto, $datos, $slug) {
             $producto->forceFill([
-                'nombre'      => $datos['nombre'],
-                'slug'        => $slug,
+                'nombre' => $datos['nombre'],
+                'slug' => $slug,
                 'categoria_id' => $datos['categoria_id'],
-                'marca_id'    => $datos['marca_id'] ?? null,
+                'marca_id' => $datos['marca_id'] ?? null,
                 'descripcion' => $datos['descripcion'] ?? null,
-                'estado'      => $datos['estado'],
+                'estado' => $datos['estado'],
             ])->save();
         });
 
@@ -205,8 +204,8 @@ class ProductoController extends Controller
         $this->authorize('productos.gestionar', $request);
 
         $datos = $request->validate([
-            'nombre'      => ['required', 'string', 'max:150'],
-            'slug'        => ['nullable', 'string', 'max:180', 'unique:categoria,slug'],
+            'nombre' => ['required', 'string', 'max:150'],
+            'slug' => ['nullable', 'string', 'max:180', 'unique:categoria,slug'],
             'descripcion' => ['nullable', 'string'],
         ], [
             'slug.unique' => 'Ya existe una categoría con ese slug.',
@@ -215,10 +214,10 @@ class ProductoController extends Controller
         $slug = $this->resolverSlug($datos['slug'] ?? null, $datos['nombre']);
 
         Categoria::query()->create([
-            'nombre'      => $datos['nombre'],
-            'slug'        => $slug,
+            'nombre' => $datos['nombre'],
+            'slug' => $slug,
             'descripcion' => $datos['descripcion'] ?? null,
-            'activo'      => true,
+            'activo' => true,
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Categoría creada.']);
@@ -236,7 +235,7 @@ class ProductoController extends Controller
 
         $datos = $request->validate([
             'nombre' => ['required', 'string', 'max:120'],
-            'slug'   => ['nullable', 'string', 'max:150', 'unique:marca,slug'],
+            'slug' => ['nullable', 'string', 'max:150', 'unique:marca,slug'],
         ], [
             'slug.unique' => 'Ya existe una marca con ese slug.',
         ]);
@@ -245,7 +244,7 @@ class ProductoController extends Controller
 
         Marca::query()->create([
             'nombre' => $datos['nombre'],
-            'slug'   => $slug,
+            'slug' => $slug,
             'estado' => 'ACTIVO',
         ]);
 
@@ -280,10 +279,10 @@ class ProductoController extends Controller
         $orden = $producto->imagenes()->max('orden_visualizacion') ?? 0;
 
         $producto->imagenes()->create([
-            'url_webp'            => '/storage/' . $ruta,
-            'es_principal'        => $request->boolean('es_principal', $orden === 0),
+            'url_webp' => '/storage/'.$ruta,
+            'es_principal' => $request->boolean('es_principal', $orden === 0),
             'orden_visualizacion' => $orden + 1,
-            'texto_alternativo'   => $producto->nombre,
+            'texto_alternativo' => $producto->nombre,
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Imagen subida correctamente.']);
@@ -321,30 +320,32 @@ class ProductoController extends Controller
     private function formatProducto(Producto $p): array
     {
         $variante = $p->variantes->first();
-        $imagen   = $p->imagenes->firstWhere('es_principal', true) ?? $p->imagenes->first();
+        $imagen = $p->imagenes->firstWhere('es_principal', true) ?? $p->imagenes->first();
 
         return [
-            'id'             => $p->id,
-            'nombre'         => $p->nombre,
-            'slug'           => $p->slug,
-            'descripcion'    => $p->descripcion,
-            'estado'         => $p->estado ?? 'ACTIVO',
-            'categoria_id'   => $p->categoria_id,
-            'categoria'      => $p->categoria?->nombre,
-            'marca_id'       => $p->marca_id,
-            'marca'          => $p->marca?->nombre,
+            'id' => $p->id,
+            'nombre' => $p->nombre,
+            'slug' => $p->slug,
+            'descripcion' => $p->descripcion,
+            'estado' => $p->estado ?? 'ACTIVO',
+            'categoria_id' => $p->categoria_id,
+            'categoria' => $p->categoria?->nombre,
+            'marca_id' => $p->marca_id,
+            'marca' => $p->marca?->nombre,
             'variantes_count' => $p->variantes_count ?? 0,
-            'stock_total'    => (int) ($p->stock_total ?? 0),
-            'precio_venta'   => $variante?->precio_venta,
-            'sku'            => $variante?->sku,
-            'imagen_url'     => $imagen?->url_webp,
-            'imagen_alt'     => $imagen?->texto_alternativo ?? $p->nombre,
-            'imagenes'       => $p->imagenes->map(fn (ImagenProducto $img) => [
-                'id'           => $img->id,
-                'url_webp'     => $img->url_webp,
+            'stock_total' => (int) ($p->stock_total ?? 0),
+            'precio_venta' => $variante?->precio_venta,
+            'sku' => $variante?->sku,
+            'imagen_url' => $imagen?->url_webp,
+            'imagen_alt' => $imagen instanceof ImagenProducto
+                ? ($imagen->texto_alternativo ?? $p->nombre)
+                : $p->nombre,
+            'imagenes' => $p->imagenes->map(fn (ImagenProducto $img) => [
+                'id' => $img->id,
+                'url_webp' => $img->url_webp,
                 'es_principal' => $img->es_principal,
-                'orden'        => $img->orden_visualizacion,
-                'alt'          => $img->texto_alternativo,
+                'orden' => $img->orden_visualizacion,
+                'alt' => $img->texto_alternativo,
             ])->values(),
         ];
     }
@@ -366,6 +367,9 @@ class ProductoController extends Controller
     /**
      * Verificación de permiso (frontera de control de acceso).
      * Lanza 403 si el usuario no tiene NINGUNO de los permisos dados.
+     */
+    /**
+     * @param  array<int, string>  $claves
      */
     private function authorizeAny(array $claves, Request $request): void
     {

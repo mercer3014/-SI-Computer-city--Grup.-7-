@@ -41,14 +41,21 @@ const etiquetas: Record<ProductoTarjeta['disponibilidad'], string> = {
                 height="320"
             />
             <ImageOff v-else :size="32" aria-hidden="true" />
-            <span class="cc-card__estado" :data-estado="producto.disponibilidad">
+            <span
+                class="cc-card__estado"
+                :data-estado="producto.disponibilidad"
+            >
                 {{ etiquetas[producto.disponibilidad] }}
             </span>
         </span>
         <span class="cc-card__body">
-            <small>{{ [producto.marca, producto.categoria].filter(Boolean).join(' · ') }}</small>
+            <small>{{
+                [producto.marca, producto.categoria].filter(Boolean).join(' · ')
+            }}</small>
             <strong>{{ producto.nombre }}</strong>
-            <span class="cc-card__precio">{{ bolivianos(producto.precio_desde) }}</span>
+            <span class="cc-card__precio">{{
+                bolivianos(producto.precio_desde)
+            }}</span>
         </span>
     </Link>
 </template>

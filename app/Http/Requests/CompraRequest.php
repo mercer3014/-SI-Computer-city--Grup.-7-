@@ -86,18 +86,30 @@ class CompraRequest extends FormRequest
     public function datos(): array
     {
         $validos = $this->validated();
+        $items = is_array($validos['items'] ?? null) ? $validos['items'] : [];
+        $normalizados = [];
+
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $serie = $item['numero_serie'] ?? null;
+
+            $normalizados[] = [
+                'sku' => (string) ($item['sku'] ?? ''),
+                'cantidad' => (int) ($item['cantidad'] ?? 0),
+                'costo_unitario' => round((float) ($item['costo_unitario'] ?? 0), 2),
+                'numero_serie' => is_string($serie) && $serie !== '' ? $serie : null,
+            ];
+        }
 
         return [
             'proveedor_id' => (int) $validos['proveedor_id'],
             'metodo_pago_id' => (int) $validos['metodo_pago_id'],
-            'numero_compra' => $validos['numero_compra'],
+            'numero_compra' => (string) $validos['numero_compra'],
             'fecha_compra' => Carbon::parse($validos['fecha_compra'])->startOfDay()->format('Y-m-d H:i:s'),
-            'items' => array_map(fn (array $item): array => [
-                'sku' => $item['sku'],
-                'cantidad' => (int) $item['cantidad'],
-                'costo_unitario' => round((float) $item['costo_unitario'], 2),
-                'numero_serie' => $item['numero_serie'] ?? null,
-            ], $validos['items']),
+            'items' => $normalizados,
         ];
     }
 

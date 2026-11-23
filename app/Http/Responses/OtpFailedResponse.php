@@ -2,6 +2,7 @@
 
 namespace App\Http\Responses;
 
+use Illuminate\Http\Request;
 use Laravel\Fortify\Contracts\FailedPasswordResetResponse as FailedPasswordResetResponseContract;
 
 class OtpFailedResponse implements FailedPasswordResetResponseContract
@@ -9,7 +10,7 @@ class OtpFailedResponse implements FailedPasswordResetResponseContract
     public function __construct(public string $status) {}
 
     /**
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      */
     public function toResponse($request)
     {

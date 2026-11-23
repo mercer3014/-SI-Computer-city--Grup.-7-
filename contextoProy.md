@@ -6,54 +6,54 @@
 
 ## 1. Identidad del Proyecto
 
-| Campo | Valor |
-|---|---|
-| **Nombre** | Computer City |
-| **Tipo** | Sistema web — Gestión de inventario y punto de venta |
-| **Dominio** | Tienda de periféricos de computadora (mouse, teclados, audífonos, etc.) |
-| **Ubicación física** | Comercial Chiriguano, Santa Cruz de la Sierra, Bolivia |
-| **Moneda** | BOB (Bolivianos) |
+| Campo                | Valor                                                                   |
+| -------------------- | ----------------------------------------------------------------------- |
+| **Nombre**           | Computer City                                                           |
+| **Tipo**             | Sistema web — Gestión de inventario y punto de venta                    |
+| **Dominio**          | Tienda de periféricos de computadora (mouse, teclados, audífonos, etc.) |
+| **Ubicación física** | Comercial Chiriguano, Santa Cruz de la Sierra, Bolivia                  |
+| **Moneda**           | BOB (Bolivianos)                                                        |
 
 ---
 
 ## 2. Stack Tecnológico
 
-| Capa | Tecnología | Notas |
-|---|---|---|
-| **Backend / API** | Laravel 12 (PHP 8.3+) | Inertia.js (servidor) |
-| **Frontend** | Vue 3 + TypeScript | Inertia.js (cliente), Composition API + `<script setup>` |
-| **Base de Datos** | PostgreSQL | Nombres de tablas en español, sin timestamps Eloquent estándar (`fecha_creacion`, `fecha_actualizacion`) |
-| **Autenticación** | Laravel Fortify + OTP | 2FA, primer login, bloqueo por intentos |
-| **Estilos** | Tailwind CSS v4 + CSS custom (`cc-admin.css`) | Tema claro/oscuro con variables CSS `--cc-*` |
-| **Animaciones** | `motion-v` | `adminSpring` desde `@/lib/adminMotion` |
-| **Iconos** | `@lucide/vue` | |
-| **Notificaciones** | `vue-sonner` | |
-| **Routing Vue** | `wayfinder` (tipado) + rutas Inertia | |
+| Capa               | Tecnología                                    | Notas                                                                                                    |
+| ------------------ | --------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Backend / API**  | Laravel 12 (PHP 8.3+)                         | Inertia.js (servidor)                                                                                    |
+| **Frontend**       | Vue 3 + TypeScript                            | Inertia.js (cliente), Composition API + `<script setup>`                                                 |
+| **Base de Datos**  | PostgreSQL                                    | Nombres de tablas en español, sin timestamps Eloquent estándar (`fecha_creacion`, `fecha_actualizacion`) |
+| **Autenticación**  | Laravel Fortify + OTP                         | 2FA, primer login, bloqueo por intentos                                                                  |
+| **Estilos**        | Tailwind CSS v4 + CSS custom (`cc-admin.css`) | Tema claro/oscuro con variables CSS `--cc-*`                                                             |
+| **Animaciones**    | `motion-v`                                    | `adminSpring` desde `@/lib/adminMotion`                                                                  |
+| **Iconos**         | `@lucide/vue`                                 |                                                                                                          |
+| **Notificaciones** | `vue-sonner`                                  |                                                                                                          |
+| **Routing Vue**    | `wayfinder` (tipado) + rutas Inertia          |                                                                                                          |
 
 ---
 
 ## 3. Módulos Principales
 
-| # | Módulo | Permiso clave | Estado |
-|---|---|---|---|
-| 1 | **Seguridad** | `usuarios.administrar`, `roles.administrar`, `bitacora.ver` | ✅ Implementado |
-| 2 | **Inventario y Productos** | `productos.gestionar`, `inventario.ver`, `inventario.ajustar` | ✅ CU07 + CU08 + CU09 |
-| 3 | **Ventas y Clientes** | `ventas.crear`, `ventas.anular`, `clientes.gestionar`, `garantias.gestionar` | ✅ CU10 + CU11 + CU12 |
-| 4 | **Compras y Proveedores** | `compras.crear`, `proveedores.gestionar` | 🔲 Pendiente |
-| 5 | **Flujo de Caja y Reportes** | `gastos.gestionar`, `reportes.ver` | 🔲 Pendiente |
-| 6 | **Catálogo Web** | Público / sin permiso | 🔲 Pendiente |
+| #   | Módulo                       | Permiso clave                                                                | Estado                |
+| --- | ---------------------------- | ---------------------------------------------------------------------------- | --------------------- |
+| 1   | **Seguridad**                | `usuarios.administrar`, `roles.administrar`, `bitacora.ver`                  | ✅ Implementado       |
+| 2   | **Inventario y Productos**   | `productos.gestionar`, `inventario.ver`, `inventario.ajustar`                | ✅ CU07 + CU08 + CU09 |
+| 3   | **Ventas y Clientes**        | `ventas.crear`, `ventas.anular`, `clientes.gestionar`, `garantias.gestionar` | ✅ CU10 + CU11 + CU12 |
+| 4   | **Compras y Proveedores**    | `compras.crear`, `proveedores.gestionar`                                     | 🔲 Pendiente          |
+| 5   | **Flujo de Caja y Reportes** | `gastos.gestionar`, `reportes.ver`                                           | 🔲 Pendiente          |
+| 6   | **Catálogo Web**             | Público / sin permiso                                                        | 🔲 Pendiente          |
 
 ---
 
 ## 4. Actores del Sistema
 
-| Actor | Rol en BD | Permisos | Restricciones |
-|---|---|---|---|
-| **Administrador** | `Administrador` | Todos | Ninguna |
-| **Vendedor** | `Vendedor` | `inventario.ver`, `ventas.crear`, `clientes.gestionar`, `garantias.gestionar` | Solo lectura en productos e inventario; no ajusta stock |
-| **Cliente** | — | Sin cuenta de sistema | Solo usa el catálogo web público |
-| **Cliente Web** | — | Sin cuenta de sistema | Navega el catálogo público |
-| **Proveedor** | — | Sin cuenta de sistema | Datos gestionados por admin |
+| Actor             | Rol en BD       | Permisos                                                                      | Restricciones                                           |
+| ----------------- | --------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------- |
+| **Administrador** | `Administrador` | Todos                                                                         | Ninguna                                                 |
+| **Vendedor**      | `Vendedor`      | `inventario.ver`, `ventas.crear`, `clientes.gestionar`, `garantias.gestionar` | Solo lectura en productos e inventario; no ajusta stock |
+| **Cliente**       | —               | Sin cuenta de sistema                                                         | Solo usa el catálogo web público                        |
+| **Cliente Web**   | —               | Sin cuenta de sistema                                                         | Navega el catálogo público                              |
+| **Proveedor**     | —               | Sin cuenta de sistema                                                         | Datos gestionados por admin                             |
 
 ---
 
@@ -76,8 +76,8 @@
 - **`<script setup lang="ts">`** siempre.
 - **Layout:** `defineOptions({ layout: { breadcrumbs: [...] } })`.
 - **Clases CSS del design system** (nunca inventar colores nuevos):
-  - `.cc-admin`, `.cc-log__head`, `.cc-log__panel`, `.cc-log__table`, `.cc-button`, `.cc-log__badge`, etc.
-  - Variables: `--cc-page`, `--cc-surface`, `--cc-text`, `--cc-muted`, `--cc-border`, `--cc-accent`, `--cc-error`, `--cc-success`.
+    - `.cc-admin`, `.cc-log__head`, `.cc-log__panel`, `.cc-log__table`, `.cc-button`, `.cc-log__badge`, etc.
+    - Variables: `--cc-page`, `--cc-surface`, `--cc-text`, `--cc-muted`, `--cc-border`, `--cc-accent`, `--cc-error`, `--cc-success`.
 - **Tema:** La clase `.dark` en el `<html>` activa el tema oscuro automáticamente via las variables CSS.
 - **Animaciones:** `motion.div` + `adminSpring` para layout animations.
 - **Permisos en Vue:** `page.props.auth.user.permisos` es un `string[]` con las claves. Usar `v-if="permisos.includes('productos.gestionar')"`.
@@ -117,45 +117,45 @@ texto_alternativo (varchar 255, nullable)
 
 ## 7. Usuarios de Prueba Iniciales
 
-| Email | Rol | Contraseña (bcrypt) |
-|---|---|---|
-| `ruben.morales@computercity.com` | Administrador | (ver poblacion.txt) |
-| `maria.fernandez@computercity.com` | Vendedor | (ver poblacion.txt) |
-| `carla.rojas@computercity.com` | Vendedor | (ver poblacion.txt) |
+| Email                              | Rol           | Contraseña (bcrypt) |
+| ---------------------------------- | ------------- | ------------------- |
+| `ruben.morales@computercity.com`   | Administrador | (ver poblacion.txt) |
+| `maria.fernandez@computercity.com` | Vendedor      | (ver poblacion.txt) |
+| `carla.rojas@computercity.com`     | Vendedor      | (ver poblacion.txt) |
 
 ---
 
 ## 8. Archivos Clave del Proyecto
 
-| Archivo | Descripción |
-|---|---|
-| `resources/css/app.css` | Variables CSS globales (`:root` y `.dark`), importa `cc-admin.css` |
-| `resources/css/cc-admin.css` | Design system completo: botones, tablas, modales, chips, badges |
-| `resources/js/pages/Usuarios.vue` | **Referencia** de patrón CRUD completo con tabla + modal |
-| `resources/js/pages/Roles.vue` | **Referencia** de patrón sin paginación + panel lateral |
-| `resources/js/pages/Variantes.vue` | **CU08** — variantes, precios, historial y rotación |
-| `resources/js/pages/Inventario.vue` | **CU09** — existencias, ajustes, kardex y serie |
-| `resources/js/pages/Clientes.vue` | **CU10** — clientes, ficha, historial y frecuentes |
-| `resources/js/pages/Ventas.vue` | **CU11** — POS: carrito, pagos múltiples, nota PDF |
-| `resources/js/components/AppSidebar.vue` | Navegación — filtrada por `permisos`. Incluye **Inventario**, **Clientes** y **Ventas**. |
-| `app/Http/Middleware/HandleInertiaRequests.php` | Props compartidas: `auth.user.rol`, `auth.user.permisos` |
-| `app/Http/Middleware/RequierePermiso.php` | Middleware de control de acceso por clave de permiso |
-| `poblacion.txt` | Datos de prueba SQL (categorías, marcas, 20 productos, variantes) |
-| `catalogo/` | Imágenes PNG de los 20 productos de prueba |
+| Archivo                                         | Descripción                                                                              |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `resources/css/app.css`                         | Variables CSS globales (`:root` y `.dark`), importa `cc-admin.css`                       |
+| `resources/css/cc-admin.css`                    | Design system completo: botones, tablas, modales, chips, badges                          |
+| `resources/js/pages/Usuarios.vue`               | **Referencia** de patrón CRUD completo con tabla + modal                                 |
+| `resources/js/pages/Roles.vue`                  | **Referencia** de patrón sin paginación + panel lateral                                  |
+| `resources/js/pages/Variantes.vue`              | **CU08** — variantes, precios, historial y rotación                                      |
+| `resources/js/pages/Inventario.vue`             | **CU09** — existencias, ajustes, kardex y serie                                          |
+| `resources/js/pages/Clientes.vue`               | **CU10** — clientes, ficha, historial y frecuentes                                       |
+| `resources/js/pages/Ventas.vue`                 | **CU11** — POS: carrito, pagos múltiples, nota PDF                                       |
+| `resources/js/components/AppSidebar.vue`        | Navegación — filtrada por `permisos`. Incluye **Inventario**, **Clientes** y **Ventas**. |
+| `app/Http/Middleware/HandleInertiaRequests.php` | Props compartidas: `auth.user.rol`, `auth.user.permisos`                                 |
+| `app/Http/Middleware/RequierePermiso.php`       | Middleware de control de acceso por clave de permiso                                     |
+| `poblacion.txt`                                 | Datos de prueba SQL (categorías, marcas, 20 productos, variantes)                        |
+| `catalogo/`                                     | Imágenes PNG de los 20 productos de prueba                                               |
 
 ---
 
 ## 9. Casos de Uso Implementados
 
-| CU | Nombre | Vista | Controlador |
-|---|---|---|---|
-| CU01–CU06 | Seguridad (usuarios, roles, bitácora) | `Usuarios.vue`, `Roles.vue`, `Bitacora.vue` | `UsuarioController`, `RolController`, `BitacoraController` |
-| **CU07** | **Catálogo de Productos (Inventario)** | **`Productos.vue`** | **`ProductoController`** |
-| **CU08** | **Variantes y Precios** | **`Variantes.vue`** | **`VarianteController`** |
-| **CU09** | **Control de Inventario (Kardex)** | **`Inventario.vue`** | **`InventarioController`** |
-| **CU10** | **Gestión de Clientes** | **`Clientes.vue`** | **`ClienteController`** |
-| **CU11** | **Registro de Ventas (POS)** | **`Ventas.vue`** | **`VentaController`** |
-| **CU12** | **Garantías y devoluciones** | **`Garantias.vue`** | **`GarantiaController`** |
+| CU        | Nombre                                 | Vista                                       | Controlador                                                |
+| --------- | -------------------------------------- | ------------------------------------------- | ---------------------------------------------------------- |
+| CU01–CU06 | Seguridad (usuarios, roles, bitácora)  | `Usuarios.vue`, `Roles.vue`, `Bitacora.vue` | `UsuarioController`, `RolController`, `BitacoraController` |
+| **CU07**  | **Catálogo de Productos (Inventario)** | **`Productos.vue`**                         | **`ProductoController`**                                   |
+| **CU08**  | **Variantes y Precios**                | **`Variantes.vue`**                         | **`VarianteController`**                                   |
+| **CU09**  | **Control de Inventario (Kardex)**     | **`Inventario.vue`**                        | **`InventarioController`**                                 |
+| **CU10**  | **Gestión de Clientes**                | **`Clientes.vue`**                          | **`ClienteController`**                                    |
+| **CU11**  | **Registro de Ventas (POS)**           | **`Ventas.vue`**                            | **`VentaController`**                                      |
+| **CU12**  | **Garantías y devoluciones**           | **`Garantias.vue`**                         | **`GarantiaController`**                                   |
 
 ### CU08 — Variantes y Precios (integrado)
 

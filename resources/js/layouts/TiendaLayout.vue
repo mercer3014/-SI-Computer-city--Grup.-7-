@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
 import {
+    FileText,
     LayoutDashboard,
     LogOut,
     Package,
@@ -21,6 +22,7 @@ type Tienda = {
     telefono: string | null;
     whatsapp: string | null;
     email: string | null;
+    anuncio: string | null;
     horarios: Horario[];
 };
 
@@ -48,7 +50,10 @@ onMounted(() => {
 });
 
 function buscar(): void {
-    router.get('/tienda', busqueda.value.trim() ? { q: busqueda.value.trim() } : {});
+    router.get(
+        '/tienda',
+        busqueda.value.trim() ? { q: busqueda.value.trim() } : {},
+    );
 }
 
 function whatsapp(numero: string): string {
@@ -60,11 +65,22 @@ function whatsapp(numero: string): string {
     <div class="cc-theme cc-shop">
         <header class="cc-shop__header">
             <div class="cc-shop__bar">
-                <Link href="/tienda" class="cc-shop__brand" aria-label="Computer City, ir al catálogo">
-                    <img src="/images/computer-city/logo.png?v=5" alt="Computer City" />
+                <Link
+                    href="/tienda"
+                    class="cc-shop__brand"
+                    aria-label="Computer City, ir al catálogo"
+                >
+                    <img
+                        src="/images/computer-city/logo.png?v=5"
+                        alt="Computer City"
+                    />
                 </Link>
 
-                <form class="cc-shop__search" role="search" @submit.prevent="buscar">
+                <form
+                    class="cc-shop__search"
+                    role="search"
+                    @submit.prevent="buscar"
+                >
                     <Search :size="16" aria-hidden="true" />
                     <input
                         v-model="busqueda"
@@ -80,16 +96,37 @@ function whatsapp(numero: string): string {
                     <ThemeToggle class="cc-shop__theme" />
 
                     <template v-if="!usuario">
-                        <Link href="/login" class="cc-shop__link">
+                        <Link
+                            href="/login"
+                            class="cc-shop__link"
+                            aria-label="Ingresar"
+                            title="Ingresar"
+                        >
                             <UserRound :size="16" />
                             <span>Ingresar</span>
                         </Link>
-                        <Link href="/registro" class="cc-button cc-shop__cta">Crear cuenta</Link>
+                        <Link href="/registro" class="cc-button cc-shop__cta"
+                            >Crear cuenta</Link
+                        >
                     </template>
                     <template v-else-if="usuario.es_cliente">
-                        <Link href="/tienda/pedidos" class="cc-shop__link">
+                        <Link
+                            href="/tienda/pedidos"
+                            class="cc-shop__link"
+                            aria-label="Mis pedidos"
+                            title="Mis pedidos"
+                        >
                             <Package :size="16" />
                             <span>Mis pedidos</span>
+                        </Link>
+                        <Link
+                            href="/tienda/cotizaciones"
+                            class="cc-shop__link"
+                            aria-label="Mis cotizaciones"
+                            title="Mis cotizaciones"
+                        >
+                            <FileText :size="16" />
+                            <span>Mis cotizaciones</span>
                         </Link>
                         <Link
                             href="/logout"
@@ -97,24 +134,47 @@ function whatsapp(numero: string): string {
                             as="button"
                             class="cc-shop__link cc-shop__link--icon"
                             aria-label="Cerrar sesión"
+                            title="Cerrar sesión"
                         >
                             <LogOut :size="16" />
                         </Link>
                     </template>
-                    <Link v-else href="/dashboard" class="cc-shop__link">
+                    <Link
+                        v-else
+                        href="/dashboard"
+                        class="cc-shop__link"
+                        aria-label="Panel"
+                        title="Panel"
+                    >
                         <LayoutDashboard :size="16" />
                         <span>Panel</span>
                     </Link>
 
-                    <Link href="/tienda/carrito" class="cc-shop__cart" aria-label="Ver carrito">
+                    <Link
+                        href="/tienda/carrito"
+                        class="cc-shop__cart"
+                        aria-label="Ver carrito"
+                    >
                         <ShoppingCart :size="18" />
-                        <span v-if="montado && cantidadTotal > 0" class="cc-shop__cart-badge">
+                        <span
+                            v-if="montado && cantidadTotal > 0"
+                            class="cc-shop__cart-badge"
+                        >
                             {{ cantidadTotal > 99 ? '99+' : cantidadTotal }}
                         </span>
                     </Link>
                 </nav>
             </div>
         </header>
+
+        <p
+            v-if="tienda?.anuncio"
+            class="cc-shop__anuncio"
+            role="status"
+            data-test="anuncio"
+        >
+            {{ tienda.anuncio }}
+        </p>
 
         <main class="cc-shop__main">
             <slot />
@@ -130,8 +190,10 @@ function whatsapp(numero: string): string {
                     />
                     <p>
                         Periféricos y servicio técnico en
-                        {{ tienda?.centro_comercial ?? 'el Comercial Chiriguano' }}.
-                        Comprá en línea y retirá en tienda.
+                        {{
+                            tienda?.centro_comercial ??
+                            'el Comercial Chiriguano'
+                        }}. Comprá en línea y retirá en tienda.
                     </p>
                 </div>
                 <div v-if="tienda">
@@ -159,7 +221,10 @@ function whatsapp(numero: string): string {
                     </dl>
                 </div>
             </div>
-            <p class="cc-shop__copy">© {{ new Date().getFullYear() }} Computer City · Pagos seguros con Stripe</p>
+            <p class="cc-shop__copy">
+                © {{ new Date().getFullYear() }} Computer City · Pagos seguros
+                con Stripe
+            </p>
         </footer>
 
         <Toaster />

@@ -18,7 +18,7 @@ Desde sus inicios, el negocio ha sido operado exclusivamente por dos personas: e
 
 Durante estos dos años, el crecimiento del flujo de ventas y reparaciones ha provocado que sus herramientas iniciales de gestión queden obsoletas. Actualmente, utilizan múltiples hojas de cálculo de Excel desconectadas entre sí para registrar inventario, ventas y compras, apoyándose en cuadernos físicos de uso rápido y talonarios manuales para la emisión de notas de venta con garantía. Aunque este método les ha permitido subsistir, el volumen actual de transacciones ha evidenciado que el sistema manual es insostenible a largo plazo.
 
-## 
+##
 
 ## **1.3. Justificación**
 
@@ -36,19 +36,19 @@ El desarrollo del sistema para Computer City surge de la necesidad de resolver d
 
 **Sector 1: Administración del Inventario y Compras**
 
-1. **Discrepancia y duplicidad de datos:** El registro en Excel requiere coincidencia exacta de caracteres. Un error de tipeo genera duplicidad de productos, lo que causa constantes descuadres entre el stock registrado y el físico en tienda.  
-2. **Carencia de control de stock automatizado:** Actualmente se enteran que un producto debe reponerse solo cuando la celda marca "0" o al notar la ausencia física en el estante, lo que en ocasiones los obliga a pedir mercancía a última hora frente al cliente o perder la venta si el proveedor exige 3 días de anticipación.  
+1. **Discrepancia y duplicidad de datos:** El registro en Excel requiere coincidencia exacta de caracteres. Un error de tipeo genera duplicidad de productos, lo que causa constantes descuadres entre el stock registrado y el físico en tienda.
+2. **Carencia de control de stock automatizado:** Actualmente se enteran que un producto debe reponerse solo cuando la celda marca "0" o al notar la ausencia física en el estante, lo que en ocasiones los obliga a pedir mercancía a última hora frente al cliente o perder la venta si el proveedor exige 3 días de anticipación.
 3. **Actualización manual de ingresos:** La recepción de mercadería y la actualización de precios de compra (fluctuantes por la cotización del dólar) requieren un registro manual laborioso cruzando hojas de cálculo.
 
 **Sector 2: Proceso de Ventas y Atención al Cliente**
 
-1. **Doble trabajo en la facturación/nota de venta:** El proceso de venta exige llenar un talonario físico a mano, anotar en un cuaderno y, al final del día, transcribirlo a Excel. Esto genera lentitud en la atención y fatiga operativa.  
-2. **Falta de Base de Datos de Clientes:** A los clientes particulares se les registra genéricamente como "Cliente Final" en Excel. No se guarda un historial de compras, dificultando el seguimiento para garantías y desaprovechando oportunidades de conocer el comportamiento de clientes frecuentes.  
+1. **Doble trabajo en la facturación/nota de venta:** El proceso de venta exige llenar un talonario físico a mano, anotar en un cuaderno y, al final del día, transcribirlo a Excel. Esto genera lentitud en la atención y fatiga operativa.
+2. **Falta de Base de Datos de Clientes:** A los clientes particulares se les registra genéricamente como "Cliente Final" en Excel. No se guarda un historial de compras, dificultando el seguimiento para garantías y desaprovechando oportunidades de conocer el comportamiento de clientes frecuentes.
 3. **Control de garantías manual:** La verificación de devoluciones o cambios por garantía se realiza buscando en talonarios físicos y verificando los últimos 4 dígitos del número de serie, un proceso susceptible a pérdida de documentos.
 
 **Sector 3: Administración y Reportes Financieros**
 
-1. **Falsedad de datos por omisión:** La falta de tiempo hace que, en ocasiones, no se registren operaciones en el Excel. Esto genera un efecto dominó que contamina la veracidad de los reportes de ganancias y costos.  
+1. **Falsedad de datos por omisión:** La falta de tiempo hace que, en ocasiones, no se registren operaciones en el Excel. Esto genera un efecto dominó que contamina la veracidad de los reportes de ganancias y costos.
 2. **Generación de reportes ineficiente:** Consolidar la información para obtener los reportes de Ingresos Operativos, Costo de Ventas, Gastos Operativos y Utilidad demanda demasiado tiempo de procesamiento manual al cierre del mes.
 
 ## **1.5. Formulación Del Problema**
@@ -63,13 +63,12 @@ Desarrollar un Sistema de Información integral para la administración, control
 
 ### **1.6.2 Objetivos Específicos**
 
-* Recolectar los datos obtenidos mediante la entrevista realizada a los responsables de la tienda para identificar sus necesidades y procesos actuales.  
-* Analizar la información recolectada en la entrevista para establecer los requerimientos funcionales del sistema.  
-* Diseñar el SGBD(PostgreSQL) para gestionar la información de productos, categorías, proveedores, clientes, ventas, compras y usuarios.  
-* Diseñar una arquitectura de despliegue que defina los componentes necesarios para el funcionamiento del sistema.  
-* Implementar una interfaz de usuario web que permita realizar de forma ágil las operaciones contempladas en los módulos del sistema.  
-* Realizar pruebas funcionales para verificar el correcto funcionamiento de los módulos y la integridad de la información registrada.
-
+- Recolectar los datos obtenidos mediante la entrevista realizada a los responsables de la tienda para identificar sus necesidades y procesos actuales.
+- Analizar la información recolectada en la entrevista para establecer los requerimientos funcionales del sistema.
+- Diseñar el SGBD(PostgreSQL) para gestionar la información de productos, categorías, proveedores, clientes, ventas, compras y usuarios.
+- Diseñar una arquitectura de despliegue que defina los componentes necesarios para el funcionamiento del sistema.
+- Implementar una interfaz de usuario web que permita realizar de forma ágil las operaciones contempladas en los módulos del sistema.
+- Realizar pruebas funcionales para verificar el correcto funcionamiento de los módulos y la integridad de la información registrada.
 
 ## **1.7. Alcance**
 
@@ -77,48 +76,48 @@ Desarrollar un Sistema de Información integral para la administración, control
 
 **Módulo de Administración de Usuarios y Seguridad**
 
-* **RF1: Inicio y cierre de sesión:** El sistema permitirá a los usuarios iniciar y cerrar sesión de forma segura, registrando la fecha y hora de cada acceso y salida.  
-* **RF2: Administración de usuarios y perfiles:** El sistema permitirá registrar, modificar, habilitar y deshabilitar usuarios, así como asignar perfiles según sus funciones dentro de la tienda.  
-* **RF3: Gestión de privilegios de acceso:** El sistema permitirá definir y administrar los privilegios de cada perfil, controlando el acceso a las diferentes funciones y módulos.  
-* **RF4: Gestión de contraseñas:** El sistema permitirá administrar y actualizar las contraseñas de los usuarios.  
-* **RF5: Bitácora de actividades:** El sistema registrará las acciones realizadas por los usuarios, permitiendo conocer quién ingresó al sistema, cuándo ingresó, qué acciones realizó y cuándo cerró sesión.
+- **RF1: Inicio y cierre de sesión:** El sistema permitirá a los usuarios iniciar y cerrar sesión de forma segura, registrando la fecha y hora de cada acceso y salida.
+- **RF2: Administración de usuarios y perfiles:** El sistema permitirá registrar, modificar, habilitar y deshabilitar usuarios, así como asignar perfiles según sus funciones dentro de la tienda.
+- **RF3: Gestión de privilegios de acceso:** El sistema permitirá definir y administrar los privilegios de cada perfil, controlando el acceso a las diferentes funciones y módulos.
+- **RF4: Gestión de contraseñas:** El sistema permitirá administrar y actualizar las contraseñas de los usuarios.
+- **RF5: Bitácora de actividades:** El sistema registrará las acciones realizadas por los usuarios, permitiendo conocer quién ingresó al sistema, cuándo ingresó, qué acciones realizó y cuándo cerró sesión.
 
 **Módulo de Inventario y Productos**
 
-* **RF6: Gestión de Productos:** El sistema permitirá registrar, modificar y dar de baja productos. La información principal incluirá código/SKU, nombre del producto, marca, modelo y categoría, además de los datos necesarios para el control de costos, precios y existencias.  
-* **RF7: Control de Inventario:** El sistema permitirá registrar y consultar las existencias de los productos, controlando las entradas y salidas generadas por compras y ventas.  
-* **RF8: Control de Seriales y Garantías:** El sistema permitirá registrar el número de serie del producto o los últimos dígitos/letras utilizados para identificarlo durante una garantía, relacionándolo con la venta correspondiente.  
-* **RF9: Alertas de Stock:** El sistema podrá mostrar advertencias cuando un producto llegue a stock cero o alcance un nivel mínimo definido, facilitando la reposición anticipada.
+- **RF6: Gestión de Productos:** El sistema permitirá registrar, modificar y dar de baja productos. La información principal incluirá código/SKU, nombre del producto, marca, modelo y categoría, además de los datos necesarios para el control de costos, precios y existencias.
+- **RF7: Control de Inventario:** El sistema permitirá registrar y consultar las existencias de los productos, controlando las entradas y salidas generadas por compras y ventas.
+- **RF8: Control de Seriales y Garantías:** El sistema permitirá registrar el número de serie del producto o los últimos dígitos/letras utilizados para identificarlo durante una garantía, relacionándolo con la venta correspondiente.
+- **RF9: Alertas de Stock:** El sistema podrá mostrar advertencias cuando un producto llegue a stock cero o alcance un nivel mínimo definido, facilitando la reposición anticipada.
 
 **Módulo de Ventas y Clientes**
 
-* **RF10: Registro de Ventas:** El sistema permitirá registrar ventas al contado, incluyendo la fecha, cliente, productos, cantidades, precios y método de pago. Los métodos de pago contemplados serán efectivo, QR, transferencia y pagos combinados.  
-* **RF11: Generación de Notas de Venta:** El sistema permitirá generar una nota de venta o recibo con el detalle de la operación, los datos del producto, el número de serie cuando corresponda y la información de garantía.  
-* **RF12: Gestionar Clientes:** El sistema permitirá registrar y modificar los datos de clientes particulares y tiendas recurrentes, manteniendo el historial de compras asociado.  
-* **RF13: Gestión de Devoluciones y Cambios:** El sistema permitirá consultar ventas anteriores para validar las condiciones de devolución o garantía mediante la nota de venta y/o número de serie, registrando el cambio y la diferencia de precio cuando corresponda.  
-* **RF14: Consulta de Ventas:** El sistema permitirá consultar las ventas realizadas para facilitar la atención al cliente y el seguimiento de garantías.
+- **RF10: Registro de Ventas:** El sistema permitirá registrar ventas al contado, incluyendo la fecha, cliente, productos, cantidades, precios y método de pago. Los métodos de pago contemplados serán efectivo, QR, transferencia y pagos combinados.
+- **RF11: Generación de Notas de Venta:** El sistema permitirá generar una nota de venta o recibo con el detalle de la operación, los datos del producto, el número de serie cuando corresponda y la información de garantía.
+- **RF12: Gestionar Clientes:** El sistema permitirá registrar y modificar los datos de clientes particulares y tiendas recurrentes, manteniendo el historial de compras asociado.
+- **RF13: Gestión de Devoluciones y Cambios:** El sistema permitirá consultar ventas anteriores para validar las condiciones de devolución o garantía mediante la nota de venta y/o número de serie, registrando el cambio y la diferencia de precio cuando corresponda.
+- **RF14: Consulta de Ventas:** El sistema permitirá consultar las ventas realizadas para facilitar la atención al cliente y el seguimiento de garantías.
 
 **Módulo de Compras y Proveedores**
 
-* **RF15: Gestionar Proveedores:** El sistema permitirá registrar, modificar y consultar la información de los proveedores con los que trabaja la tienda.  
-* **RF16: Registro de Compras:** El sistema permitirá registrar compras realizadas a proveedores, incluyendo productos, cantidades, costos y fecha, actualizando las existencias correspondientes.  
-* **RF17: Control de Compras por Proveedor:** El sistema permitirá consultar las compras realizadas a cada proveedor.  
-* **RF18: Compras al contado o por pagar:** Las compras a proveedores se registrarán como operaciones al contado y compras por pagar.
+- **RF15: Gestionar Proveedores:** El sistema permitirá registrar, modificar y consultar la información de los proveedores con los que trabaja la tienda.
+- **RF16: Registro de Compras:** El sistema permitirá registrar compras realizadas a proveedores, incluyendo productos, cantidades, costos y fecha, actualizando las existencias correspondientes.
+- **RF17: Control de Compras por Proveedor:** El sistema permitirá consultar las compras realizadas a cada proveedor.
+- **RF18: Compras al contado o por pagar:** Las compras a proveedores se registrarán como operaciones al contado y compras por pagar.
 
 **Módulo de Flujo de Caja y Reportes**
 
-* **RF19: Registro de Ingresos y Gastos:** El sistema permitirá registrar y organizar los ingresos y gastos necesarios para conocer el movimiento de efectivo del negocio.  
-* **RF20: Reportes de Gestión:** El sistema generará reportes diarios, semanales y mensuales sobre ventas, costos, gastos, ingresos y utilidades, tomando como referencia la información que actualmente se maneja en Excel.  
-* **RF21: Productos Más Vendidos:** El sistema permitirá generar un reporte de los productos con mayor rotación para apoyar las decisiones de compra e inversión.  
-* **RF22: Consulta del Flujo de Caja:** El sistema permitirá consultar los ingresos y egresos registrados durante un período determinado para conocer el movimiento económico del negocio.
+- **RF19: Registro de Ingresos y Gastos:** El sistema permitirá registrar y organizar los ingresos y gastos necesarios para conocer el movimiento de efectivo del negocio.
+- **RF20: Reportes de Gestión:** El sistema generará reportes diarios, semanales y mensuales sobre ventas, costos, gastos, ingresos y utilidades, tomando como referencia la información que actualmente se maneja en Excel.
+- **RF21: Productos Más Vendidos:** El sistema permitirá generar un reporte de los productos con mayor rotación para apoyar las decisiones de compra e inversión.
+- **RF22: Consulta del Flujo de Caja:** El sistema permitirá consultar los ingresos y egresos registrados durante un período determinado para conocer el movimiento económico del negocio.
 
 ### **1.7.2 Requisitos no funcionales**
 
-* **RNF1:** El sistema no realizará la gestión contable completa de la empresa.  
-* **RNF2:** El sistema no gestionará el pago de salarios ni planillas de empleados.  
-* **RNF3:** El sistema no realizará ventas en línea ni funcionará como una tienda de comercio electrónico.  
-* **RNF4:** El sistema no gestionará servicios de entrega o distribución de productos a domicilio.  
-* **RNF5:** El sistema no administrará múltiples sucursales; estará orientado a la gestión de la tienda Computer City.  
-* **RNF6:** El sistema no contará con una aplicación móvil nativa; el acceso se realizará mediante la aplicación web.  
-* **RNF7:** El sistema no realizará reparaciones ni diagnósticos técnicos de los periféricos comercializados.  
-* **RNF8:** El sistema no se encargará de procesos externos pertenecientes a entidades bancarias o plataformas de pago.
+- **RNF1:** El sistema no realizará la gestión contable completa de la empresa.
+- **RNF2:** El sistema no gestionará el pago de salarios ni planillas de empleados.
+- **RNF3:** El sistema no realizará ventas en línea ni funcionará como una tienda de comercio electrónico.
+- **RNF4:** El sistema no gestionará servicios de entrega o distribución de productos a domicilio.
+- **RNF5:** El sistema no administrará múltiples sucursales; estará orientado a la gestión de la tienda Computer City.
+- **RNF6:** El sistema no contará con una aplicación móvil nativa; el acceso se realizará mediante la aplicación web.
+- **RNF7:** El sistema no realizará reparaciones ni diagnósticos técnicos de los periféricos comercializados.
+- **RNF8:** El sistema no se encargará de procesos externos pertenecientes a entidades bancarias o plataformas de pago.

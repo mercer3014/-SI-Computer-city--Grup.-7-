@@ -44,7 +44,7 @@ class RolTest extends TestCase
             ->assertInertia(fn ($p) => $p
                 ->component('Roles')
                 ->has('roles', 1)
-                ->has('permisos', 3)
+                ->has('permisos', Permiso::query()->count())
                 ->where('roles.0.usuarios', 1));
     }
 

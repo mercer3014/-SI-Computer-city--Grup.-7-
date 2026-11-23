@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsurePrimerLoginCompleto;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\PuedeUsarAsistente;
 use App\Http\Middleware\RequierePermiso;
 use App\Http\Middleware\SetPostgresAuditContext;
 use Illuminate\Foundation\Application;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'permiso' => RequierePermiso::class,
+            'puede.asistente' => PuedeUsarAsistente::class,
         ]);
 
         $middleware->redirectUsersTo(function (Request $request) {
@@ -100,6 +102,20 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->withInput($request->except(['password', 'password_confirmation', 'token', 'code', 'recovery_code']))
                 ->withErrors([$errorKey => $message])
                 ->with('throttleSeconds', $seconds);
+        });
+
+        // CU22: el límite de consultas del asistente responde JSON con los segundos que faltan (EX-08).
+        $exceptions->render(function (TooManyRequestsHttpException $e, Request $request) {
+            if (! $request->routeIs('asistente.*')) {
+                return null;
+            }
+
+            $segundos = max(1, (int) ($e->getHeaders()['Retry-After'] ?? 60));
+
+            return response()->json([
+                'message' => "Superaste el límite de consultas por minuto. Espera {$segundos} segundos antes de enviar otra.",
+                'retry_after' => $segundos,
+            ], 429, ['Retry-After' => (string) $segundos]);
         });
 
         // Middleware throttle:*: sin pantalla cruda 429 — error bajo el campo + conteo.

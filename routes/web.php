@@ -1,18 +1,26 @@
 <?php
 
+use App\Http\Controllers\AsistenteController;
 use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\CajaController;
+use App\Http\Controllers\CalificacionController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CompraController;
+use App\Http\Controllers\ConfiguracionTiendaController;
+use App\Http\Controllers\CotizacionController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FirstLoginController;
 use App\Http\Controllers\GarantiaController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProveedorController;
+use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\RolController;
+use App\Http\Controllers\Tienda\CalificacionController as CalificacionTiendaController;
 use App\Http\Controllers\Tienda\CarritoController;
 use App\Http\Controllers\Tienda\CatalogoController;
 use App\Http\Controllers\Tienda\CheckoutController;
+use App\Http\Controllers\Tienda\CotizacionController as CotizacionTiendaController;
 use App\Http\Controllers\Tienda\RegistroClienteController;
 use App\Http\Controllers\Tienda\StripeWebhookController;
 use App\Http\Controllers\UsuarioController;
@@ -51,6 +59,16 @@ Route::prefix('tienda')->name('tienda.')->group(function () {
         Route::post('pedidos/{numero}/confirmar', [CheckoutController::class, 'confirmar'])->name('pedidos.confirmar');
         Route::post('pedidos/{numero}/fallo', [CheckoutController::class, 'fallo'])->name('pedidos.fallo');
         Route::get('pedidos/{numero}/comprobante', [CheckoutController::class, 'comprobante'])->name('pedidos.comprobante');
+
+        // ── CU19: cotización web (requiere cuenta de cliente) ──
+        Route::get('cotizar', [CotizacionTiendaController::class, 'cotizar'])->name('cotizar');
+        Route::post('cotizaciones', [CotizacionTiendaController::class, 'store'])->middleware('throttle:10,1')->name('cotizaciones.store');
+        Route::get('cotizaciones', [CotizacionTiendaController::class, 'index'])->name('cotizaciones.index');
+        Route::get('cotizaciones/{codigo}', [CotizacionTiendaController::class, 'show'])->name('cotizaciones.show');
+        Route::get('cotizaciones/{codigo}/pdf', [CotizacionTiendaController::class, 'pdf'])->name('cotizaciones.pdf');
+
+        // ── CU24: calificar los productos de un pedido pagado ──
+        Route::post('pedidos/{numero}/calificaciones', [CalificacionTiendaController::class, 'store'])->middleware('throttle:20,1')->name('pedidos.calificaciones.store');
     });
 });
 
@@ -73,11 +91,8 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function (Request $request) {
-        return $request->user()?->esClienteWeb()
-            ? redirect()->route('tienda.index')
-            : Inertia::render('Dashboard');
-    })->name('dashboard');
+    // ── CU23: Dashboard ─────────────────────────────────────────────────
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // ── CU15: Gastos y flujo de caja ────────────────────────────────────
     Route::prefix('caja')->name('caja.')->group(function () {
@@ -195,6 +210,50 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('permiso:garantias.gestionar')->prefix('garantias')->name('garantias.')->group(function () {
         Route::get('/', [GarantiaController::class, 'index'])->name('index');
         Route::post('devolver', [GarantiaController::class, 'devolver'])->name('devolver');
+    });
+
+    // ── CU16: Reportes de gestión ───────────────────────────────────────
+    Route::middleware('permiso:reportes.ver')->prefix('reportes')->name('reportes.')->group(function () {
+        Route::get('/', [ReporteController::class, 'index'])->name('index');
+        Route::get('generar', [ReporteController::class, 'generar'])->name('generar');
+        Route::get('exportar', [ReporteController::class, 'exportar'])->middleware('throttle:30,1')->name('exportar');
+        Route::post('interpretar-voz', [ReporteController::class, 'interpretarVoz'])->middleware('throttle:60,1')->name('interpretar-voz');
+    });
+
+    // ── CU22: Asistente virtual (solo Administrador) ─────────────────────
+    Route::middleware(['permiso:asistente.usar', 'puede.asistente'])->prefix('asistente')->name('asistente.')->group(function () {
+        Route::get('/', [AsistenteController::class, 'index'])->name('index');
+        Route::post('mensajes', [AsistenteController::class, 'enviar'])->middleware('throttle:asistente')->name('enviar');
+        Route::get('mensajes/{mensaje}/exportar', [AsistenteController::class, 'exportar'])->whereNumber('mensaje')->name('exportar');
+        Route::post('conversaciones', [AsistenteController::class, 'nueva'])->name('conversaciones.nueva');
+        Route::get('conversaciones/{conversacion}', [AsistenteController::class, 'mostrar'])->whereNumber('conversacion')->name('conversaciones.mostrar');
+        Route::post('plantillas', [AsistenteController::class, 'guardarPlantilla'])->name('plantillas.guardar');
+        Route::post('plantillas/{plantilla}/ejecutar', [AsistenteController::class, 'ejecutarPlantilla'])->middleware('throttle:asistente')->whereNumber('plantilla')->name('plantillas.ejecutar');
+        Route::delete('plantillas/{plantilla}', [AsistenteController::class, 'eliminarPlantilla'])->whereNumber('plantilla')->name('plantillas.eliminar');
+    });
+
+    // ── CU20: Gestión de cotizaciones y productos más visitados ─────────
+    Route::middleware('permiso:cotizaciones.gestionar')->prefix('cotizaciones')->name('cotizaciones.')->group(function () {
+        Route::get('/', [CotizacionController::class, 'index'])->name('index');
+        Route::get('mas-visitados', [CotizacionController::class, 'masVisitados'])->name('mas-visitados');
+        Route::get('{cotizacion}', [CotizacionController::class, 'show'])->whereNumber('cotizacion')->name('show');
+        Route::patch('{cotizacion}/estado', [CotizacionController::class, 'estado'])->whereNumber('cotizacion')->name('estado');
+        Route::post('{cotizacion}/renovar', [CotizacionController::class, 'renovar'])->whereNumber('cotizacion')->name('renovar');
+    });
+
+    // ── CU24: Moderación de calificaciones ──────────────────────────────
+    Route::middleware('permiso:calificaciones.gestionar')->prefix('calificaciones')->name('calificaciones.')->group(function () {
+        Route::get('/', [CalificacionController::class, 'index'])->name('index');
+        Route::patch('{calificacion}/publicar', [CalificacionController::class, 'publicar'])->whereNumber('calificacion')->name('publicar');
+        Route::patch('{calificacion}/ocultar', [CalificacionController::class, 'ocultar'])->whereNumber('calificacion')->name('ocultar');
+    });
+
+    // ── CU17: Configuración de la tienda ────────────────────────────────
+    Route::middleware('permiso:configuracion.gestionar')->prefix('configuracion/tienda')->name('configuracion.tienda.')->group(function () {
+        Route::get('/', [ConfiguracionTiendaController::class, 'edit'])->name('edit');
+        Route::put('/', [ConfiguracionTiendaController::class, 'update'])->name('update');
+        Route::put('horarios', [ConfiguracionTiendaController::class, 'horarios'])->name('horarios');
+        Route::post('logo', [ConfiguracionTiendaController::class, 'logo'])->name('logo');
     });
 });
 

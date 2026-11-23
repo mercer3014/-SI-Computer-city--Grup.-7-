@@ -8,6 +8,8 @@ type Modulo = {
     titulo: string;
     href?: string;
     permisos?: string[];
+    /** Además del permiso, exige ser Administrador (el asistente es solo para ese rol). */
+    soloAsistente?: boolean;
     icono: string;
     grupo: 'MENU' | 'FINANZAS' | 'SISTEMA';
 };
@@ -24,6 +26,13 @@ const modulos: Modulo[] = [
         href: '/ventas',
         permisos: ['ventas.crear', 'ventas.anular'],
         icono: 'nav-sales.svg',
+        grupo: 'MENU',
+    },
+    {
+        titulo: 'Cotizaciones',
+        href: '/cotizaciones',
+        permisos: ['cotizaciones.gestionar'],
+        icono: 'nav-new.svg',
         grupo: 'MENU',
     },
     {
@@ -59,6 +68,13 @@ const modulos: Modulo[] = [
         grupo: 'MENU',
     },
     {
+        titulo: 'Calificaciones',
+        href: '/calificaciones',
+        permisos: ['calificaciones.gestionar'],
+        icono: 'nav-clients.svg',
+        grupo: 'MENU',
+    },
+    {
         titulo: 'Compras',
         href: '/compras',
         permisos: ['compras.crear'],
@@ -81,8 +97,17 @@ const modulos: Modulo[] = [
     },
     {
         titulo: 'Reportes',
-        permisos: ['reportes.ver', 'gastos.gestionar'],
+        href: '/reportes',
+        permisos: ['reportes.ver'],
         icono: 'nav-log.svg',
+        grupo: 'FINANZAS',
+    },
+    {
+        titulo: 'Asistente virtual',
+        href: '/asistente',
+        permisos: ['asistente.usar'],
+        soloAsistente: true,
+        icono: 'nav-new.svg',
         grupo: 'FINANZAS',
     },
     {
@@ -96,6 +121,13 @@ const modulos: Modulo[] = [
         titulo: 'Roles y permisos',
         href: '/roles',
         permisos: ['roles.administrar'],
+        icono: 'nav-settings.svg',
+        grupo: 'SISTEMA',
+    },
+    {
+        titulo: 'Configuración',
+        href: '/configuracion/tienda',
+        permisos: ['configuracion.gestionar'],
         icono: 'nav-settings.svg',
         grupo: 'SISTEMA',
     },
@@ -122,11 +154,13 @@ watch(
 
 const visibles = computed(() => {
     const claves = new Set(page.props.auth.user?.permisos ?? []);
+    const puedeAsistente = page.props.auth.user?.puede_asistente === true;
 
     return modulos.filter(
         (modulo) =>
-            !modulo.permisos ||
-            modulo.permisos.some((clave) => claves.has(clave)),
+            (!modulo.permisos ||
+                modulo.permisos.some((clave) => claves.has(clave))) &&
+            (!modulo.soloAsistente || puedeAsistente),
     );
 });
 

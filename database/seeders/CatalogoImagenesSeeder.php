@@ -27,7 +27,7 @@ class CatalogoImagenesSeeder extends Seeder
         $carpeta = base_path('catalogo');
 
         if (! File::isDirectory($carpeta)) {
-            $this->command?->warn('No existe la carpeta catalogo/.');
+            $this->command->warn('No existe la carpeta catalogo/.');
 
             return;
         }
@@ -45,7 +45,7 @@ class CatalogoImagenesSeeder extends Seeder
             $producto = $alias !== null ? $porSlug->get($alias) : $porClave->get($this->clave($base));
 
             if ($producto === null) {
-                $this->command?->warn("Sin producto para {$archivo->getFilename()}");
+                $this->command->warn("Sin producto para {$archivo->getFilename()}");
 
                 continue;
             }
@@ -70,7 +70,7 @@ class CatalogoImagenesSeeder extends Seeder
             $cargadas++;
         }
 
-        $this->command?->info("Imágenes nuevas asociadas: {$cargadas}");
+        $this->command->info("Imágenes nuevas asociadas: {$cargadas}");
     }
 
     private function clave(string $texto): string

@@ -9,7 +9,7 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.3",
+        "php": "^8.4",
         "barryvdh/laravel-dompdf": "^3.1",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/chisel": "^0.1.0",
@@ -17,6 +17,8 @@
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
+        "openspout/openspout": "^5.15",
+        "phpoffice/phpword": "^1.1",
         "stripe/stripe-php": "^22.1",
         "symfony/brevo-mailer": "^8.1",
         "symfony/http-client": "^8.1"

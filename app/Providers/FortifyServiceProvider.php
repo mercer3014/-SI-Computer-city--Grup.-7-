@@ -67,7 +67,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
-        Fortify::authenticateUsing(function (Request $request): ?User {
+        Fortify::authenticateUsing(function (Request $request): User {
             $email = Str::lower($request->string(Fortify::username())->toString());
             $bloqueo = app(BloqueoLoginService::class);
 
@@ -174,7 +174,7 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureOtpMail(): void
     {
-        ResetPassword::toMailUsing(function (object $notifiable, string $token): MailMessage {
+        ResetPassword::toMailUsing(function (User $notifiable, string $token): MailMessage {
             $minutes = config('auth.passwords.'.config('auth.defaults.passwords').'.expire');
 
             Log::info('OTP recuperar cuenta', [

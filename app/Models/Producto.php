@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -14,12 +15,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $slug
  * @property string|null $descripcion
  * @property string $estado
- * @property \Illuminate\Support\Carbon|null $fecha_creacion
- * @property \Illuminate\Support\Carbon|null $fecha_actualizacion
+ * @property Carbon|null $fecha_creacion
+ * @property Carbon|null $fecha_actualizacion
  */
 class Producto extends Model
 {
     public const CREATED_AT = 'fecha_creacion';
+
     public const UPDATED_AT = 'fecha_actualizacion';
 
     protected $table = 'producto';
@@ -36,7 +38,7 @@ class Producto extends Model
     protected function casts(): array
     {
         return [
-            'fecha_creacion'     => 'datetime',
+            'fecha_creacion' => 'datetime',
             'fecha_actualizacion' => 'datetime',
         ];
     }

@@ -2,7 +2,7 @@ packages:
     - '.'
 
 allowBuilds:
-  vue-demi: false
+    vue-demi: false
 
 publicHoistPattern:
     - '@inertiajs/core'

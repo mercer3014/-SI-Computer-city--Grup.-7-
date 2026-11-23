@@ -3,9 +3,8 @@
 namespace App\Http\Controllers\Tienda;
 
 use App\Http\Controllers\Controller;
-use App\Models\DetallePedido;
+use App\Models\Cliente;
 use App\Models\Pedido;
-use App\Models\User;
 use App\Models\Venta;
 use App\Services\NotaVentaPdf;
 use App\Services\Pagos\PasarelaPagos;
@@ -23,6 +22,8 @@ use Throwable;
  */
 class CheckoutController extends Controller
 {
+    use ExigeClienteWeb;
+
     public function __construct(
         private PedidoEnLineaService $pedidos,
         private PasarelaPagos $pasarela,
@@ -41,7 +42,9 @@ class CheckoutController extends Controller
         return Inertia::render('tienda/Checkout', [
             'cliente' => [
                 'nombre' => $cliente?->nombre,
-                'documento' => trim(($cliente?->tipo_documento ?? '').' '.($cliente?->numero_documento ?? '')),
+                'documento' => $cliente instanceof Cliente
+                    ? trim(($cliente->tipo_documento ?? '').' '.($cliente->numero_documento ?? ''))
+                    : '',
                 'telefono' => $cliente?->telefono,
                 'email' => $user->email,
             ],
@@ -146,7 +149,7 @@ class CheckoutController extends Controller
         $user = $request->user();
 
         $pedidos = Pedido::query()
-            ->with(['detalles', 'venta:id,pedido_id,numero_venta'])
+            ->with(['detalles.variante:id,producto_id', 'calificaciones', 'venta:id,pedido_id,numero_venta'])
             ->where('usuario_id', $user?->id)
             ->where('estado', '<>', Pedido::CANCELADO)
             ->orderByDesc('fecha')
@@ -180,26 +183,10 @@ class CheckoutController extends Controller
         return $pdf->descargar($venta);
     }
 
-    private function cliente(Request $request): User|RedirectResponse
-    {
-        $user = $request->user();
-
-        if ($user instanceof User && $user->cliente_id !== null) {
-            return $user;
-        }
-
-        Inertia::flash('toast', [
-            'type' => 'warning',
-            'message' => 'Para comprar en línea necesitás una cuenta de cliente. Las cuentas del personal usan el POS.',
-        ]);
-
-        return redirect()->route('tienda.carrito');
-    }
-
     private function pedidoPropio(Request $request, string $numero): Pedido
     {
         return Pedido::query()
-            ->with(['detalles', 'venta:id,pedido_id,numero_venta,fecha'])
+            ->with(['detalles.variante:id,producto_id', 'calificaciones', 'venta:id,pedido_id,numero_venta,fecha'])
             ->where('numero_pedido', $numero)
             ->where('usuario_id', $request->user()?->id)
             ->firstOrFail();
@@ -227,15 +214,50 @@ class CheckoutController extends Controller
             'comprobante' => $pedido->venta !== null
                 ? route('tienda.pedidos.comprobante', $pedido->numero_pedido)
                 : null,
-            'items' => $pedido->detalles
-                ->map(fn (DetallePedido $d) => [
-                    'producto' => $d->nombre_producto_snapshot,
-                    'variante' => $d->variante_snapshot,
-                    'cantidad' => $d->cantidad,
-                    'precio' => (float) $d->precio_unitario,
-                    'subtotal' => $d->subtotal(),
-                ])
-                ->values(),
+            'items' => $this->items($pedido),
         ];
+    }
+
+    /**
+     * CU24: cada ítem trae el producto, si se puede calificar y la calificación que ya envió el cliente.
+     * Si un pedido repite el producto con otra variante, solo la primera línea ofrece calificarlo.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function items(Pedido $pedido): array
+    {
+        $zona = (string) config('app.timezone');
+        $calificaciones = $pedido->calificaciones->keyBy('producto_id');
+        $vistos = [];
+        $items = [];
+
+        foreach ($pedido->detalles as $d) {
+            $productoId = $d->variante?->producto_id;
+            $primera = $productoId !== null && ! isset($vistos[$productoId]);
+
+            if ($productoId !== null) {
+                $vistos[$productoId] = true;
+            }
+
+            $calificacion = $primera ? $calificaciones->get($productoId) : null;
+
+            $items[] = [
+                'producto_id' => $productoId,
+                'producto' => $d->nombre_producto_snapshot,
+                'variante' => $d->variante_snapshot,
+                'cantidad' => $d->cantidad,
+                'precio' => (float) $d->precio_unitario,
+                'subtotal' => $d->subtotal(),
+                'puede_calificar' => $primera && $pedido->estaPagado() && $calificacion === null,
+                'calificacion' => $calificacion === null ? null : [
+                    'puntuacion' => $calificacion->puntuacion,
+                    'comentario' => $calificacion->comentario,
+                    'estado' => $calificacion->estado,
+                    'fecha' => $calificacion->fecha?->timezone($zona)->format('d/m/Y'),
+                ],
+            ];
+        }
+
+        return $items;
     }
 }
