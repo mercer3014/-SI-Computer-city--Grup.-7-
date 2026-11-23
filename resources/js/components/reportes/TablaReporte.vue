@@ -8,7 +8,7 @@ defineProps<{
 </script>
 
 <template>
-    <div class="cc-log__table-wrap">
+    <div class="cc-log__table-wrap cc-log__table-wrap--keep">
         <table class="cc-log__table" data-test="tabla-reporte">
             <thead>
                 <tr>

@@ -474,7 +474,7 @@ const nombreDia = (indice: number): string =>
                 :transition="adminSpring"
             >
                 <form class="cc-conf__form" @submit.prevent="guardarHorarios">
-                    <div class="cc-log__table-wrap">
+                    <div class="cc-log__table-wrap cc-log__table-wrap--keep">
                         <table class="cc-log__table">
                             <thead>
                                 <tr>
@@ -650,10 +650,14 @@ const nombreDia = (indice: number): string =>
 
 .cc-conf__logo-actions {
     display: flex;
-    flex: 1;
+    flex: 1 1 200px;
     flex-direction: column;
     gap: 10px;
-    min-width: 240px;
+    min-width: 0;
+}
+
+.cc-conf__logo-actions input[type='file'] {
+    max-width: 100%;
 }
 
 .cc-conf__actions {

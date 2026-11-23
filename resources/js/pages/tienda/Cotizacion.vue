@@ -137,32 +137,34 @@ const cabecera = computed(() => {
                 </div>
             </dl>
 
-            <table class="cc-comprobante__tabla">
-                <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th>Cant.</th>
-                        <th>Precio</th>
-                        <th>Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="(item, i) in cotizacion.items" :key="i">
-                        <td>{{ item.descripcion }}</td>
-                        <td>{{ item.cantidad }}</td>
-                        <td>{{ bolivianos(item.precio) }}</td>
-                        <td>{{ bolivianos(item.subtotal) }}</td>
-                    </tr>
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="3">Total</td>
-                        <td data-test="total">
-                            {{ bolivianos(cotizacion.total) }}
-                        </td>
-                    </tr>
-                </tfoot>
-            </table>
+            <div class="cc-comprobante__tabla-wrap">
+                <table class="cc-comprobante__tabla">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cant.</th>
+                            <th>Precio</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, i) in cotizacion.items" :key="i">
+                            <td>{{ item.descripcion }}</td>
+                            <td>{{ item.cantidad }}</td>
+                            <td>{{ bolivianos(item.precio) }}</td>
+                            <td>{{ bolivianos(item.subtotal) }}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3">Total</td>
+                            <td data-test="total">
+                                {{ bolivianos(cotizacion.total) }}
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
 
             <p class="cc-comprobante__leyenda">
                 Precios válidos hasta {{ cotizacion.vencimiento }}. No reserva

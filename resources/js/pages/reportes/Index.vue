@@ -781,16 +781,16 @@ const monedaGrafico = computed(
 
 .cc-rep__voz-texto {
     display: flex;
-    flex: 1;
+    flex: 1 1 200px;
     flex-wrap: wrap;
     gap: 8px;
     align-items: center;
-    min-width: 260px;
+    min-width: 0;
 }
 
 .cc-rep__voz-texto .cc-log__control {
-    flex: 1;
-    min-width: 200px;
+    flex: 1 1 180px;
+    min-width: 0;
 }
 
 .cc-rep__nota {
@@ -1030,5 +1030,12 @@ const monedaGrafico = computed(
     margin: 4px 0 0;
     color: var(--cc-error);
     font-size: 12px;
+}
+
+@media (max-width: 600px) {
+    .cc-rep__menu {
+        right: auto;
+        left: 0;
+    }
 }
 </style>

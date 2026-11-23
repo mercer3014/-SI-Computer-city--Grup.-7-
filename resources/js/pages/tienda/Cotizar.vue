@@ -341,6 +341,12 @@ const vacio = computed(() => montado.value && items.value.length === 0);
     gap: 12px;
 }
 
+@media (max-width: 520px) {
+    .cc-campo-par {
+        grid-template-columns: 1fr;
+    }
+}
+
 .cc-cambios {
     margin: 6px 0;
     padding-left: 18px;

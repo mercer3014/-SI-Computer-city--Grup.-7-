@@ -96,7 +96,12 @@ function whatsapp(numero: string): string {
                     <ThemeToggle class="cc-shop__theme" />
 
                     <template v-if="!usuario">
-                        <Link href="/login" class="cc-shop__link">
+                        <Link
+                            href="/login"
+                            class="cc-shop__link"
+                            aria-label="Ingresar"
+                            title="Ingresar"
+                        >
                             <UserRound :size="16" />
                             <span>Ingresar</span>
                         </Link>
@@ -105,11 +110,21 @@ function whatsapp(numero: string): string {
                         >
                     </template>
                     <template v-else-if="usuario.es_cliente">
-                        <Link href="/tienda/pedidos" class="cc-shop__link">
+                        <Link
+                            href="/tienda/pedidos"
+                            class="cc-shop__link"
+                            aria-label="Mis pedidos"
+                            title="Mis pedidos"
+                        >
                             <Package :size="16" />
                             <span>Mis pedidos</span>
                         </Link>
-                        <Link href="/tienda/cotizaciones" class="cc-shop__link">
+                        <Link
+                            href="/tienda/cotizaciones"
+                            class="cc-shop__link"
+                            aria-label="Mis cotizaciones"
+                            title="Mis cotizaciones"
+                        >
                             <FileText :size="16" />
                             <span>Mis cotizaciones</span>
                         </Link>
@@ -119,11 +134,18 @@ function whatsapp(numero: string): string {
                             as="button"
                             class="cc-shop__link cc-shop__link--icon"
                             aria-label="Cerrar sesión"
+                            title="Cerrar sesión"
                         >
                             <LogOut :size="16" />
                         </Link>
                     </template>
-                    <Link v-else href="/dashboard" class="cc-shop__link">
+                    <Link
+                        v-else
+                        href="/dashboard"
+                        class="cc-shop__link"
+                        aria-label="Panel"
+                        title="Panel"
+                    >
                         <LayoutDashboard :size="16" />
                         <span>Panel</span>
                     </Link>

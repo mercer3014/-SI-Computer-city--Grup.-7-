@@ -1175,6 +1175,7 @@ const dosPartes = (contenido: string): string[] => contenido.split('\n');
 
 .cc-asi__fila textarea {
     flex: 1;
+    min-width: 0;
     min-height: 52px;
     padding: 10px 14px;
     border: 1px solid var(--cc-border);
@@ -1210,6 +1211,18 @@ const dosPartes = (contenido: string): string[] => contenido.split('\n');
 
     .cc-asi__mensajes {
         max-height: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .cc-asi__fila {
+        flex-wrap: wrap;
+    }
+
+    .cc-asi__fila textarea {
+        order: -1;
+        flex: 1 1 100%;
+        width: 100%;
     }
 }
 

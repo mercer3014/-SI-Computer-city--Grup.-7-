@@ -671,6 +671,7 @@
 
 .cc-ficha__miniaturas {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     margin-top: 12px;
 }
@@ -1255,6 +1256,12 @@
     font-weight: 600;
 }
 
+.cc-comprobante__tabla-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 .cc-comprobante__tabla {
     width: 100%;
     border-collapse: collapse;
@@ -1547,6 +1554,10 @@
 
     .cc-shop__cta {
         display: none;
+    }
+
+    .cc-comprobante {
+        padding: 18px;
     }
 }
 

@@ -1058,8 +1058,13 @@
         display: none;
     }
 
-    .cc-admin--pins .cc-log__table-wrap {
+    .cc-admin--pins .cc-log__table-wrap:not(.cc-log__table-wrap--keep) {
         display: none;
+    }
+
+    .cc-admin--pins .cc-log__table-wrap--keep {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .cc-admin--pins .cc-log__filters,

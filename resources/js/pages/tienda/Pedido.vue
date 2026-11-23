@@ -193,81 +193,91 @@ const estado = computed(() => {
                 </div>
             </dl>
 
-            <table class="cc-comprobante__tabla">
-                <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th>Cant.</th>
-                        <th>Precio</th>
-                        <th>Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="(item, i) in pedido.items" :key="i">
-                        <td>
-                            {{ item.producto
-                            }}<small v-if="item.variante">{{
-                                item.variante
-                            }}</small>
-                            <div
-                                v-if="
-                                    pedido.estado === 'PAGADO' &&
-                                    (item.puede_calificar || item.calificacion)
-                                "
-                                class="cc-calif-item"
-                            >
-                                <button
-                                    v-if="item.puede_calificar"
-                                    type="button"
-                                    class="cc-button cc-button--ghost"
-                                    :data-test="`calificar-${item.producto_id}`"
-                                    @click="abrirCalificacion(item)"
-                                >
-                                    <Star :size="14" /> Calificar
-                                </button>
+            <div class="cc-comprobante__tabla-wrap">
+                <table class="cc-comprobante__tabla">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cant.</th>
+                            <th>Precio</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, i) in pedido.items" :key="i">
+                            <td>
+                                {{ item.producto
+                                }}<small v-if="item.variante">{{
+                                    item.variante
+                                }}</small>
                                 <div
-                                    v-else-if="item.calificacion"
-                                    class="cc-calif-item__hecho"
-                                    data-test="calificacion-existente"
+                                    v-if="
+                                        pedido.estado === 'PAGADO' &&
+                                        (item.puede_calificar ||
+                                            item.calificacion)
+                                    "
+                                    class="cc-calif-item"
                                 >
-                                    <strong
-                                        >Ya calificaste este producto</strong
+                                    <button
+                                        v-if="item.puede_calificar"
+                                        type="button"
+                                        class="cc-button cc-button--ghost"
+                                        :data-test="`calificar-${item.producto_id}`"
+                                        @click="abrirCalificacion(item)"
                                     >
-                                    <Estrellas
-                                        :valor="item.calificacion.puntuacion"
-                                        :tamano="14"
-                                    />
-                                    <span
-                                        class="cc-calif-estado"
-                                        :data-estado="item.calificacion.estado"
+                                        <Star :size="14" /> Calificar
+                                    </button>
+                                    <div
+                                        v-else-if="item.calificacion"
+                                        class="cc-calif-item__hecho"
+                                        data-test="calificacion-existente"
                                     >
-                                        {{
-                                            ESTADOS_CALIFICACION[
+                                        <strong
+                                            >Ya calificaste este
+                                            producto</strong
+                                        >
+                                        <Estrellas
+                                            :valor="
+                                                item.calificacion.puntuacion
+                                            "
+                                            :tamano="14"
+                                        />
+                                        <span
+                                            class="cc-calif-estado"
+                                            :data-estado="
                                                 item.calificacion.estado
-                                            ]
-                                        }}
-                                    </span>
-                                    <p
-                                        v-if="item.calificacion.comentario"
-                                        class="cc-calif-comentario"
-                                    >
-                                        “{{ item.calificacion.comentario }}”
-                                    </p>
+                                            "
+                                        >
+                                            {{
+                                                ESTADOS_CALIFICACION[
+                                                    item.calificacion.estado
+                                                ]
+                                            }}
+                                        </span>
+                                        <p
+                                            v-if="item.calificacion.comentario"
+                                            class="cc-calif-comentario"
+                                        >
+                                            “{{
+                                                item.calificacion.comentario
+                                            }}”
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td>{{ item.cantidad }}</td>
-                        <td>{{ bolivianos(item.precio) }}</td>
-                        <td>{{ bolivianos(item.subtotal) }}</td>
-                    </tr>
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="3">Total</td>
-                        <td>{{ bolivianos(pedido.total) }}</td>
-                    </tr>
-                </tfoot>
-            </table>
+                            </td>
+                            <td>{{ item.cantidad }}</td>
+                            <td>{{ bolivianos(item.precio) }}</td>
+                            <td>{{ bolivianos(item.subtotal) }}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3">Total</td>
+                            <td>{{ bolivianos(pedido.total) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
 
             <footer class="cc-comprobante__acciones">
                 <a

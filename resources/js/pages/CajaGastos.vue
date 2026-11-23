@@ -1118,6 +1118,19 @@ td.is-egreso {
     }
 }
 
+@media (max-width: 768px) {
+    .cc-caja .cc-log__head {
+        flex-wrap: wrap;
+    }
+
+    .cc-caja .cc-log__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        width: 100%;
+    }
+}
+
 @media (max-width: 560px) {
     .cc-caja__par {
         grid-template-columns: 1fr;
