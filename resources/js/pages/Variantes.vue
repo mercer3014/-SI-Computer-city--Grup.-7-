@@ -122,6 +122,17 @@ const moneda = new Intl.NumberFormat('es-BO', {
     currency: 'BOB',
     minimumFractionDigits: 2,
 });
+const imagenesRotas = reactive<Record<string, boolean>>({});
+
+function marcarImagenRota(url: string | null): void {
+    if (url) {
+        imagenesRotas[url] = true;
+    }
+}
+
+function imagenDisponible(url: string | null | undefined): url is string {
+    return Boolean(url && !imagenesRotas[url]);
+}
 
 function textoAtributos(atributos: AtributoVariante[]): string {
     return atributos.length
@@ -416,9 +427,10 @@ function eliminarVariante(variante: Variante): void {
                 >
                     <span class="cc-var__thumb">
                         <img
-                            v-if="producto.imagen_url"
+                            v-if="imagenDisponible(producto.imagen_url)"
                             :src="producto.imagen_url"
                             :alt="producto.nombre"
+                            @error="marcarImagenRota(producto.imagen_url)"
                         />
                         <Box v-else :size="22" />
                     </span>
@@ -461,7 +473,7 @@ function eliminarVariante(variante: Variante): void {
             <!-- ── KPIs ── -->
             <motion.div
                 layout
-                class="cc-admin__kpis"
+                class="cc-admin__kpis cc-admin__kpis--four"
                 aria-label="Resumen de variantes"
                 :transition="adminSpring"
             >

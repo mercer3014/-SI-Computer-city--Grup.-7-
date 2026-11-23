@@ -398,6 +398,17 @@ const detalleAbierto = computed({
 });
 
 const imagenActiva = ref(0);
+const imagenesRotas = reactive<Record<string, boolean>>({});
+
+function marcarImagenRota(url: string | null): void {
+    if (url) {
+        imagenesRotas[url] = true;
+    }
+}
+
+function imagenDisponible(url: string | null | undefined): url is string {
+    return Boolean(url && !imagenesRotas[url]);
+}
 
 function verDetalle(producto: Producto): void {
     viendoDetalle.value = producto;
@@ -535,7 +546,7 @@ function badgeStock(stock: number): string {
             <!-- ── KPIs ── -->
             <motion.div
                 layout
-                class="cc-admin__kpis"
+                class="cc-admin__kpis cc-admin__kpis--four"
                 aria-label="Resumen de la página"
                 :transition="adminSpring"
             >
@@ -666,13 +677,22 @@ function badgeStock(stock: number): string {
                                     >
                                         <span class="cc-prod__thumb">
                                             <img
-                                                v-if="producto.imagen_url"
+                                                v-if="
+                                                    imagenDisponible(
+                                                        producto.imagen_url,
+                                                    )
+                                                "
                                                 :src="producto.imagen_url"
                                                 :alt="
                                                     producto.imagen_alt ??
                                                     producto.nombre
                                                 "
                                                 loading="lazy"
+                                                @error="
+                                                    marcarImagenRota(
+                                                        producto.imagen_url,
+                                                    )
+                                                "
                                             />
                                             <Box v-else :size="20" />
                                         </span>
@@ -840,12 +860,15 @@ function badgeStock(stock: number): string {
                         >
                             <span class="cc-prod__thumb">
                                 <img
-                                    v-if="producto.imagen_url"
+                                    v-if="imagenDisponible(producto.imagen_url)"
                                     :src="producto.imagen_url"
                                     :alt="
                                         producto.imagen_alt ?? producto.nombre
                                     "
                                     loading="lazy"
+                                    @error="
+                                        marcarImagenRota(producto.imagen_url)
+                                    "
                                 />
                                 <Box v-else :size="18" />
                             </span>
@@ -1197,7 +1220,12 @@ function badgeStock(stock: number): string {
                     <div class="cc-prod-ficha__galeria">
                         <div class="cc-prod-ficha__img-wrap">
                             <img
-                                v-if="viendoDetalle.imagenes[imagenActiva]"
+                                v-if="
+                                    imagenDisponible(
+                                        viendoDetalle.imagenes[imagenActiva]
+                                            ?.url_webp,
+                                    )
+                                "
                                 :src="
                                     viendoDetalle.imagenes[imagenActiva]
                                         .url_webp
@@ -1207,6 +1235,12 @@ function badgeStock(stock: number): string {
                                     viendoDetalle.nombre
                                 "
                                 class="cc-prod-ficha__img"
+                                @error="
+                                    marcarImagenRota(
+                                        viendoDetalle.imagenes[imagenActiva]
+                                            .url_webp,
+                                    )
+                                "
                             />
                             <div v-else class="cc-prod-ficha__img-empty">
                                 <Box :size="48" />

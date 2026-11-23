@@ -452,7 +452,7 @@ function reenviar(usuario: Usuario): void {
 
             <motion.div
                 layout
-                class="cc-admin__kpis"
+                class="cc-admin__kpis cc-admin__kpis--four"
                 aria-label="Resumen de la página"
                 :transition="adminSpring"
             >
