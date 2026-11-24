@@ -258,9 +258,7 @@ const estado = computed(() => {
                                             v-if="item.calificacion.comentario"
                                             class="cc-calif-comentario"
                                         >
-                                            “{{
-                                                item.calificacion.comentario
-                                            }}”
+                                            “{{ item.calificacion.comentario }}”
                                         </p>
                                     </div>
                                 </div>
